@@ -1,0 +1,793 @@
+-- ============================================================
+-- Super Tools 后台服务数据库
+-- 版本: 2.0.0
+-- 支持: 官网/H5/管理端/微信小程序 多端统一服务
+-- ============================================================
+
+CREATE DATABASE IF NOT EXISTS `superadmin_db`
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE `superadmin_db`;
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ============================================================
+-- 一、用户体系
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 1.1 用户主表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `users` (
+  `id`              BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  `uuid`            VARCHAR(36)       NOT NULL COMMENT '全局唯一标识(UUID v4)',
+  `username`        VARCHAR(50)       DEFAULT NULL COMMENT '用户名(可选,后台账号必填)',
+  `email`           VARCHAR(100)      DEFAULT NULL COMMENT '邮箱',
+  `phone`           VARCHAR(20)       DEFAULT NULL COMMENT '手机号(E.164格式)',
+  `password_hash`   VARCHAR(255)      DEFAULT NULL COMMENT 'bcrypt密码哈希(第三方登录可为空)',
+  `nickname`        VARCHAR(50)       DEFAULT NULL COMMENT '昵称',
+  `avatar`          VARCHAR(500)      DEFAULT NULL COMMENT '头像URL',
+  `gender`          TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '性别:0未知,1男,2女',
+  `birthday`        DATE              DEFAULT NULL COMMENT '生日',
+  `user_type`       TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '用户类型:1普通用户,2管理员,3超级管理员',
+  `status`          TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0禁用,1正常,2待审核,3已注销',
+  `is_verified`     TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否实名认证',
+  `register_source` VARCHAR(30)       NOT NULL DEFAULT 'email' COMMENT '注册来源:email/phone/wechat/web/h5/miniprogram',
+  `register_ip`     VARCHAR(50)       DEFAULT NULL COMMENT '注册IP',
+  `last_login_at`   DATETIME          DEFAULT NULL COMMENT '最后登录时间',
+  `last_login_ip`   VARCHAR(50)       DEFAULT NULL COMMENT '最后登录IP',
+  `last_login_platform` VARCHAR(20)   DEFAULT NULL COMMENT '最后登录平台',
+  `login_count`     INT UNSIGNED      NOT NULL DEFAULT 0 COMMENT '累计登录次数',
+  `extra`           JSON              DEFAULT NULL COMMENT '扩展字段(业务自定义)',
+  `created_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted_at`      DATETIME          DEFAULT NULL COMMENT '软删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_uuid`     (`uuid`),
+  UNIQUE KEY `uk_username` (`username`),
+  UNIQUE KEY `uk_email`    (`email`),
+  UNIQUE KEY `uk_phone`    (`phone`),
+  INDEX `idx_user_type`    (`user_type`),
+  INDEX `idx_status`       (`status`),
+  INDEX `idx_created_at`   (`created_at`),
+  INDEX `idx_deleted_at`   (`deleted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户主表';
+
+
+-- ------------------------------------------------------------
+-- 1.2 第三方账号绑定表（支持多端OAuth）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_oauth` (
+  `id`              BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`         BIGINT UNSIGNED   NOT NULL COMMENT '关联用户ID',
+  `platform`        VARCHAR(30)       NOT NULL COMMENT '平台:wechat_mp/wechat_open/alipay/github/google等',
+  `open_id`         VARCHAR(100)      NOT NULL COMMENT '平台OpenID',
+  `union_id`        VARCHAR(100)      DEFAULT NULL COMMENT '平台UnionID(微信体系)',
+  `access_token`    VARCHAR(500)      DEFAULT NULL COMMENT 'AccessToken(加密存储)',
+  `refresh_token`   VARCHAR(500)      DEFAULT NULL COMMENT 'RefreshToken(加密存储)',
+  `token_expire_at` DATETIME          DEFAULT NULL COMMENT 'Token过期时间',
+  `nickname`        VARCHAR(100)      DEFAULT NULL COMMENT '平台昵称',
+  `avatar`          VARCHAR(500)      DEFAULT NULL COMMENT '平台头像',
+  `raw_data`        JSON              DEFAULT NULL COMMENT '平台原始数据',
+  `created_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_platform_openid` (`platform`, `open_id`),
+  INDEX `idx_user_id`   (`user_id`),
+  INDEX `idx_union_id`  (`union_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='第三方账号绑定表';
+
+
+-- ------------------------------------------------------------
+-- 1.3 用户实名认证表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_verifications` (
+  `id`              BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`         BIGINT UNSIGNED   NOT NULL COMMENT '用户ID',
+  `real_name`       VARCHAR(50)       NOT NULL COMMENT '真实姓名(加密存储)',
+  `id_type`         TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '证件类型:1身份证,2护照,3港澳通行证',
+  `id_number`       VARCHAR(100)      NOT NULL COMMENT '证件号码(加密存储)',
+  `id_front_url`    VARCHAR(500)      DEFAULT NULL COMMENT '证件正面照',
+  `id_back_url`     VARCHAR(500)      DEFAULT NULL COMMENT '证件背面照',
+  `status`          TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '状态:0待审核,1通过,2拒绝',
+  `reject_reason`   VARCHAR(200)      DEFAULT NULL COMMENT '拒绝原因',
+  `verified_at`     DATETIME          DEFAULT NULL COMMENT '认证通过时间',
+  `verified_by`     BIGINT UNSIGNED   DEFAULT NULL COMMENT '审核人ID',
+  `created_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_id` (`user_id`),
+  INDEX `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户实名认证表';
+
+
+-- ------------------------------------------------------------
+-- 1.4 用户地址表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_addresses` (
+  `id`          BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`     BIGINT UNSIGNED   NOT NULL,
+  `label`       VARCHAR(20)       DEFAULT NULL COMMENT '标签:家/公司/学校',
+  `receiver`    VARCHAR(50)       NOT NULL COMMENT '收件人',
+  `phone`       VARCHAR(20)       NOT NULL COMMENT '联系电话',
+  `province`    VARCHAR(50)       NOT NULL COMMENT '省',
+  `city`        VARCHAR(50)       NOT NULL COMMENT '市',
+  `district`    VARCHAR(50)       NOT NULL COMMENT '区/县',
+  `address`     VARCHAR(200)      NOT NULL COMMENT '详细地址',
+  `postal_code` VARCHAR(10)       DEFAULT NULL COMMENT '邮政编码',
+  `is_default`  TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否默认地址',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`  DATETIME          DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户地址表';
+
+
+-- ============================================================
+-- 二、认证与会话体系（SSO单点登录）
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 2.1 应用/客户端注册表（SSO多端管理）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `oauth_clients` (
+  `id`              INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `client_id`       VARCHAR(64)       NOT NULL COMMENT '客户端ID',
+  `client_secret`   VARCHAR(255)      NOT NULL COMMENT '客户端密钥(加密存储)',
+  `name`            VARCHAR(100)      NOT NULL COMMENT '应用名称',
+  `platform`        VARCHAR(30)       NOT NULL COMMENT '平台类型:web/h5/miniprogram/ios/android/admin',
+  `redirect_uris`   JSON              DEFAULT NULL COMMENT '允许的回调地址列表',
+  `allowed_scopes`  JSON              DEFAULT NULL COMMENT '允许的权限范围',
+  `grant_types`     JSON              DEFAULT NULL COMMENT '允许的授权类型',
+  `access_token_ttl`  INT UNSIGNED    NOT NULL DEFAULT 7200    COMMENT 'AccessToken有效期(秒)',
+  `refresh_token_ttl` INT UNSIGNED    NOT NULL DEFAULT 2592000 COMMENT 'RefreshToken有效期(秒)',
+  `status`          TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0禁用,1启用',
+  `description`     VARCHAR(200)      DEFAULT NULL,
+  `created_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_client_id` (`client_id`),
+  INDEX `idx_platform` (`platform`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='OAuth客户端/应用注册表';
+
+
+-- ------------------------------------------------------------
+-- 2.2 用户会话表（SSO Token管理）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_sessions` (
+  `id`              BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `session_id`      VARCHAR(64)       NOT NULL COMMENT '会话唯一标识',
+  `user_id`         BIGINT UNSIGNED   NOT NULL COMMENT '用户ID',
+  `client_id`       VARCHAR(64)       NOT NULL COMMENT '来源客户端',
+  `platform`        VARCHAR(30)       NOT NULL COMMENT '登录平台',
+  `access_token`    VARCHAR(512)      NOT NULL COMMENT 'JWT AccessToken',
+  `refresh_token`   VARCHAR(512)      NOT NULL COMMENT 'RefreshToken',
+  `access_expire_at`  DATETIME        NOT NULL COMMENT 'AccessToken过期时间',
+  `refresh_expire_at` DATETIME        NOT NULL COMMENT 'RefreshToken过期时间',
+  `ip`              VARCHAR(50)       DEFAULT NULL COMMENT '登录IP',
+  `user_agent`      VARCHAR(500)      DEFAULT NULL COMMENT 'UA信息',
+  `device_id`       VARCHAR(100)      DEFAULT NULL COMMENT '设备ID',
+  `device_name`     VARCHAR(100)      DEFAULT NULL COMMENT '设备名称',
+  `location`        VARCHAR(100)      DEFAULT NULL COMMENT '登录地点(IP解析)',
+  `is_active`       TINYINT(1)        NOT NULL DEFAULT 1 COMMENT '是否有效',
+  `logout_at`       DATETIME          DEFAULT NULL COMMENT '登出时间',
+  `logout_type`     TINYINT UNSIGNED  DEFAULT NULL COMMENT '登出类型:1主动登出,2Token过期,3被踢出,4异地登录',
+  `created_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_session_id`    (`session_id`),
+  UNIQUE KEY `uk_access_token`  (`access_token`(191)),
+  UNIQUE KEY `uk_refresh_token` (`refresh_token`(191)),
+  INDEX `idx_user_id`           (`user_id`),
+  INDEX `idx_client_platform`   (`client_id`, `platform`),
+  INDEX `idx_is_active`         (`is_active`),
+  INDEX `idx_refresh_expire`    (`refresh_expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会话表(SSO)';
+
+
+-- ------------------------------------------------------------
+-- 2.3 验证码表（登录/注册/找回密码）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `verify_codes` (
+  `id`          BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `target`      VARCHAR(100)      NOT NULL COMMENT '目标(手机号/邮箱)',
+  `type`        VARCHAR(30)       NOT NULL COMMENT '类型:register/login/reset_pwd/bind_phone/bind_email',
+  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'web' COMMENT '来源平台',
+  `code`        VARCHAR(10)       NOT NULL COMMENT '验证码',
+  `ip`          VARCHAR(50)       DEFAULT NULL COMMENT '请求IP',
+  `is_used`     TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否已使用',
+  `used_at`     DATETIME          DEFAULT NULL COMMENT '使用时间',
+  `expire_at`   DATETIME          NOT NULL COMMENT '过期时间',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_target_type`  (`target`, `type`),
+  INDEX `idx_expire_at`    (`expire_at`),
+  INDEX `idx_created_at`   (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='验证码表';
+
+
+-- ------------------------------------------------------------
+-- 2.4 登录日志表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `login_logs` (
+  `id`          BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`     BIGINT UNSIGNED   DEFAULT NULL COMMENT '用户ID(登录失败可能为空)',
+  `username`    VARCHAR(100)      DEFAULT NULL COMMENT '登录账号(原始输入)',
+  `client_id`   VARCHAR(64)       DEFAULT NULL COMMENT '客户端ID',
+  `platform`    VARCHAR(30)       NOT NULL COMMENT '登录平台',
+  `login_type`  VARCHAR(30)       NOT NULL COMMENT '登录方式:password/sms/email/wechat/token',
+  `ip`          VARCHAR(50)       DEFAULT NULL,
+  `user_agent`  VARCHAR(500)      DEFAULT NULL,
+  `device_id`   VARCHAR(100)      DEFAULT NULL,
+  `location`    VARCHAR(100)      DEFAULT NULL COMMENT '登录地点',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0失败,1成功',
+  `fail_reason` VARCHAR(200)      DEFAULT NULL COMMENT '失败原因',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id`    (`user_id`),
+  INDEX `idx_platform`   (`platform`),
+  INDEX `idx_status`     (`status`),
+  INDEX `idx_created_at` (`created_at`),
+  INDEX `idx_ip`         (`ip`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='登录日志表';
+
+
+-- ============================================================
+-- 三、RBAC 权限体系
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 3.1 角色表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `roles` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `name`        VARCHAR(50)       NOT NULL COMMENT '角色名称',
+  `code`        VARCHAR(50)       NOT NULL COMMENT '角色编码(唯一)',
+  `type`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '类型:1系统角色,2自定义角色',
+  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'all' COMMENT '适用平台:all/admin/web/miniprogram',
+  `description` VARCHAR(200)      DEFAULT NULL,
+  `sort`        INT               NOT NULL DEFAULT 0 COMMENT '排序',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0禁用,1启用',
+  `created_by`  BIGINT UNSIGNED   DEFAULT NULL COMMENT '创建人',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`  DATETIME          DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code` (`code`),
+  INDEX `idx_platform` (`platform`),
+  INDEX `idx_status`   (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
+
+
+-- ------------------------------------------------------------
+-- 3.2 权限表（菜单/按钮/API三合一）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `permissions` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `parent_id`   INT UNSIGNED      NOT NULL DEFAULT 0 COMMENT '父级ID,0为顶级',
+  `name`        VARCHAR(100)      NOT NULL COMMENT '权限名称',
+  `code`        VARCHAR(100)      NOT NULL COMMENT '权限编码(唯一)',
+  `type`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '类型:1目录,2菜单,3按钮,4API',
+  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'admin' COMMENT '适用平台',
+  `icon`        VARCHAR(100)      DEFAULT NULL COMMENT '图标',
+  `path`        VARCHAR(200)      DEFAULT NULL COMMENT '前端路由路径/API路径',
+  `component`   VARCHAR(200)      DEFAULT NULL COMMENT '前端组件路径',
+  `method`      VARCHAR(10)       DEFAULT NULL COMMENT 'HTTP方法:GET/POST/PUT/DELETE',
+  `redirect`    VARCHAR(200)      DEFAULT NULL COMMENT '重定向路径',
+  `is_hidden`   TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否隐藏菜单',
+  `is_cache`    TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否缓存页面',
+  `is_external` TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否外链',
+  `sort`        INT               NOT NULL DEFAULT 0 COMMENT '排序',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code`      (`code`),
+  INDEX `idx_parent_id`     (`parent_id`),
+  INDEX `idx_type_platform` (`type`, `platform`),
+  INDEX `idx_path_method`   (`path`(100), `method`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='权限表(菜单/按钮/API)';
+
+
+-- ------------------------------------------------------------
+-- 3.3 用户角色关联表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_roles` (
+  `user_id`     BIGINT UNSIGNED   NOT NULL,
+  `role_id`     INT UNSIGNED      NOT NULL,
+  `expire_at`   DATETIME          DEFAULT NULL COMMENT '角色过期时间(NULL永不过期)',
+  `granted_by`  BIGINT UNSIGNED   DEFAULT NULL COMMENT '授权人',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`, `role_id`),
+  INDEX `idx_role_id`   (`role_id`),
+  INDEX `idx_expire_at` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户角色关联表';
+
+
+-- ------------------------------------------------------------
+-- 3.4 角色权限关联表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `role_permissions` (
+  `role_id`       INT UNSIGNED    NOT NULL,
+  `permission_id` INT UNSIGNED    NOT NULL,
+  `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`role_id`, `permission_id`),
+  INDEX `idx_permission_id` (`permission_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色权限关联表';
+
+
+-- ------------------------------------------------------------
+-- 3.5 用户权限扩展表（直接授权/拒绝，覆盖角色权限）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `user_permissions` (
+  `id`            BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`       BIGINT UNSIGNED   NOT NULL,
+  `permission_id` INT UNSIGNED      NOT NULL,
+  `effect`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '效果:1允许,0拒绝',
+  `expire_at`     DATETIME          DEFAULT NULL COMMENT '过期时间',
+  `granted_by`    BIGINT UNSIGNED   DEFAULT NULL COMMENT '授权人',
+  `reason`        VARCHAR(200)      DEFAULT NULL COMMENT '授权原因',
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_permission` (`user_id`, `permission_id`),
+  INDEX `idx_expire_at` (`expire_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户权限扩展表(直接授权)';
+
+
+-- ============================================================
+-- 四、系统配置体系
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 4.1 系统配置表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `system_configs` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `group`       VARCHAR(50)       NOT NULL COMMENT '配置分组:basic/sms/email/pay/oss/wechat等',
+  `key`         VARCHAR(100)      NOT NULL COMMENT '配置键',
+  `value`       TEXT              DEFAULT NULL COMMENT '配置值',
+  `type`        VARCHAR(20)       NOT NULL DEFAULT 'string' COMMENT '值类型:string/number/boolean/json',
+  `is_secret`   TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否敏感(加密存储,接口脱敏)',
+  `is_public`   TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否前端可读',
+  `description` VARCHAR(200)      DEFAULT NULL COMMENT '配置说明',
+  `sort`        INT               NOT NULL DEFAULT 0,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_group_key` (`group`, `key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
+
+
+-- ------------------------------------------------------------
+-- 4.2 数据字典表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `dict_types` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `name`        VARCHAR(100)      NOT NULL COMMENT '字典名称',
+  `code`        VARCHAR(100)      NOT NULL COMMENT '字典编码(唯一)',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1,
+  `description` VARCHAR(200)      DEFAULT NULL,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据字典类型表';
+
+
+CREATE TABLE IF NOT EXISTS `dict_items` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `type_id`     INT UNSIGNED      NOT NULL COMMENT '字典类型ID',
+  `type_code`   VARCHAR(100)      NOT NULL COMMENT '字典类型编码(冗余)',
+  `label`       VARCHAR(100)      NOT NULL COMMENT '显示标签',
+  `value`       VARCHAR(100)      NOT NULL COMMENT '数据值',
+  `extra`       VARCHAR(200)      DEFAULT NULL COMMENT '扩展信息(如颜色/图标)',
+  `sort`        INT               NOT NULL DEFAULT 0,
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1,
+  `is_default`  TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否默认值',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_type_id`   (`type_id`),
+  INDEX `idx_type_code` (`type_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据字典项表';
+
+
+-- ------------------------------------------------------------
+-- 4.3 地区表（省市区）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `regions` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `parent_id`   INT UNSIGNED      NOT NULL DEFAULT 0,
+  `name`        VARCHAR(100)      NOT NULL COMMENT '地区名称',
+  `short_name`  VARCHAR(50)       DEFAULT NULL COMMENT '简称',
+  `code`        VARCHAR(20)       NOT NULL COMMENT '行政区划代码',
+  `level`       TINYINT UNSIGNED  NOT NULL COMMENT '层级:1省,2市,3区县,4街道',
+  `sort`        INT               NOT NULL DEFAULT 0,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code`    (`code`),
+  INDEX `idx_parent_id`   (`parent_id`),
+  INDEX `idx_level`       (`level`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='行政区划表';
+
+
+-- ============================================================
+-- 五、内容管理体系（CMS）
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 5.1 文章分类表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `article_categories` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `parent_id`   INT UNSIGNED      NOT NULL DEFAULT 0,
+  `name`        VARCHAR(100)      NOT NULL,
+  `slug`        VARCHAR(100)      NOT NULL COMMENT 'URL友好标识',
+  `icon`        VARCHAR(200)      DEFAULT NULL,
+  `cover`       VARCHAR(500)      DEFAULT NULL COMMENT '封面图',
+  `description` VARCHAR(500)      DEFAULT NULL,
+  `sort`        INT               NOT NULL DEFAULT 0,
+  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'all' COMMENT '适用平台',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_slug`    (`slug`),
+  INDEX `idx_parent_id`   (`parent_id`),
+  INDEX `idx_platform`    (`platform`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章分类表';
+
+
+-- ------------------------------------------------------------
+-- 5.2 文章/内容表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `articles` (
+  `id`            BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `category_id`   INT UNSIGNED      NOT NULL DEFAULT 0 COMMENT '分类ID',
+  `author_id`     BIGINT UNSIGNED   DEFAULT NULL COMMENT '作者ID',
+  `title`         VARCHAR(200)      NOT NULL COMMENT '标题',
+  `slug`          VARCHAR(200)      DEFAULT NULL COMMENT 'URL标识',
+  `summary`       VARCHAR(500)      DEFAULT NULL COMMENT '摘要',
+  `content`       LONGTEXT          DEFAULT NULL COMMENT '正文(富文本/Markdown)',
+  `content_type`  VARCHAR(20)       NOT NULL DEFAULT 'richtext' COMMENT '内容类型:richtext/markdown',
+  `cover`         VARCHAR(500)      DEFAULT NULL COMMENT '封面图',
+  `type`          VARCHAR(30)       NOT NULL DEFAULT 'article' COMMENT '内容类型:article/notice/banner/help',
+  `platform`      VARCHAR(30)       NOT NULL DEFAULT 'all' COMMENT '适用平台',
+  `source`        VARCHAR(100)      DEFAULT NULL COMMENT '来源',
+  `source_url`    VARCHAR(500)      DEFAULT NULL COMMENT '来源链接',
+  `tags`          JSON              DEFAULT NULL COMMENT '标签列表',
+  `seo_title`     VARCHAR(200)      DEFAULT NULL COMMENT 'SEO标题',
+  `seo_keywords`  VARCHAR(200)      DEFAULT NULL COMMENT 'SEO关键词',
+  `seo_desc`      VARCHAR(500)      DEFAULT NULL COMMENT 'SEO描述',
+  `view_count`    INT UNSIGNED      NOT NULL DEFAULT 0 COMMENT '浏览量',
+  `like_count`    INT UNSIGNED      NOT NULL DEFAULT 0 COMMENT '点赞数',
+  `comment_count` INT UNSIGNED      NOT NULL DEFAULT 0 COMMENT '评论数',
+  `is_top`        TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否置顶',
+  `is_hot`        TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否热门',
+  `is_recommend`  TINYINT(1)        NOT NULL DEFAULT 0 COMMENT '是否推荐',
+  `status`        TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '状态:0草稿,1已发布,2已下线',
+  `published_at`  DATETIME          DEFAULT NULL COMMENT '发布时间',
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at`    DATETIME          DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  INDEX `idx_category_id`  (`category_id`),
+  INDEX `idx_author_id`    (`author_id`),
+  INDEX `idx_type_platform`(`type`, `platform`),
+  INDEX `idx_status`       (`status`),
+  INDEX `idx_published_at` (`published_at`),
+  INDEX `idx_is_top`       (`is_top`),
+  FULLTEXT INDEX `ft_title_content` (`title`, `summary`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文章/内容表';
+
+
+-- ------------------------------------------------------------
+-- 5.3 Banner/广告位表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `banners` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `title`       VARCHAR(100)      NOT NULL COMMENT '标题',
+  `image`       VARCHAR(500)      NOT NULL COMMENT '图片URL',
+  `link`        VARCHAR(500)      DEFAULT NULL COMMENT '跳转链接',
+  `link_type`   VARCHAR(20)       DEFAULT NULL COMMENT '链接类型:url/article/page',
+  `link_value`  VARCHAR(200)      DEFAULT NULL COMMENT '链接值',
+  `position`    VARCHAR(50)       NOT NULL COMMENT '广告位:home_top/home_middle等',
+  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'all',
+  `sort`        INT               NOT NULL DEFAULT 0,
+  `start_at`    DATETIME          DEFAULT NULL COMMENT '展示开始时间',
+  `end_at`      DATETIME          DEFAULT NULL COMMENT '展示结束时间',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_position_platform` (`position`, `platform`),
+  INDEX `idx_status`            (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Banner/广告位表';
+
+
+-- ============================================================
+-- 六、消息通知体系
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 6.1 消息模板表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `message_templates` (
+  `id`          INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `code`        VARCHAR(100)      NOT NULL COMMENT '模板编码(唯一)',
+  `name`        VARCHAR(100)      NOT NULL COMMENT '模板名称',
+  `channel`     VARCHAR(20)       NOT NULL COMMENT '渠道:sms/email/push/wechat_tpl',
+  `title`       VARCHAR(200)      DEFAULT NULL COMMENT '消息标题',
+  `content`     TEXT              NOT NULL COMMENT '模板内容(支持变量{{var}})',
+  `variables`   JSON              DEFAULT NULL COMMENT '变量说明',
+  `third_id`    VARCHAR(100)      DEFAULT NULL COMMENT '第三方模板ID(如短信模板ID)',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code_channel` (`code`, `channel`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息模板表';
+
+
+-- ------------------------------------------------------------
+-- 6.2 消息发送记录表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `message_logs` (
+  `id`            BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `template_code` VARCHAR(100)      DEFAULT NULL COMMENT '模板编码',
+  `channel`       VARCHAR(20)       NOT NULL COMMENT '发送渠道',
+  `target`        VARCHAR(200)      NOT NULL COMMENT '接收目标(手机/邮箱/用户ID)',
+  `user_id`       BIGINT UNSIGNED   DEFAULT NULL,
+  `title`         VARCHAR(200)      DEFAULT NULL,
+  `content`       TEXT              NOT NULL COMMENT '实际发送内容',
+  `variables`     JSON              DEFAULT NULL COMMENT '变量值',
+  `status`        TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '状态:0待发送,1发送中,2成功,3失败',
+  `fail_reason`   VARCHAR(500)      DEFAULT NULL COMMENT '失败原因',
+  `third_msg_id`  VARCHAR(200)      DEFAULT NULL COMMENT '第三方消息ID',
+  `retry_count`   TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '重试次数',
+  `send_at`       DATETIME          DEFAULT NULL COMMENT '实际发送时间',
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id`       (`user_id`),
+  INDEX `idx_channel`       (`channel`),
+  INDEX `idx_status`        (`status`),
+  INDEX `idx_created_at`    (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息发送记录表';
+
+
+-- ------------------------------------------------------------
+-- 6.3 站内信/系统通知表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id`          BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`     BIGINT UNSIGNED   NOT NULL COMMENT '接收用户ID',
+  `type`        VARCHAR(50)       NOT NULL COMMENT '通知类型:system/order/activity/security',
+  `title`       VARCHAR(200)      NOT NULL,
+  `content`     TEXT              NOT NULL,
+  `extra`       JSON              DEFAULT NULL COMMENT '扩展数据(如跳转参数)',
+  `is_read`     TINYINT(1)        NOT NULL DEFAULT 0,
+  `read_at`     DATETIME          DEFAULT NULL,
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id`   (`user_id`),
+  INDEX `idx_type`      (`type`),
+  INDEX `idx_is_read`   (`is_read`),
+  INDEX `idx_created_at`(`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站内通知表';
+
+
+-- ============================================================
+-- 七、文件/媒体资源管理
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 7.1 文件上传记录表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `file_resources` (
+  `id`            BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `user_id`       BIGINT UNSIGNED   DEFAULT NULL COMMENT '上传用户',
+  `original_name` VARCHAR(255)      NOT NULL COMMENT '原始文件名',
+  `file_name`     VARCHAR(255)      NOT NULL COMMENT '存储文件名',
+  `file_path`     VARCHAR(500)      NOT NULL COMMENT '存储路径',
+  `file_url`      VARCHAR(500)      NOT NULL COMMENT '访问URL',
+  `file_size`     BIGINT UNSIGNED   NOT NULL COMMENT '文件大小(字节)',
+  `mime_type`     VARCHAR(100)      NOT NULL COMMENT 'MIME类型',
+  `extension`     VARCHAR(20)       NOT NULL COMMENT '文件扩展名',
+  `storage`       VARCHAR(30)       NOT NULL DEFAULT 'local' COMMENT '存储引擎:local/oss/cos/qiniu',
+  `bucket`        VARCHAR(100)      DEFAULT NULL COMMENT '存储桶',
+  `md5`           VARCHAR(32)       DEFAULT NULL COMMENT '文件MD5(去重)',
+  `width`         INT UNSIGNED      DEFAULT NULL COMMENT '图片宽度',
+  `height`        INT UNSIGNED      DEFAULT NULL COMMENT '图片高度',
+  `duration`      INT UNSIGNED      DEFAULT NULL COMMENT '音视频时长(秒)',
+  `platform`      VARCHAR(30)       DEFAULT NULL COMMENT '上传来源平台',
+  `biz_type`      VARCHAR(50)       DEFAULT NULL COMMENT '业务类型:avatar/article/product等',
+  `status`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0待处理,1正常,2已删除',
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id`   (`user_id`),
+  INDEX `idx_md5`       (`md5`),
+  INDEX `idx_biz_type`  (`biz_type`),
+  INDEX `idx_created_at`(`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='文件资源表';
+
+
+-- ============================================================
+-- 八、审计与日志体系
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 8.1 操作审计日志表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `audit_logs` (
+  `id`            BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `trace_id`      VARCHAR(64)       DEFAULT NULL COMMENT '链路追踪ID',
+  `user_id`       BIGINT UNSIGNED   DEFAULT NULL COMMENT '操作用户ID',
+  `username`      VARCHAR(50)       DEFAULT NULL COMMENT '操作用户名(冗余)',
+  `platform`      VARCHAR(30)       DEFAULT NULL COMMENT '操作平台',
+  `module`        VARCHAR(50)       NOT NULL COMMENT '模块',
+  `action`        VARCHAR(50)       NOT NULL COMMENT '操作动作:create/update/delete/export等',
+  `description`   VARCHAR(500)      DEFAULT NULL COMMENT '操作描述',
+  `biz_type`      VARCHAR(50)       DEFAULT NULL COMMENT '业务类型',
+  `biz_id`        VARCHAR(64)       DEFAULT NULL COMMENT '业务ID',
+  `before_data`   JSON              DEFAULT NULL COMMENT '操作前数据',
+  `after_data`    JSON              DEFAULT NULL COMMENT '操作后数据',
+  `ip`            VARCHAR(50)       DEFAULT NULL,
+  `user_agent`    VARCHAR(500)      DEFAULT NULL,
+  `request_url`   VARCHAR(500)      DEFAULT NULL,
+  `request_method`VARCHAR(10)       DEFAULT NULL,
+  `request_params`JSON              DEFAULT NULL COMMENT '请求参数(脱敏)',
+  `response_code` INT               DEFAULT NULL COMMENT '响应状态码',
+  `cost_time`     INT UNSIGNED      DEFAULT NULL COMMENT '耗时(ms)',
+  `status`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '0失败,1成功',
+  `fail_reason`   VARCHAR(500)      DEFAULT NULL,
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id`     (`user_id`),
+  INDEX `idx_module`      (`module`),
+  INDEX `idx_biz`         (`biz_type`, `biz_id`),
+  INDEX `idx_created_at`  (`created_at`),
+  INDEX `idx_trace_id`    (`trace_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作审计日志表';
+
+
+-- ------------------------------------------------------------
+-- 8.2 API访问日志表（高频写入，建议分区或归档）
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `api_logs` (
+  `id`            BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `trace_id`      VARCHAR(64)       DEFAULT NULL,
+  `user_id`       BIGINT UNSIGNED   DEFAULT NULL,
+  `client_id`     VARCHAR(64)       DEFAULT NULL,
+  `platform`      VARCHAR(30)       DEFAULT NULL,
+  `method`        VARCHAR(10)       NOT NULL,
+  `path`          VARCHAR(500)      NOT NULL,
+  `query`         TEXT              DEFAULT NULL COMMENT 'Query参数',
+  `body`          TEXT              DEFAULT NULL COMMENT 'Body参数(脱敏)',
+  `ip`            VARCHAR(50)       DEFAULT NULL,
+  `user_agent`    VARCHAR(500)      DEFAULT NULL,
+  `response_code` INT               DEFAULT NULL,
+  `response_size` INT UNSIGNED      DEFAULT NULL COMMENT '响应大小(字节)',
+  `cost_time`     INT UNSIGNED      DEFAULT NULL COMMENT '耗时(ms)',
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_user_id`    (`user_id`),
+  INDEX `idx_path`       (`path`(100)),
+  INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='API访问日志表';
+
+
+-- ============================================================
+-- 九、任务调度体系
+-- ============================================================
+
+-- ------------------------------------------------------------
+-- 9.1 定时任务表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `scheduled_jobs` (
+  `id`            INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+  `name`          VARCHAR(100)      NOT NULL COMMENT '任务名称',
+  `code`          VARCHAR(100)      NOT NULL COMMENT '任务编码(唯一)',
+  `group`         VARCHAR(50)       NOT NULL DEFAULT 'default' COMMENT '任务分组',
+  `cron`          VARCHAR(100)      NOT NULL COMMENT 'Cron表达式',
+  `handler`       VARCHAR(200)      NOT NULL COMMENT '处理器(类名/函数名)',
+  `params`        JSON              DEFAULT NULL COMMENT '任务参数',
+  `timeout`       INT UNSIGNED      NOT NULL DEFAULT 60 COMMENT '超时时间(秒)',
+  `retry_times`   TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '失败重试次数',
+  `status`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0停用,1启用',
+  `last_run_at`   DATETIME          DEFAULT NULL COMMENT '上次执行时间',
+  `next_run_at`   DATETIME          DEFAULT NULL COMMENT '下次执行时间',
+  `description`   VARCHAR(200)      DEFAULT NULL,
+  `created_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code` (`code`),
+  INDEX `idx_status`   (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='定时任务配置表';
+
+
+-- ------------------------------------------------------------
+-- 9.2 任务执行记录表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `job_logs` (
+  `id`          BIGINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  `job_id`      INT UNSIGNED      NOT NULL COMMENT '任务ID',
+  `job_code`    VARCHAR(100)      NOT NULL COMMENT '任务编码',
+  `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 0 COMMENT '状态:0执行中,1成功,2失败,3超时',
+  `start_at`    DATETIME          NOT NULL COMMENT '开始时间',
+  `end_at`      DATETIME          DEFAULT NULL COMMENT '结束时间',
+  `cost_time`   INT UNSIGNED      DEFAULT NULL COMMENT '耗时(ms)',
+  `result`      TEXT              DEFAULT NULL COMMENT '执行结果',
+  `error`       TEXT              DEFAULT NULL COMMENT '错误信息',
+  `created_at`  DATETIME          NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_job_id`    (`job_id`),
+  INDEX `idx_status`    (`status`),
+  INDEX `idx_created_at`(`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='任务执行记录表';
+
+
+-- ============================================================
+-- 十、初始化数据
+-- ============================================================
+
+-- 初始化角色
+INSERT IGNORE INTO `roles` (`name`, `code`, `type`, `platform`, `description`, `sort`) VALUES
+('超级管理员', 'super_admin',  1, 'all',   '拥有所有权限,不受RBAC限制', 0),
+('管理员',     'admin',        1, 'admin', '后台管理权限',               1),
+('运营',       'operator',     1, 'admin', '内容运营权限',               2),
+('普通用户',   'user',         1, 'all',   '基础用户权限',               3),
+('访客',       'guest',        1, 'all',   '未登录访客权限',             4);
+
+-- 初始化OAuth客户端
+INSERT IGNORE INTO `oauth_clients`
+  (`client_id`, `client_secret`, `name`, `platform`, `grant_types`, `access_token_ttl`, `refresh_token_ttl`)
+VALUES
+('web_client',         'CHANGE_ME_WEB_SECRET',    '官网PC端',   'web',         '["password","refresh_token","sms","wechat"]', 7200,   2592000),
+('h5_client',          'CHANGE_ME_H5_SECRET',     '移动H5端',   'h5',          '["password","refresh_token","sms","wechat"]', 7200,   2592000),
+('miniprogram_client', 'CHANGE_ME_MP_SECRET',     '微信小程序', 'miniprogram', '["wechat","sms","refresh_token"]',            86400,  2592000),
+('admin_client',       'CHANGE_ME_ADMIN_SECRET',  '管理后台',   'admin',       '["password","refresh_token"]',               3600,   86400),
+('ios_client',         'CHANGE_ME_IOS_SECRET',    'iOS App',    'ios',         '["password","refresh_token","sms","wechat"]', 86400,  2592000),
+('android_client',     'CHANGE_ME_ANDROID_SECRET','Android App','android',     '["password","refresh_token","sms","wechat"]', 86400,  2592000);
+
+-- 初始化系统配置
+INSERT IGNORE INTO `system_configs` (`group`, `key`, `value`, `type`, `is_public`, `description`) VALUES
+('basic',  'site_name',        'Super Tools',  'string',  1, '站点名称'),
+('basic',  'site_logo',        '',             'string',  1, '站点Logo'),
+('basic',  'site_description', '',             'string',  1, '站点描述'),
+('basic',  'icp_number',       '',             'string',  1, 'ICP备案号'),
+('basic',  'copyright',        '',             'string',  1, '版权信息'),
+('auth',   'login_captcha',    'true',         'boolean', 0, '登录是否需要验证码'),
+('auth',   'register_open',    'true',         'boolean', 0, '是否开放注册'),
+('auth',   'sms_expire',       '300',          'number',  0, '短信验证码有效期(秒)'),
+('auth',   'max_login_fail',   '5',            'number',  0, '最大登录失败次数'),
+('upload', 'max_size',         '10485760',     'number',  0, '最大上传大小(字节)'),
+('upload', 'allowed_types',    '["jpg","jpeg","png","gif","webp","pdf","doc","docx","xls","xlsx"]', 'json', 0, '允许上传的文件类型');
+
+-- 初始化数据字典
+INSERT IGNORE INTO `dict_types` (`name`, `code`, `description`) VALUES
+('用户状态',   'user_status',    '用户账号状态'),
+('性别',       'gender',         '用户性别'),
+('登录方式',   'login_type',     '用户登录方式'),
+('平台类型',   'platform',       '客户端平台类型'),
+('内容状态',   'article_status', '文章内容状态'),
+('文件存储',   'storage_type',   '文件存储引擎类型');
+
+-- 初始化超级管理员账号（密码: Admin@123456）
+-- password_hash 由 bcrypt.hash('Admin@123456', 12) 生成
+INSERT IGNORE INTO `users`
+  (`uuid`, `username`, `email`, `password_hash`, `nickname`, `user_type`, `status`, `register_source`)
+VALUES
+  (UUID(), 'admin', 'admin@supertools.com', '$2a$12$Gm0AjXJHuBCVKGu9Cx2xv.lldcv9l.iaqmdPMUR6cDAakCT/grzO6', '超级管理员', 3, 1, 'web');
+
+-- 为 admin 用户绑定 super_admin 角色
+INSERT IGNORE INTO `user_roles` (`user_id`, `role_id`)
+SELECT u.id, r.id
+FROM `users` u, `roles` r
+WHERE u.username = 'admin' AND r.code = 'super_admin';
+
+SET FOREIGN_KEY_CHECKS = 1;

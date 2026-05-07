@@ -1,0 +1,83 @@
+// ============================================================
+// Footer 样式
+// ============================================================
+
+.footer {
+  padding: 10px 24px;
+
+  &__inner {
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+  }
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  &__link {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+    transition: color var(--transition-fast);
+
+    &:hover {
+      color: var(--color-primary);
+    }
+  }
+
+  &__link-divider {
+    color: var(--color-border);
+    font-size: var(--font-size-sm);
+  }
+
+  &__copyright {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+  }
+
+  &__heart {
+    color: #ef4444;
+    font-size: 12px;
+    animation: heartbeat 1.5s ease-in-out infinite;
+  }
+
+  &__download {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-size-sm);
+  }
+
+  &__download-label {
+    color: var(--color-text-tertiary);
+  }
+
+  &__download-link {
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast);
+
+    &:hover {
+      color: var(--color-primary);
+    }
+  }
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+logs/
+run/
+.env
+*.log
+coverage/
+.nyc_output/
+typings/app/
+typings/config/

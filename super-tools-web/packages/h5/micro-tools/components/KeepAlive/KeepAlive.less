@@ -1,0 +1,26 @@
+/**
+ * KeepAlive 相关样式
+ * 页面缓存容器 + 切换过渡动画
+ */
+
+.keep-alive {
+  &__page {
+    width: 100%;
+    min-height: 0;
+
+    /* 页面切换淡入动画 */
+    &--active-enter {
+      animation: keepAlivePageIn var(--transition-normal) both;
+    }
+  }
+}
+
+/* 页面淡入动画 */
+@keyframes keepAlivePageIn {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}

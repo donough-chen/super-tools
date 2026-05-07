@@ -1,0 +1,26 @@
+<svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- 左边小长方形 -->
+  <rect x="40" y="120" width="60" height="70" fill="#f0f8ff" stroke="#222" stroke-width="2"/>
+
+  <!-- 中间第一个双向箭头 -->
+  <g stroke="#222" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="100" y1="135" x2="150" y2="135"/>
+    <line x1="110" y1="125" x2="100" y2="135"/>
+    <line x1="110" y1="145" x2="100" y2="135"/>
+    <line x1="140" y1="125" x2="150" y2="135"/>
+    <line x1="140" y1="145" x2="150" y2="135"/>
+  </g>
+
+  <!-- 中间第二个双向箭头 -->
+  <g stroke="#222" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="100" y1="165" x2="150" y2="165"/>
+    <line x1="110" y1="155" x2="100" y2="165"/>
+    <line x1="110" y1="175" x2="100" y2="165"/>
+    <line x1="140" y1="155" x2="150" y2="165"/>
+    <line x1="140" y1="175" x2="150" y2="165"/>
+  </g>
+
+  <!-- 右边大长方形 -->
+  <rect x="170" y="110" width="120" height="120" fill="#f0f8ff" stroke="#222" stroke-width="2"/>
+</svg>

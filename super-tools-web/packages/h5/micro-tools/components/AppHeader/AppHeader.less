@@ -1,0 +1,84 @@
+@import '~@/assets/variables.less';
+
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--header-height);
+
+  /* 毛玻璃效果 */
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: var(--glass-border);
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 100%;
+    padding: 0 var(--spacing-lg);
+  }
+
+  &__back {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    background: none;
+    border: none;
+    cursor: pointer;
+
+    /* 返回箭头图标（用 CSS 伪元素实现） */
+    &::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 20px;
+      border-left: 3px solid var(--text-primary);
+      border-bottom: 3px solid var(--text-primary);
+      transform: rotate(45deg);
+    }
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0 var(--spacing-md);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex-shrink: 0;
+  }
+
+  &__btn {
+    width: 52px;
+    height: 52px;
+    border: none;
+    background: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+
+    &:active {
+      background: var(--primary-color-light);
+    }
+
+    &--search {
+      /* 搜索按钮样式：圆环背景 */
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.06);
+    }
+  }
+}

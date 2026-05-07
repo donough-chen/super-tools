@@ -1,0 +1,9 @@
+{
+  "name": "<%= parent %>-<%= projectName %>",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@umijs/preset-react": "1.x"
+  }
+}

@@ -1,0 +1,212 @@
+// ============================================================
+// 全局样式
+// 引入变量文件，设置全局 reset 样式和公共类
+// ============================================================
+
+@import './variables.less';
+@import './themes.less';
+
+// ---------- Reset ----------
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-base);
+  transition: background-color var(--transition-base), color var(--transition-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+
+  &:hover {
+    color: var(--color-primary-hover);
+  }
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+input,
+textarea,
+select {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+// ---------- 滚动条美化 ----------
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--color-text-tertiary);
+  }
+}
+
+// ---------- 毛玻璃公共类 ----------
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+// ---------- 文本截断 ----------
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ---------- 弹性布局工具类 ----------
+.flex {
+  display: flex;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// ---------- 分割线 ----------
+.divider {
+  height: 1px;
+  background: var(--color-divider);
+  border: none;
+  margin: 0;
+}
+
+// ---------- 卡片基础样式 ----------
+.card {
+  background: var(--color-bg-container);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-base), transform var(--transition-base),
+    border-color var(--transition-base);
+
+  &:hover {
+    box-shadow: var(--shadow-card-hover);
+    border-color: var(--color-primary-light);
+    transform: translateY(-2px);
+  }
+}
+
+// ---------- 主题过渡动画 ----------
+html[data-theme] * {
+  transition: background-color var(--transition-base), border-color var(--transition-base),
+    color var(--transition-base), box-shadow var(--transition-base);
+}
+
+// ---------- Ant Design 主题覆盖 ----------
+.ant-btn-primary {
+  background-color: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+
+  &:hover {
+    background-color: var(--color-primary-hover) !important;
+    border-color: var(--color-primary-hover) !important;
+  }
+}
+
+// 暗色主题下 Ant Design 组件适配
+[data-theme='dark'] {
+  .ant-modal-content,
+  .ant-drawer-content,
+  .ant-dropdown-menu,
+  .ant-select-dropdown,
+  .ant-tooltip-inner {
+    background-color: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+  }
+
+  .ant-modal-header,
+  .ant-drawer-header {
+    background-color: var(--color-bg-elevated);
+    border-bottom-color: var(--color-border);
+  }
+
+  .ant-modal-title,
+  .ant-drawer-title {
+    color: var(--color-text-primary);
+  }
+
+  .ant-input,
+  .ant-input-affix-wrapper {
+    background-color: var(--color-bg-spotlight);
+    border-color: var(--color-border);
+    color: var(--color-text-primary);
+
+    &::placeholder {
+      color: var(--color-text-tertiary);
+    }
+  }
+
+  .ant-form-item-label > label {
+    color: var(--color-text-secondary);
+  }
+}

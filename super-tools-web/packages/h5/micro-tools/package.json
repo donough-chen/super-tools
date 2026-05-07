@@ -1,0 +1,9 @@
+{
+  "name": "h5-micro-tools",
+  "private": true,
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@umijs/preset-react": "1.x"
+  }
+}

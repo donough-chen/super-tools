@@ -1,0 +1,2335 @@
+const categorys = {
+	DAILY: "日常应用",
+	DOCUMENT: "文档编辑",
+	QUERY: "信息查询",
+	CALCULATION: "计算转换",
+	VIDEO: "视频处理",
+	AUDIO: "音频处理",
+	IMAGE: "图片处理",
+	TEXT: "文本优化",
+	DEV: "开发工具",
+	LIFE: "生活工具",
+	INTELLIGENT: "智能应用"
+};
+
+const tools = [{
+	id: "gold-price",
+	name: "今日黄金价格",
+	description: "实时黄金价格查询",
+	keyword: "黄金|价格|行情|投资",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/gold-price"
+}, {
+	id: "oil-price",
+	name: "全国油价查询",
+	description: "全国最新油价查询",
+	keyword: "油价|汽油|柴油|加油站",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/local_gas_station_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/oil-price"
+}, {
+	id: "horoscope",
+	name: "星座运势",
+	description: "十二星座今日运势查询",
+	keyword: "星座|运势|占卜|白羊|金牛|双子|巨蟹|狮子|处女|天秤|天蝎|射手|摩羯|水瓶|双鱼",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/cookie_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/horoscope"
+}, {
+	id: "relationship-calculator",
+	name: "亲戚称呼换算",
+	description: "亲戚称呼计算",
+	keyword: "亲戚|称呼|关系|家庭",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/egg_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/relationship-calculator"
+}, {
+	id: "calculator",
+	name: "计算器",
+	description: "标准/科学计算器",
+	keyword: "计算器|科学计算器|四则运算|sin|cos|tan|log|ln|开方",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/functions_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D81B60",
+	path: "/calculator"
+}, {
+	id: "exchange-rate-converter",
+	name: "汇率换算",
+	description: "实时汇率换算",
+	keyword: "汇率|换算|货币|外汇|兑换|美元|人民币|欧元|日元",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/universal_currency_alt_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8E24AA",
+	path: "/exchange-rate-converter"
+}, {
+	id: "realtime-exchange-rate",
+	name: "实时汇率",
+	description: "实时汇率查询与换算",
+	keyword: "汇率|实时|货币|外汇|兑换|查询",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/universal_currency_alt_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#5E35B1",
+	path: "/realtime-exchange-rate"
+}, {
+	id: "number-to-chinese",
+	name: "数字转中文",
+	description: "数字金额转中文大写",
+	keyword: "数字|中文|大写|金额|人民币|转换",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/number_to_chinese_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/number-to-chinese"
+}, {
+	id: "chinese-converter",
+	name: "简繁转换",
+	description: "在线简繁体中文转换工具，支持简体转繁体、繁体转简体，一键转换，方便快捷。",
+	keyword: "简繁转换|简体|繁体|中文转换|繁简转换",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/translate_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/chinese-converter"
+}, {
+	id: "text-to-pinyin",
+	name: "文字转拼音",
+	description: "在线中文汉字转拼音工具，支持多音字识别，一键转换，方便快捷。",
+	keyword: "文字转拼音|汉字转拼音|拼音转换|注音|读音",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/text_to_pinyin_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/text-to-pinyin"
+}, {
+	id: "dialect-translator",
+	name: "方言翻译",
+	description: "在线方言翻译工具，支持粤语、闽南语、上海话、四川话、东北话等多种方言与普通话互译。",
+	keyword: "方言翻译|粤语翻译|闽南语翻译|上海话翻译|东北话翻译|方言转换",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_translate_e2c.svg",
+	color: "#00ACC1",
+	path: "/dialect-translator"
+}, {
+	id: "cantonese-translator",
+	name: "粤语互译",
+	description: "在线粤语（广东话）与普通话互译工具，支持粤语转国语、国语转粤语，一键翻译，沟通无障碍。",
+	keyword: "粤语翻译|广东话翻译|粤语转国语|国语转粤语|白话翻译",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_text.svg",
+	color: "#00897B",
+	path: "/cantonese-translator"
+}, {
+	id: "translation",
+	name: "在线翻译",
+	description: "多语言在线互译工具，支持中文、英语、日语、韩语等多种语言互译",
+	keyword: "在线翻译|多语言翻译|中英互译|翻译工具",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_translate_c2e.svg",
+	color: "#43A047",
+	path: "/translation"
+}, {
+	id: "unit-converter",
+	name: "单位换算",
+	description: "常用单位快速换算",
+	keyword: "单位换算|单位转换|长度|面积|体积|质量|纳米|微米|毫米|厘米|米|千米",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/ic_public_rotate.svg",
+	color: "#FB8C00",
+	path: "/unit-converter"
+}, {
+	id: "money-management-calculator",
+	name: "理财计算",
+	description: "理财计算工具",
+	keyword: "理财计算|投资收益|利息计算|复利计算|财务计算",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/account_balance_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F4511E",
+	path: "/money-management-calculator"
+}, {
+	id: "pension-calculator",
+	name: "养老金计算",
+	description: "养老金计算器",
+	keyword: "养老金|退休金|社保|退休",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/elderly_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#E53935",
+	path: "/pension-calculator"
+}, {
+	id: "individual-income-tax-calculator",
+	name: "个税计算",
+	description: "个人所得税计算器",
+	keyword: "个税|所得税|工资|年终奖|劳务",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/receipt_long_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D32F2F",
+	path: "/individual-income-tax-calculator"
+}, {
+	id: "house-loan-calculator",
+	name: "房贷计算",
+	description: "房贷计算器",
+	keyword: "房贷|商业贷款|公积金贷款|组合贷款|等额本息|等额本金",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/house_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D81B60",
+	path: "/house-loan-calculator"
+}, {
+	id: "car-loan-calculator",
+	name: "车贷计算",
+	description: "车贷计算器",
+	keyword: "车贷|汽车贷款|等额本息|等额本金",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/directions_car_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8E24AA",
+	path: "/car-loan-calculator"
+}, {
+	id: "profit-calculator",
+	name: "收益计算",
+	description: "收益计算器",
+	keyword: "收益|计算|增幅|正推|反推|利润|投资",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/trending_up_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#5E35B1",
+	path: "/profit-calculator"
+}, {
+	id: "fuel-consumption-calculator",
+	name: "油耗计算",
+	description: "油耗计算器 - 计算百公里油耗和每公里成本",
+	keyword: "油耗|计算|百公里|成本|加油|行驶",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/local_gas_station_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8B5CF6",
+	path: "/fuel-consumption-calculator"
+}, {
+	id: "network-calculator",
+	name: "网络计算",
+	description: "网络计算器 - 支持IP地址、子网掩码、广播地址计算及网络规划",
+	keyword: "网络|计算|IP|子网|掩码|广播|规划",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/router_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1E88E5",
+	path: "/network-calculator"
+}, {
+	id: "date-calculator",
+	name: "日期计算器",
+	description: "日期计算器 - 计算两个日期之间的天数，或根据日期推算前后日期",
+	keyword: "日期|计算|天数|推算|间隔|日历",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/calendar_month_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/date-calculator"
+}, {
+	id: "time-calculator",
+	name: "时间计算器",
+	description: "时间计算器 - 支持时间加减和日期加减计算",
+	keyword: "时间|计算|加减|日期|间隔|时长",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/schedule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/time-calculator"
+}, {
+	id: "retirement-age-calculator",
+	name: "退休年龄计算",
+	description: "退休年龄计算器 - 根据最新政策计算延迟退休年龄和时间",
+	keyword: "退休|年龄|计算|延迟|政策|社保",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/work_history_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1976D2",
+	path: "/retirement-age-calculator"
+}, {
+	id: "compound-interest-calculator",
+	name: "复利计算",
+	description: "复利计算器 - 支持按年、月、日复利计算",
+	keyword: "复利|计算|利息|本金|投资|理财",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/auto_graph_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1565C0",
+	path: "/compound-interest-calculator"
+}, {
+	id: "fancy-name-generator",
+	name: "花式昵称生成",
+	description: "在线生成花式昵称，支持删除线、下划线、花藤字等30+种特效",
+	keyword: "花式昵称|昵称生成|花藤字|菊花文|特殊符号|网名生成",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/glyphs_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/fancy-name-generator"
+}, {
+	id: "text-editor",
+	name: "文本编辑器",
+	description: "在线文本编辑工具，支持去除空格、空行、换行，全角半角转换等功能",
+	keyword: "文本编辑|去除空格|去除空行|全角半角|文本处理",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/edit_square_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/text-editor"
+}, {
+	id: "id-card-converter",
+	name: "身份证转换",
+	description: "15位与18位身份证号码相互转换，自动计算校验码",
+	keyword: "身份证|转换|15位|18位|校验码|证件",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/id_card_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/id-card-converter"
+}, {
+	id: "text-crypto",
+	name: "文本加解密",
+	description: "支持AES加密解密、MD5摘要、SHA256摘要等多种加密算法",
+	keyword: "文本加密|AES|MD5|SHA256|加解密|摘要|哈希",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/lock_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#673AB7",
+	path: "/text-crypto"
+}, {
+	id: "work-value-calculator",
+	name: "工作性价比",
+	description: "工作性价比计算器 - 综合评估薪资、通勤、环境等因素",
+	keyword: "工作性价比|薪资|通勤|职场|评估|计算器",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/functions_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#E91E63",
+	path: "/work-value-calculator"
+}, {
+	id: "currency-converter",
+	name: "汇率转换",
+	description: "货币汇率转换",
+	keyword: "汇率|货币|转换|美元",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/change_circle_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/currency-converter"
+}, {
+	id: "calendar",
+	name: "万年历",
+	description: "公历农历节气查询",
+	keyword: "万年历|日历|农历|节气",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/calendar_month_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/calendar"
+}, {
+	id: "history-today",
+	name: "历史今日",
+	description: "查看历史上的今天",
+	keyword: "历史|今天|事件|回顾",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/ic_history_today.svg",
+	color: "#8f4b2e",
+	path: "/history-today"
+}, {
+	id: "hot-list",
+	name: "即时热榜",
+	description: "查看全网热门话题榜单",
+	keyword: "热榜|热搜|百度|微博|抖音|知乎",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/newspaper_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#f71b0c",
+	path: "/hot-list"
+}, {
+	id: "morning-paper",
+	name: "每日早报",
+	description: "每天60秒读懂世界",
+	keyword: "早报|新闻|每日|60秒|世界",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/ic_public_worldclock_filled.svg",
+	color: "#060af1",
+	path: "/morning-paper"
+}, {
+	id: "news-center",
+	name: "新闻资讯",
+	description: "聚合全网最新热门新闻资讯",
+	keyword: "新闻|资讯|热点|时事|科技|娱乐",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/newspaper_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/news-center"
+}, {
+	id: "movie-boxoffice",
+	name: "电影票房",
+	description: "实时查询电影票房排行榜",
+	keyword: "电影|票房|排行|影视|院线",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/movie_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#000000",
+	path: "/movie-boxoffice"
+}, {
+	id: "gold-history",
+	name: "金价历史",
+	description: "查看黄金价格历史走势",
+	keyword: "金价|黄金|历史|走势|价格",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/gold-history"
+}, {
+	id: "holiday-countdown",
+	name: "节日倒数",
+	description: "重要节日倒计时",
+	keyword: "节日|倒数|节气|时间",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/calendar_month_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/holiday-countdown"
+}, {
+	id: "daily-quote",
+	name: "每日一言",
+	description: "每日随机获取一句经典语录",
+	keyword: "一言|语录|名言|每日|经典",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/oneword.svg",
+	color: "#8B5CF6",
+	path: "/daily-quote"
+}, {
+	id: "daily-english",
+	name: "每日英语",
+	description: "每日一句英语名言，支持中英对照和朗读",
+	keyword: "英语|名言|每日|学习|翻译",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/translate_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/daily-english"
+}, {
+	id: "weather-forecast",
+	name: "天气预报",
+	description: "实时天气预报查询",
+	keyword: "天气|预报|温度|气象|下雨",
+	category: "DAILY",
+	categoryName: "日常应用",
+	icon: "/assets/imgs/weather_snowy_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/weather-forecast"
+}, {
+	id: "hardware-ranking",
+	name: "天梯排行",
+	description: "手机CPU、桌面CPU、桌面显卡性能天梯排行榜",
+	keyword: "性能|排行|天梯图|CPU|显卡|手机|桌面",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/speed_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/hardware-ranking"
+}, {
+	id: "funny-jokes",
+	name: "搞笑段子",
+	description: "随机获取搞笑段子，开心每一天",
+	keyword: "搞笑|段子|笑话|幽默|娱乐",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/mood_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FFC107",
+	path: "/funny-jokes"
+}, {
+	id: "couplet-generator",
+	name: "对联生成",
+	description: "智能对联生成工具",
+	keyword: "对联|生成|上联|下联|春联",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/writing.svg",
+	color: "#E53935",
+	path: "/couplet-generator"
+}, {
+	id: "garbage-classification",
+	name: "垃圾分类",
+	description: "垃圾分类查询助手",
+	keyword: "垃圾|分类|回收|干垃圾|湿垃圾|有害垃圾",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/delete_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#4CAF50",
+	path: "/garbage-classification"
+}, {
+	id: "gold-reserve",
+	name: "世界黄金储备",
+	description: "查看世界各国黄金储备数据及趋势",
+	keyword: "黄金|储备|世界|排名|趋势",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#0D47A1",
+	path: "/gold-reserve"
+}, {
+	id: "beast-language",
+	name: "兽语互译",
+	description: "兽语加密解密工具，将文字转换为兽语（呜嗷啊）或反向解码",
+	keyword: "兽语|加密|解密|呜嗷啊|恶搞|聊天",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/translate_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#673AB7",
+	path: "/beast-language"
+}, {
+	id: "speak-well",
+	name: "好好说话",
+	description: "网络流行语缩写查询",
+	keyword: "好好说话|缩写|拼音|网络用语|yyds",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/chat_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1296db",
+	path: "/speak-well"
+}, {
+	id: "sentence-query",
+	name: "据意查句",
+	description: "根据意思查找名言佳句",
+	keyword: "据意查句|名言|佳句|古诗文|现代文|写作",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/library_books_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/sentence-query"
+}, {
+	id: "api-percent",
+	name: "API占比",
+	description: "鸿蒙系统各API版本占比情况分布",
+	keyword: "API|占比|分布|鸿蒙|HarmonyOS",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/harmony_api_percent_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/api-percent"
+}, {
+	id: "cookbook-query",
+	name: "菜谱查询",
+	description: "在线菜谱查询，提供详细的做法和食材",
+	keyword: "菜谱|美食|做法|烹饪|查询|食谱",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/restaurant_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/cookbook-query"
+}, {
+	id: "car-query",
+	name: "车辆查询",
+	description: "在线车辆信息查询，支持查询车辆品牌、型号、价格等详细信息",
+	keyword: "车辆|汽车|品牌|型号|查询|宝马|奥迪|奔驰",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/directions_car_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/vehicle-query"
+}, {
+	id: "history-figure",
+	name: "历史人物查询",
+	description: "查询历史人物生平事迹和基本信息",
+	keyword: "历史|人物|生平|事迹|朝代|查询",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/ic_contacts_business_cards.svg",
+	color: "#795548",
+	path: "/history-figure"
+}, {
+	id: "company-query",
+	name: "企业查询",
+	description: "全国企业工商信息查询",
+	keyword: "企业|工商|查询|公司|信用代码",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/ic_contacts_company_filled.svg",
+	color: "#2a5caa",
+	path: "/company-query"
+}, {
+	id: "coordinate-query",
+	name: "经纬度查询",
+	description: "在线经纬度查询工具",
+	keyword: "经纬度|坐标|查询|定位|地理",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/location_on_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/coordinate-query"
+}, {
+	id: "world-time",
+	name: "世界时间",
+	description: "全球主要城市实时时间查询",
+	keyword: "时间|时区|世界|全球|时差",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/schedule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#673AB7",
+	path: "/world-time"
+}, {
+	id: "lottery-query",
+	name: "彩票开奖查询",
+	description: "全国彩票开奖结果查询",
+	keyword: "彩票|开奖|双色球|大乐透|中奖",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/ic_public_search_filled.svg",
+	color: "#f71b0c",
+	path: "/lottery"
+}, {
+	id: "phone-query",
+	name: "常用号码查询",
+	description: "各类服务电话查询",
+	keyword: "电话|号码|服务|查询",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/contact_phone_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/phone-query"
+}, {
+	id: "location-query",
+	name: "归属地查询",
+	description: "手机IP归属地查询",
+	keyword: "归属地|手机号|IP|地址",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/location_on_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/location-query"
+}, {
+	id: "postcode-query",
+	name: "邮编查询",
+	description: "全国邮政编码查询",
+	keyword: "邮编|邮政|编码|地址",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/pin_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/postcode-query"
+}, {
+	id: "capital-list",
+	name: "世界各国首都大全",
+	description: "世界各国首都查询",
+	keyword: "首都|国家|城市|地理",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/location_city_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/capital-list"
+}, {
+	id: "ip-location",
+	name: "全球IP查询",
+	description: "IP地址归属地查询",
+	keyword: "IP|地址|归属地|网络",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/location_on_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/ip-location"
+}, {
+	id: "phone-code-list",
+	name: "国际电话区号大全",
+	description: "国际电话区号查询",
+	keyword: "区号|国际|电话|国家",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/phone_enabled_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/phone-code-list"
+}, {
+	id: "license-plate-list",
+	name: "车牌号码查询",
+	description: "车牌归属地查询",
+	keyword: "车牌|号码|归属地|省份",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/universal_currency_alt_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/license-plate-list"
+}, {
+	id: "country-code-list",
+	name: "国家地区简码信息表表",
+	description: "国家地区ISO代码查询",
+	keyword: "国家|简码|ISO|代码",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/globe_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/country-code-list"
+}, {
+	id: "linux-command",
+	name: "Linux命令查询",
+	description: "Linux命令用法详解查询",
+	keyword: "Linux|命令|查询|用法|参数|shell",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/developer_mode_tv_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#000000",
+	path: "/linux-command"
+}, {
+	id: "id-card-validator",
+	name: "身份证查询",
+	description: "身份证号码验证",
+	keyword: "身份证|查询|验证|号码",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/id_card_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/id-card-validator"
+}, {
+	id: "university-query",
+	name: "高校查询",
+	description: "全国高校信息查询",
+	keyword: "高校|大学|查询|学校|代码",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/school_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#f71b0c",
+	path: "/university-query"
+}, {
+	id: "trademark-query",
+	name: "商标查询",
+	description: "商标注册信息查询",
+	keyword: "商标|注册|查询|品牌|知识产权",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/trademark.svg",
+	color: "#1296db",
+	path: "/trademark-query"
+}, {
+	id: "emoji-list",
+	name: "Emoji表情大全",
+	description: "Emoji表情符号查找复制",
+	keyword: "Emoji|表情|符号|复制|搜索",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/ic_public_emoji.svg",
+	color: "#F39C12",
+	path: "/emoji-list"
+}, {
+	id: "symbol-list",
+	name: "常用特殊符号",
+	description: "常用特殊符号查找复制",
+	keyword: "符号|特殊符号|复制|搜索|箭头|爱心",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/symbol-list"
+}, {
+	id: "ascii-table",
+	name: "ASCII码表",
+	description: "ASCII字符对照表",
+	keyword: "ASCII|码表|字符|对照|控制字符",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#607D8B",
+	path: "/ascii-table"
+}, {
+	id: "user-agent-tool",
+	name: "浏览器UA查询",
+	description: "浏览器UA信息查询",
+	keyword: "UA|UserAgent|浏览器|查询",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/highlight_mouse_cursor_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/user-agent-tool"
+}, {
+	id: "directory-tree-converter",
+	name: "目录树转目录",
+	description: "在线目录树结构与目录列表互转工具，支持生成JSON、Markdown等格式",
+	keyword: "目录树,目录列表,结构转换,tree命令,文件结构",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/account_tree_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/directory-tree-converter"
+}, {
+	id: "browser-fingerprint",
+	name: "浏览器指纹检测",
+	description: "在线浏览器指纹检测工具，查看Canvas、WebGL、Audio等指纹信息",
+	keyword: "浏览器指纹,Canvas指纹,WebGL指纹,设备指纹,隐私检测",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/fingerprint_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1565C0",
+	path: "/browser-fingerprint"
+}, {
+	id: "json-extractor",
+	name: "JSON字段提取",
+	description: "在线JSON字段提取工具",
+	keyword: "JSON提取,JSON解析,字段提取,数据处理,编程工具",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/data_object_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#0D47A1",
+	path: "/json-extractor"
+}, {
+	id: "html-all-tags-remover",
+	name: "HTML标签去除",
+	description: "在线HTML标签去除工具",
+	keyword: "HTML去除,标签去除,HTML清理,文本提取,纯文本",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/code_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#060af1",
+	path: "/html-all-tags-remover"
+}, {
+	id: "cookie-to-json",
+	name: "Cookie转JSON",
+	description: "在线Cookie转JSON工具",
+	keyword: "Cookie转换,Cookie转JSON,JSON转换,Cookie解析,开发工具",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/cookie_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#f71b0c",
+	path: "/cookie-to-json"
+}, {
+	id: "crontab-calculator",
+	name: "Crontab表达式",
+	description: "在线Crontab表达式计算与验证工具",
+	keyword: "Crontab,Cron表达式,定时任务,执行时间,Linux工具",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/schedule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/crontab-calculator"
+}, {
+	id: "json-merger",
+	name: "JSON数据合并",
+	description: "在线JSON数据合并工具，支持对象合并、数组合并、深度合并等多种模式",
+	keyword: "JSON合并,数据合并,JSON拼接,对象合并,开发工具",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/file_json_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/json-merger"
+}, {
+	id: "link-list-converter",
+	name: "链接列表转超链接",
+	description: "将纯文本链接列表批量转换为HTML、Markdown或BBCode格式的超链接",
+	keyword: "链接转换,超链接,HTML链接,Markdown链接,批量转换",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/link_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/link-list-converter"
+}, {
+	id: "url-filename-extractor",
+	name: "链接文件名提取",
+	description: "批量提取URL链接中的文件名和扩展名",
+	keyword: "URL|提取|文件名|链接|解析",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/link_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/url-filename-extractor"
+}, {
+	id: "excel-to-json",
+	name: "Excel转JSON",
+	description: "在线Excel文件转JSON工具，支持自定义表头、预览和格式化输出",
+	keyword: "Excel转JSON,XLSX转换,JSON转换,数据格式转换,开发工具",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/ic_files_spreadsheet_drive.svg",
+	color: "#27AE60",
+	path: "/excel-to-json"
+}, {
+	id: "html-preview",
+	name: "HTML运行",
+	description: "在线HTML代码编辑与实时预览工具，支持iframe和新窗口预览模式",
+	keyword: "HTML预览,代码运行,前端工具,在线编辑器,实时预览",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/code_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/html-preview"
+}, {
+	id: "video-converter",
+	name: "视频格式转换",
+	description: "多种视频格式互转",
+	keyword: "视频|格式|转换|MP4",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/video_file_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/video-converter"
+}, {
+	id: "video-compress",
+	name: "视频压缩",
+	description: "视频文件压缩",
+	keyword: "视频|压缩|文件|大小",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/compress_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/video-compress"
+}, {
+	id: "audio-extractor",
+	name: "视频提取音频",
+	description: "提取视频中音频",
+	keyword: "视频|音频|提取|分离",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/music_note_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/video-extract-audio"
+}, {
+	id: "video-speed",
+	name: "视频变速",
+	description: "视频播放速度调节",
+	keyword: "视频|变速|速度|快慢",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/speed_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/video-speed"
+}, {
+	id: "video-merge",
+	name: "视频拼接",
+	description: "多段视频合并",
+	keyword: "视频|拼接|合并|连接",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/join_left_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/video-merge"
+}, {
+	id: "video-cut",
+	name: "视频裁剪",
+	description: "裁剪视频片段",
+	keyword: "视频|裁剪|剪切|片段",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/content_cut_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/video-cut"
+}, {
+	id: "video-volume",
+	name: "视频音量修改",
+	description: "调整视频音量",
+	keyword: "视频|音量|声音|调整",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/volume_up_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/video-volume"
+}, {
+	id: "video-to-gif",
+	name: "视频转GIF",
+	description: "视频转GIF动图",
+	keyword: "视频|GIF|动图|转换",
+	category: "VIDEO",
+	categoryName: "视频处理",
+	icon: "/assets/imgs/gif_box_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/video-to-gif"
+}, {
+	id: "audio-converter",
+	name: "音频格式转换",
+	description: "多种音频格式互转",
+	keyword: "音频|格式|转换|MP3",
+	category: "AUDIO",
+	categoryName: "音频处理",
+	icon: "/assets/imgs/library_music_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/audio-converter"
+}, {
+	id: "audio-cut",
+	name: "音频裁剪",
+	description: "裁剪音频片段",
+	keyword: "音频|裁剪|剪切|片段",
+	category: "AUDIO",
+	categoryName: "音频处理",
+	icon: "/assets/imgs/content_cut_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/audio-cut"
+}, {
+	id: "audio-compress",
+	name: "音频压缩",
+	description: "音频文件压缩",
+	keyword: "音频|压缩|文件|大小",
+	category: "AUDIO",
+	categoryName: "音频处理",
+	icon: "/assets/imgs/compress_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/audio-compress"
+}, {
+	id: "audio-volume",
+	name: "音频音量修改",
+	description: "调整音频音量",
+	keyword: "音频|音量|声音|调整",
+	category: "AUDIO",
+	categoryName: "音频处理",
+	icon: "/assets/imgs/volume_up_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/audio-volume"
+}, {
+	id: "audio-speed",
+	name: "音频调速",
+	description: "音频播放速度调节",
+	keyword: "音频|调速|速度|快慢",
+	category: "AUDIO",
+	categoryName: "音频处理",
+	icon: "/assets/imgs/speed_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/audio-speed"
+}, {
+	id: "audio-merge",
+	name: "音频拼接",
+	description: "多段音频合并",
+	keyword: "音频|拼接|合并|连接",
+	category: "AUDIO",
+	categoryName: "音频处理",
+	icon: "/assets/imgs/join_left_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/audio-merge"
+}, {
+	id: "image-compress",
+	name: "图片压缩",
+	description: "图片文件压缩",
+	keyword: "图片|压缩|文件|大小",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/compress_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/image-compress"
+}, {
+	id: "image-merge",
+	name: "图片拼接",
+	description: "图片拼接合成",
+	keyword: "图片|拼接|合成|连接",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/transition_chop_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/image-merge"
+}, {
+	id: "image-resize",
+	name: "修改图片尺寸",
+	description: "自定义图片尺寸",
+	keyword: "图片|尺寸|修改|自定义",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/checkbook_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/image-resize"
+}, {
+	id: "image-split",
+	name: "图片水平/垂直均等切割",
+	description: "图片水平/垂直均等切割",
+	keyword: "图片|切割|均等|水平|垂直",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00ACC1",
+	path: "/image-split"
+}, {
+	id: "image-batch-resize",
+	name: "图片批量缩放",
+	description: "批量调整多张图片尺寸，支持自定义大小、比例缩放",
+	keyword: "图片|缩放|尺寸|批量|调整|大小",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/ic_image_batch_resize.svg",
+	color: "#FF9800",
+	path: "/image-batch-resize"
+}, {
+	id: "image-to-gif",
+	name: "图片合成GIF",
+	description: "多图合成GIF动图",
+	keyword: "图片|GIF|动图|合成",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/gif_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/image-to-gif"
+}, {
+	id: "image-convert",
+	name: "图片格式转换",
+	description: "图片格式互相转换",
+	keyword: "图片|格式|转换|JPG|PNG|WEBP",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/change_circle_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#27AE60",
+	path: "/image-convert"
+}, {
+	id: "image-matting",
+	name: "单色图像抠图",
+	description: "在线单色背景图片抠图工具",
+	keyword: "抠图|单色|背景|去除|透明",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/cleaning_services_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/image-matting"
+}, {
+	id: "image-crop",
+	name: "图片裁剪",
+	description: "在线图片裁剪工具",
+	keyword: "图片|裁剪|剪切|头像|裁切",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/crop_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#E91E63",
+	path: "/image-crop"
+}, {
+	id: "image-background",
+	name: "PNG图片背景色添加",
+	description: "为PNG图片添加背景色",
+	keyword: "PNG背景色|图片背景|透明图片|背景填充|图片处理",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/image-background"
+}, {
+	id: "svg-preview",
+	name: "SVG预览工具",
+	description: "在线SVG代码预览工具",
+	keyword: "SVG预览|SVG查看er|SVG代码|矢量图预览",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/ic_svg_preview.svg",
+	color: "#FF9800",
+	path: "/svg-preview"
+}, {
+	id: "color-preview",
+	name: "颜色预览",
+	description: "在线颜色预览与转换工具",
+	keyword: "颜色预览|颜色转换|取色器|RGB转换|HEX转换|HSL转换|调色板",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/draw_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/color-preview"
+}, {
+	id: "qr-code-repair",
+	name: "二维码修复",
+	description: "在线二维码修复工具",
+	keyword: "二维码修复|二维码去Logo|二维码修复工具|QR码修复|二维码美化",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/qr_code_2_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/qr-code-repair"
+}, {
+	id: "qr-code-generator",
+	name: "二维码生成",
+	description: "生成二维码",
+	keyword: "二维码|生成|扫码|QR",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/qr_code_2_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/qr-code-generator"
+}, {
+	id: "gif-edit",
+	name: "GIF帧修改",
+	description: "修改GIF动图的帧",
+	keyword: "GIF|编辑|帧|修改|动图",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/edit_square_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/gif-edit"
+}, {
+	id: "gif-split",
+	name: "GIF帧拆分",
+	description: "将GIF拆分为静态图片",
+	keyword: "GIF|拆分|分解|图片|帧",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/content_cut_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/gif-split"
+}, {
+	id: "image-round",
+	name: "图片圆角",
+	description: "图片添加圆角",
+	keyword: "图片|圆角|效果|边框",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/crop_rotate_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/image-round"
+}, {
+	id: "image-pixelate",
+	name: "图片像素化马赛克",
+	description: "图片马赛克效果",
+	keyword: "图片|像素|马赛克|效果",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/comedy_mask_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/image-pixelate"
+}, {
+	id: "image-watermark",
+	name: "图片水印平铺",
+	description: "图片添加平铺水印",
+	keyword: "图片|水印|平铺|添加",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/copyright_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/image-watermark"
+}, {
+	id: "image-invert",
+	name: "图像反相/反色",
+	description: "图像反相反色",
+	keyword: "图像|反相|反色|处理",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/contrast_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/image-invert"
+}, {
+	id: "image-color-picker",
+	name: "图片取色",
+	description: "图片颜色提取",
+	keyword: "图片|取色|颜色|提取",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/format_color_fill_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/image-color-picker"
+}, {
+	id: "handheld-danmu",
+	name: "手持弹幕",
+	description: "在线手持弹幕工具，支持自定义文字内容、大小、颜色和滚动速度，适用于各种聚会、演唱会场景",
+	keyword: "手持弹幕|弹幕|滚动文字|自定义弹幕|演唱会",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/text_snippet_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00897B",
+	path: "/handheld-danmu"
+}, {
+	id: "reaction-test",
+	name: "反应力测试",
+	description: "在线反应力测试工具，测试你的神经反应速度，挑战极限手速",
+	keyword: "反应力测试,反应速度,手速测试,反应时间,游戏,测试工具",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/timer_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#4CAF50",
+	path: "/reaction-test"
+}, {
+	id: "decision-maker",
+	name: "做个决定",
+	description: "在线转盘做决定工具",
+	keyword: "做决定|转盘|选择困难症|随机选择|今天吃什么",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/change_circle_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#43A047",
+	path: "/decision-maker"
+}, {
+	id: "weather-ranking",
+	name: "天气排行",
+	description: "全国天气气温实时排行榜",
+	keyword: "天气|排行|气温|温度|排名",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/leaderboard_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/weather-ranking"
+}, {
+	id: "temperature-map",
+	name: "全国气温图",
+	description: "查看全国气温实时状况图",
+	keyword: "气温|地图|天气|温度分布",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/globe_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FB8C00",
+	path: "/temperature-map"
+}, {
+	id: "random-question",
+	name: "随机弱智提问",
+	description: "随机获取一个有趣的弱智问题及回答",
+	keyword: "弱智吧|提问|段子|搞笑|幽默",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/mood_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/random-question"
+}, {
+	id: "brain-teasers",
+	name: "脑筋急转弯",
+	description: "随机获取一个脑筋急转弯问题及答案",
+	keyword: "脑筋急转弯|智力题|谜语|搞笑",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/smart_toy_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#E91E63",
+	path: "/brain-teasers"
+}, {
+	id: "crazy-thursday",
+	name: "疯狂星期四",
+	description: "随机获取疯狂星期四文案",
+	keyword: "疯狂星期四|KFC|文案|段子|搞笑",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/smart_toy_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D32F2F",
+	path: "/crazy-thursday"
+}, {
+	id: "caihongpi",
+	name: "彩虹屁",
+	description: "随机获取一句花式夸人彩虹屁",
+	keyword: "彩虹屁|夸人|赞美|语录|搞笑",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_love.svg",
+	color: "#F4511E",
+	path: "/caihongpi"
+}, {
+	id: "solid-color-generator",
+	name: "纯色图片生成",
+	description: "生成纯色背景图",
+	keyword: "纯色|图片|生成|背景",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/format_color_fill_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/solid-color-generator"
+}, {
+	id: "image-grayscale",
+	name: "图像黑白化",
+	description: "彩图转黑白效果",
+	keyword: "图像|黑白|灰度|效果",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/contrast_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/image-grayscale"
+}, {
+	id: "base64-to-image",
+	name: "Base64转图片",
+	description: "Base64转图片",
+	keyword: "Base64|图片|编码|转换",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/functions_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/base64-to-image"
+}, {
+	id: "image-to-base64",
+	name: "图片转Base64",
+	description: "图片转Base64",
+	keyword: "图片|Base64|编码|转换",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/functions_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/image-to-base64"
+}, {
+	id: "qr-code-scanner",
+	name: "二维码解析",
+	description: "识别二维码内容",
+	keyword: "二维码|识别|解析|扫码",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/qr_code_2_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/qr-code-scanner"
+}, {
+	id: "pdf-to-doc",
+	name: "PDF转Word",
+	description: "PDF转Word文档",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/description_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/pdf-to-doc"
+}, {
+	id: "doc-to-pdf",
+	name: "文档转PDF",
+	description: "文档转PDF",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/picture_as_pdf_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/doc-to-pdf"
+}, {
+	id: "doc-to-image",
+	name: "文档转图片",
+	description: "文档转图片",
+	keyword: "文档转图片|Word转图片|DOC转图片|DOCX转图片",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/image_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FFC107",
+	path: "/doc-to-image"
+}, {
+	id: "pdf-merge",
+	name: "PDF合并",
+	description: "合并多个PDF",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/stacks_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/pdf-merge"
+}, {
+	id: "pdf-compress",
+	name: "PDF压缩",
+	description: "PDF压缩与设置",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/picture_as_pdf_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/pdf-compress"
+}, {
+	id: "pdf-encrypt",
+	name: "PDF加密",
+	description: "PDF设置密码",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/picture_as_pdf_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/pdf-encrypt"
+}, {
+	id: "pdf-decrypt",
+	name: "PDF解密",
+	description: "移除PDF密码",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/picture_as_pdf_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/pdf-decrypt"
+}, {
+	id: "image-to-pdf",
+	name: "图片转PDF",
+	description: "图片转PDF",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/picture_as_pdf_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/image-to-pdf"
+}, {
+	id: "pdf-to-image",
+	name: "PDF转图片",
+	description: "PDF转图片",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/image_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/pdf-to-image"
+}, {
+	id: "pdf-split",
+	name: "PDF拆分",
+	description: "提取PDF页面",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/content_cut_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/pdf-split"
+}, {
+	id: "table-to-csv",
+	name: "表格转CSV",
+	description: "Excel表格转CSV文件",
+	keyword: "Excel转CSV|表格转换|数据转换|xlsx转csv",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/ic_files_spreadsheet_drive.svg",
+	color: "#27AE60",
+	path: "/table-to-csv"
+}, {
+	id: "word-to-markdown",
+	name: "Word转Markdown",
+	description: "Word转Markdown格式",
+	keyword: "Word转Markdown|DOC转Markdown|文档转换|技术文档",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/description_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#795548",
+	path: "/word-to-markdown"
+}, {
+	id: "markdown-to-file",
+	name: "Markdown转文档",
+	description: "Markdown转换",
+	category: "DOCUMENT",
+	categoryName: "文档编辑",
+	icon: "/assets/imgs/edit_document_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/markdown-to-file"
+}, {
+	id: "text-diff",
+	name: "文本对比",
+	description: "对比文本差异",
+	keyword: "文本|对比|差异|比较",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/horizontal_split_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/text-diff"
+}, {
+	id: "english-fancy-text",
+	name: "英文花字",
+	description: "在线生成英文花样字体",
+	keyword: "英文花字,花样字体,特殊字体,英文特效,字体生成器,Instagram字体,朋友圈字体",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/match_case_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/english-fancy-text"
+}, {
+	id: "chinese-segmentation",
+	name: "中文分词",
+	description: "在线中文分词工具，将中文句子拆分为独立的词语",
+	keyword: "中文|分词|NLP|拆分|词语",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/horizontal_split_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/chinese-segmentation"
+}, {
+	id: "text-count",
+	name: "字数统计",
+	description: "统计文本字数",
+	keyword: "字数|统计|文本|计数",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/looks_one_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/text-count"
+}, {
+	id: "text-replace",
+	name: "文本替换",
+	description: "正则文本替换",
+	keyword: "文本|替换|正则|表达式",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/regular_expression_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/text-replace"
+}, {
+	id: "text-url-extractor",
+	name: "文本提取网址",
+	description: "提取文本URL",
+	keyword: "文本|提取|网址|URL",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/link_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/text-url-extractor"
+}, {
+	id: "text-line-remover",
+	name: "文本去空换行",
+	description: "文本空行处理",
+	keyword: "文本|去空|换行|处理",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/horizontal_rule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/text-line-remover"
+}, {
+	id: "text-deduplicator",
+	name: "文本去重",
+	description: "文本行去重",
+	keyword: "文本|去重|行|重复",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/format_quote_off_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/text-deduplicator"
+}, {
+	id: "magic-text",
+	name: "魔法文案",
+	description: "在文案中插入不可见字符，规避检测",
+	keyword: "魔法|文案|防检测|不可见字符|零宽",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/ic_magic_text.svg",
+	color: "#9C27B0",
+	path: "/magic-text"
+}, {
+	id: "number-extractor",
+	name: "数字号码提取",
+	description: "批量提取数字",
+	keyword: "数字|号码|提取|批量",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/pin_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/number-extractor"
+}, {
+	id: "english-text-converter",
+	name: "英文文本转换",
+	description: "英文文本格式转换（大小写、命名规范等）",
+	keyword: "英文|文本|转换|大小写|命名规范",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/english-text-converter"
+}, {
+	id: "link-extractor",
+	name: "链接批量提取",
+	description: "批量提取链接",
+	keyword: "链接|批量|提取|文本",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/link_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/link-extractor"
+}, {
+	id: "ip-extractor",
+	name: "IP地址批量提取",
+	description: "批量提取IP",
+	keyword: "IP|地址|批量|提取",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/bring_your_own_ip_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/ip-extractor"
+}, {
+	id: "text-prefix-suffix",
+	name: "文本行前后添加",
+	description: "添加前缀后缀",
+	keyword: "文本|前缀|后缀|添加",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/align_justify_center_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/text-prefix-suffix"
+}, {
+	id: "keyword-filter",
+	name: "关键词筛选过滤",
+	description: "关键词筛选文本",
+	keyword: "关键词|筛选|过滤|文本",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/filter_list_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/keyword-filter"
+}, {
+	id: "word-frequency",
+	name: "词频统计",
+	description: "文本词频统计",
+	keyword: "词频|统计|文本|分析",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/flex_wrap_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/word-frequency"
+}, {
+	id: "unicode-converter",
+	name: "Unicode互转",
+	description: "字符Unicode互转",
+	keyword: "Unicode|字符|编码|互转",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/screen_rotation_up_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/unicode-converter"
+}, {
+	id: "punctuation-converter",
+	name: "中英文符号转换",
+	description: "中英文标点互转",
+	keyword: "中英文|符号|标点|转换",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/swap_horizontal_circle_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/punctuation-converter"
+}, {
+	id: "case-converter",
+	name: "驼峰/下划线转换",
+	description: "编程命名转换",
+	keyword: "驼峰|下划线|命名|转换",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/format_underlined_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/case-converter"
+}, {
+	id: "datetime-formatter",
+	name: "时间日期格式化",
+	description: "时间日期格式转换",
+	keyword: "时间|日期|格式化|转换",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/schedule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/datetime-formatter"
+}, {
+	id: "json-parser",
+	name: "JSON解析",
+	description: "JSON格式化验证",
+	keyword: "JSON|解析|格式化|验证",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/file_json_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/json-parser"
+}, {
+	id: "regex-tester",
+	name: "正则表达式测试",
+	description: "正则测试工具",
+	keyword: "正则|表达式|测试|工具",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/regular_expression_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/regex-tester"
+}, {
+	id: "regex-collection",
+	name: "正则表达式大全",
+	description: "常用正则大全",
+	keyword: "正则|表达式|大全|常用",
+	category: "TEXT",
+	categoryName: "文本优化",
+	icon: "/assets/imgs/regular_expression_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/regex-collection"
+}, {
+	id: "bmi-calculator",
+	name: "BMI计算",
+	description: "BMI指数计算",
+	keyword: "BMI|身体|质量|指数",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/accessibility_new_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/bmi-calculator"
+}, {
+	id: "time-converter",
+	name: "时间转换",
+	description: "时间戳日期互转",
+	keyword: "时间|时间戳|日期|转换",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/schedule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/time-converter"
+}, {
+	id: "area-converter",
+	name: "面积转换",
+	description: "面积单位转换",
+	keyword: "面积|平方|单位|转换",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/crop_square_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/area-converter"
+}, {
+	id: "volume-converter",
+	name: "体积转换",
+	description: "体积单位转换",
+	keyword: "体积|立方|容量|转换",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/package_2_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/volume-converter"
+}, {
+	id: "energy-converter",
+	name: "功热转换",
+	description: "功热单位转换",
+	keyword: "功率|热量|能量|转换",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/local_fire_department_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/energy-converter"
+}, {
+	id: "speed-converter",
+	name: "速度转换",
+	description: "速度单位转换",
+	keyword: "速度|公里|英里|转换",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/rocket_launch_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/speed-converter"
+}, {
+	id: "temperature-converter",
+	name: "温度转换",
+	description: "温度单位转换",
+	keyword: "温度|摄氏|华氏|转换",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/device_thermostat_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/temperature-converter"
+}, {
+	id: "base-converter",
+	name: "进制转换",
+	description: "进制任意转换",
+	keyword: "进制|转换|二进制|十六进制",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/counter_2_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/base-converter"
+}, {
+	id: "pregnancy-calculator",
+	name: "预产期计算",
+	description: "预产期计算",
+	keyword: "预产期|怀孕|计算|孕期",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/baby_changing_station_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/pregnancy-calculator"
+}, {
+	id: "chinese-calendar-calculator",
+	name: "日期天干地支计算",
+	description: "在线日期天干地支计算器",
+	keyword: "天干地支|农历计算|生肖查询|五行查询|中国传统历法",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/calendar_month_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/chinese-calendar-calculator"
+}, {
+	id: "menstrual-calculator",
+	name: "生理期计算",
+	description: "生理期计算",
+	keyword: "生理期|月经|女性|计算",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/face_3_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/menstrual-calculator"
+}, {
+	id: "credit-card-apr-calculator",
+	name: "信用卡利率计算",
+	description: "信用卡分期真实年化利率计算器",
+	keyword: "信用卡|分期|利率|年化|计算器|IRR",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/credit_card_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#E91E63",
+	path: "/credit-card-apr-calculator"
+}, {
+	id: "dynasty-calculator",
+	name: "历史朝代年份计算器",
+	description: "中国历史朝代查询工具",
+	keyword: "历史|朝代|年份|查询|时间轴",
+	category: "CALCULATION",
+	categoryName: "计算转换",
+	icon: "/assets/imgs/calendar_month_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/dynasty-calculator"
+}, {
+	id: "md5-digest",
+	name: "MD5摘要",
+	description: "计算MD5摘要",
+	keyword: "MD5|摘要|哈希|加密",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/developer_mode_tv_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#1ABC9C",
+	path: "/md5-digest"
+}, {
+	id: "base64-converter",
+	name: "Base64编码",
+	description: "文本Base64互转",
+	keyword: "Base64|编码|解码|转换",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/heap_snapshot_large_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/base64-converter"
+}, {
+	id: "rc4-converter",
+	name: "RC4加密解密",
+	description: "RC4对称加密解密工具，支持自定义密钥的RC4算法加密解密",
+	keyword: "RC4加密|RC4解密|对称加密|数据加密|密钥加密",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/enhanced_encryption_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/rc4-converter"
+}, {
+	id: "url-encoder",
+	name: "URL编码",
+	description: "URL编码解码",
+	keyword: "URL|编码|解码|链接",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/frame_source_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/url-encode"
+}, {
+	id: "rsa-key-generator",
+	name: "RSA加密",
+	description: "RSA密钥生成",
+	keyword: "RSA|密钥|生成|公钥",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/vpn_key_generator_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#00a6ac",
+	path: "/rsa-key-generator"
+}, {
+	id: "sha-encryption",
+	name: "SHA加密",
+	description: "SHA哈希加密",
+	keyword: "SHA|加密|哈希|摘要",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/enhanced_encryption_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/sha-encryption"
+}, {
+	id: "aes-encryption",
+	name: "AES加密",
+	description: "AES加密解密",
+	keyword: "AES|加密|解密|对称",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/security_key_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/aes-encryption"
+}, {
+	id: "js-obfuscator",
+	name: "JS混淆",
+	description: "JS代码混淆",
+	keyword: "JS|JavaScript|混淆|代码",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/javascript_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/js-obfuscator"
+}, {
+	id: "binary-converter",
+	name: "二进制转文本",
+	description: "二进制格式互转",
+	keyword: "二进制|转换|文本|格式",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/folder_data_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/binary-converter"
+}, {
+	id: "css-to-js",
+	name: "CSS转JS工具",
+	description: "CSS转JS对象",
+	keyword: "CSS|JS|转换|样式",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/css_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/css-to-js"
+}, {
+	id: "html-tag-remover",
+	name: "HTML指定标签去除",
+	description: "HTML标签移除",
+	keyword: "HTML|标签|去除|移除",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/html_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/html-tag-remover"
+}, {
+	id: "user-agent-generator",
+	name: "UA生成",
+	description: "生成UserAgent",
+	keyword: "UserAgent|生成|浏览器|设备",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/admin_panel_settings_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/user-agent-generator"
+}, {
+	id: "uuid-generator",
+	name: "UUID生成",
+	description: "生成验证UUID",
+	keyword: "UUID|生成|验证|唯一",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/contextual_token_add_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#2a5caa",
+	path: "/uuid-generator"
+}, {
+	id: "mac-generator",
+	name: "MAC随机生成",
+	description: "生成随机MAC",
+	keyword: "MAC|地址|生成|网络",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/family_history_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3498DB",
+	path: "/mac-generator"
+}, {
+	id: "barcode-generator",
+	name: "条形码生成",
+	description: "生成条形码",
+	keyword: "条形码|生成|扫码|识别",
+	category: "IMAGE",
+	categoryName: "图片处理",
+	icon: "/assets/imgs/barcode_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/barcode-generator"
+}, {
+	id: "file-base64-converter",
+	name: "Base64文件互转",
+	description: "文件Base64互转",
+	keyword: "文件|Base64|编码|转换",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/box_edit_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#45b97c",
+	path: "/file-base64-converter"
+}, {
+	id: "xml-formatter",
+	name: "XML美化",
+	description: "XML美化压缩",
+	keyword: "XML|美化|压缩|格式化",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/folder_zip_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#F39C12",
+	path: "/xml-formatter"
+}, {
+	id: "sql-formatter",
+	name: "SQL美化",
+	description: "SQL美化压缩",
+	keyword: "SQL|美化|压缩|数据库",
+	category: "DEV",
+	categoryName: "开发工具",
+	icon: "/assets/imgs/database_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#ea66a6",
+	path: "/sql-formatter"
+}, {
+	id: "document-correction",
+	name: "文档校正",
+	description: "文档图像自动矫正工具，支持自动识别文档边缘并进行透视矫正",
+	keyword: "文档校正|图像矫正|透视变换|扫描件处理",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/ic_gallery_frame_overlay_rectify.svg",
+	color: "#9C27B0",
+	path: "/document-correction"
+}, {
+	id: "face-enhancement",
+	name: "人脸清晰化",
+	description: "AI智能人脸修复工具，将模糊人脸变清晰，支持老照片修复",
+	keyword: "人脸修复|照片清晰化|老照片修复|AI增强",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/ic_public_contacts_filled.svg",
+	color: "#D35400",
+	path: "/face-enhancement"
+}, {
+	id: "image-moire-removal",
+	name: "图片去摩尔纹",
+	description: "去除拍摄屏幕时产生的摩尔纹，还原图片真实细节",
+	keyword: "去摩尔纹|屏幕纹去除|翻拍修复|图像优化",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/cleaning_services_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#8f4b2e",
+	path: "/image-moire-removal"
+}, {
+	id: "image-to-link",
+	name: "图片转链接",
+	description: "图片上传生成链接工具，支持多种图片格式",
+	keyword: "图床|图片链接|外链生成|图片分享",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/link_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#42A5F5",
+	path: "/image-to-link"
+}, {
+	id: "remove-background",
+	name: "智能抠图",
+	description: "AI智能识别主体，一键去除图片背景，支持人像、商品等",
+	keyword: "抠图|去底|透明背景|证件照换底",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/cleaning_services_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg",
+	color: "#2196F3",
+	path: "/remove-background"
+}, {
+	id: "remove-watermark",
+	name: "图片去水印",
+	description: "智能涂抹去除图片中的水印、文字和杂物",
+	keyword: "去水印|消除笔|图片修复|去字",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/healing_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/remove-watermark"
+}, {
+	id: "speech-to-text",
+	name: "语音转文字",
+	description: "音频文件转换为文字，支持多种音频格式和长语音识别",
+	keyword: "语音转文字|录音转文字|音频听写|会议记录",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/change_circle_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9C27B0",
+	path: "/speech-to-text"
+}, {
+	id: "table-ocr",
+	name: "表格识别",
+	description: "图片表格自动识别并导出为Excel文件，还原表格结构",
+	keyword: "表格识别|表格OCR|图片转Excel|数据提取",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/ic_files_spreadsheet_drive.svg",
+	color: "#45b97c",
+	path: "/table-ocr"
+}, {
+	id: "text-recognition",
+	name: "通用文字识别",
+	description: "智能识别图片中的文字，支持手写体和印刷体",
+	keyword: "OCR|文字识别|拍照识字|图片转文字",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/price_change_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#42A5F5",
+	path: "/text-recognition"
+}, {
+	id: "text-to-speech",
+	name: "文本转语音",
+	description: "智能文本转语音工具，支持多种声线和语调调节",
+	keyword: "文本转语音|文字转语音|TTS|语音合成|配音",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/ic_public_switch_audio.svg",
+	color: "#060af1",
+	path: "/text-to-speech"
+}, {
+	id: "download-queue",
+	name: "下载队列",
+	description: "查看和管理所有的文件下载任务",
+	keyword: "下载|队列|任务|管理",
+	category: "INTELLIGENT",
+	categoryName: "智能应用",
+	icon: "/assets/imgs/ic_public_view_list_filled.svg",
+	color: "#1976D2",
+	path: "/download-queue"
+}, {
+	id: "competition-grouping",
+	name: "比赛活动分组",
+	description: "在线比赛活动分组工具，支持自定义互斥规则，随机分组",
+	keyword: "比赛|分组|活动|随机|互斥",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/groups_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D35400",
+	path: "/competition-grouping"
+}, {
+	id: "password-generator",
+	name: "随机密码生成",
+	description: "强密码生成器，支持自定义长度、包含字符类型，保障账户安全",
+	keyword: "密码|生成|随机|安全|强密码",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_random.svg",
+	color: "#8f4b2e",
+	path: "/password-generator"
+}, {
+	id: "random-lottery",
+	name: "随机抽奖",
+	description: "在线随机抽奖工具，支持自定义名单、奖项和抽取数量",
+	keyword: "抽奖|随机|年会|活动|名单",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_random.svg",
+	color: "#45b97c",
+	path: "/random-lottery"
+}, {
+	id: "random-number",
+	name: "随机数生成",
+	description: "在线随机数生成器，支持自定义范围、生成数量和保留小数位",
+	keyword: "随机数|生成|数字|范围",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_random.svg",
+	color: "#9C27B0",
+	path: "/random-number"
+}, {
+	id: "telegraph-translator",
+	name: "电报码翻译",
+	description: "摩斯密码/电报码在线翻译工具，支持文本与电报码互转",
+	keyword: "电报|摩斯密码|翻译|转换|编码",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_translate_c2e.svg",
+	color: "#2196F3",
+	path: "/telegraph-translator"
+}, {
+	id: "visual-frame-rate-test",
+	name: "可视帧率测试",
+	description: "测试你眼睛的可视帧率极限，挑战不同显示时长的动态视力",
+	keyword: "帧率测试,FPS测试,动态视力,视觉测试,眼力挑战",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_translate_c2e.svg",
+	color: "#607D8B",
+	path: "/visual-frame-rate-test"
+}, {
+	id: "mirror",
+	name: "在线镜子",
+	description: "在线镜子工具",
+	keyword: "镜子,在线镜子,网络镜子,摄像头镜子,手机镜子,化妆镜",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_public_translate_c2e.svg",
+	color: "#FF9800",
+	path: "/mirror"
+}, {
+	id: "timer",
+	name: "计时器",
+	description: "在线倒计时器",
+	keyword: "计时器|倒计时|定时器|Timer",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/schedule_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#3F51B5",
+	path: "/timer"
+}, {
+	id: "electronic-wooden-fish",
+	name: "电子木鱼",
+	description: "在线电子木鱼，模拟真实木鱼敲击声音和动画，积攒功德，解压放松",
+	keyword: "电子木鱼,功德,木鱼,解压,在线工具,敲木鱼",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/woodenfish.svg",
+	color: "#E53935",
+	path: "/electronic-wooden-fish"
+}, {
+	id: "coin-toss",
+	name: "抛硬币",
+	description: "在线抛硬币工具，模拟真实抛硬币动画和音效，帮你快速做决定",
+	keyword: "抛硬币,投硬币,做决定,概率,随机,在线工具",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/coin_two.svg",
+	color: "#D32F2F",
+	path: "/coin-toss"
+}, {
+	id: "text-reading",
+	name: "文本朗读",
+	description: "在线文本朗读工具，支持中文、英文等多种语言，一键朗读文本内容",
+	keyword: "文本朗读|语音朗读|文字转语音|TTS|朗读",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/volume_up_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#D81B60",
+	path: "/text-reading"
+}, {
+	id: "drawing-board",
+	name: "画板",
+	description: "在线绘图画板，支持多种画笔、颜色选择，随时记录灵感",
+	keyword: "画板|绘图|涂鸦|Drawing|Sketch",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/draw_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8E24AA",
+	path: "/drawing-board"
+}, {
+	id: "magnifier",
+	name: "在线放大镜",
+	description: "在线放大镜工具，使用后置摄像头放大物体，支持画面冻结、补光灯、多倍变焦，方便阅读微小文字",
+	keyword: "放大镜,在线放大镜,手机放大镜,变焦,微距,阅读辅助",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/ic_magnifier.svg",
+	color: "#2196F3",
+	path: "/magnifier"
+}, {
+	id: "stopwatch",
+	name: "在线秒表",
+	description: "精准在线秒表工具，支持分段计时、暂停/继续，毫秒级精度，极简设计",
+	keyword: "秒表|计时器|Stopwatch|在线计时|分段计时",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/timer_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#5E35B1",
+	path: "/stopwatch"
+}, {
+	id: "scoreboard",
+	name: "记分牌",
+	description: "简单好用的在线记分牌，支持双人/双队比分记录和计时功能",
+	keyword: "记分牌|比分|计时|比赛|Scoreboard",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/leaderboard_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#8B5CF6",
+	path: "/scoreboard"
+}, {
+	id: "color-blindness-test",
+	name: "色盲检测",
+	description: "专业色盲色弱在线检测工具",
+	keyword: "色盲|色弱|检测|测试|红绿色盲|辨色力",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/colors_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/color-blindness-test"
+}, {
+	id: "synonym-antonym",
+	name: "近反义词查询",
+	description: "在线近义词、反义词查询工具",
+	keyword: "近义词|反义词|同义词|词语|查询",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/swap_horiz_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF5722",
+	path: "/synonym-antonym"
+}, {
+	id: "calorie-query",
+	name: "卡路里查询",
+	description: "在线食物卡路里查询工具",
+	keyword: "卡路里|热量|食物|查询|减肥",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/cookie_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/calorie-query"
+}, {
+	id: "harassment-phone-query",
+	name: "骚扰电话查询",
+	description: "查询手机号码是否为骚扰电话",
+	keyword: "骚扰|电话|手机号|拦截|查询",
+	category: "QUERY",
+	categoryName: "信息查询",
+	icon: "/assets/imgs/contact_phone_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#9B59B6",
+	path: "/harassment-phone-query"
+}, {
+	id: "earthquake-warning",
+	name: "地震预警",
+	description: "实时地震信息查询",
+	keyword: "地震|预警|震级|震中|速报",
+	category: "LIFE",
+	categoryName: "生活工具",
+	icon: "/assets/imgs/tsunami_24dp_1F1F1F_FILL1_wght400_GRAD0_opsz24.svg",
+	color: "#FF9800",
+	path: "/earthquake-warning"
+}]

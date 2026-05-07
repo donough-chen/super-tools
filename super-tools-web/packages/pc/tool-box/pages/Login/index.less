@@ -1,0 +1,75 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg-layout);
+  padding: 24px;
+
+  &__card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--color-bg-container);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    box-shadow:
+      0 20px 60px rgba(0, 0, 0, 0.1),
+      0 8px 24px rgba(0, 0, 0, 0.06);
+    padding: 40px 36px 32px;
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  &__logo {
+    font-size: 48px;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  &__title {
+    font-size: 24px;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+    margin: 0 0 6px;
+  }
+
+  &__subtitle {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-tertiary);
+    margin: 0;
+  }
+
+  &__tabs {
+    :global(.ant-tabs-nav) {
+      margin-bottom: 20px;
+    }
+  }
+
+  &__form {
+    :global(.ant-form-item) {
+      margin-bottom: 14px;
+    }
+
+    :global(.ant-input-affix-wrapper) {
+      border-radius: var(--radius-lg);
+    }
+  }
+
+  &__submit {
+    border-radius: var(--radius-full) !important;
+    height: 42px;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    margin-top: 4px;
+  }
+
+  &__hint {
+    text-align: center;
+    font-size: var(--font-size-xs, 12px);
+    color: var(--color-text-tertiary);
+    margin-top: -4px;
+  }
+}

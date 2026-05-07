@@ -1,0 +1,33 @@
+@import '~@/assets/variables.less';
+
+.page-help {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+
+  &__item {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+  }
+
+  &__question {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  &__answer {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+}

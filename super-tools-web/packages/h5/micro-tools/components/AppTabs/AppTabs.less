@@ -1,0 +1,122 @@
+@import '~@/assets/variables.less';
+
+.app-tabs {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  z-index: 99;
+
+  /* ==================== 双 Tab 模式 ==================== */
+  &--double {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--tabs-height);
+
+    /* 与头部导航融为一体 */
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+  }
+
+  &__double-track {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 56px;
+    width: calc(100% - 2 * var(--spacing-lg));
+    max-width: 480px;
+    background: var(--bg-page);
+    border-radius: var(--border-radius-round);
+    overflow: hidden;
+  }
+
+  &__double-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 50%;
+    height: 100%;
+    border-radius: var(--border-radius-round);
+    background: var(--primary-color);
+    transition: transform var(--transition-normal);
+  }
+
+  &__double-item {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color var(--transition-normal);
+    user-select: none;
+    text-align: center;
+
+    &--active {
+      color: var(--text-white);
+      font-weight: bold;
+    }
+  }
+
+  /* ==================== 多 Tab 模式 ==================== */
+  &--multiple {
+    display: flex;
+    align-items: center;
+    height: var(--tabs-height);
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__multiple-track {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    padding: 0 var(--spacing-md);
+    gap: var(--spacing-sm);
+    -webkit-overflow-scrolling: touch;
+
+    /* 隐藏滚动条 */
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  &__multiple-item {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-round);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    background: var(--bg-page);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    user-select: none;
+    text-align: center;
+
+    &--active {
+      color: var(--text-white);
+      background: var(--primary-color);
+      font-weight: 500;
+    }
+  }
+
+  &__icon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "name": "super-tool-node",
+  "version": "1.0.0",
+  "description": "Super Tools 后台服务 - Egg.js + TypeScript + MySQL + Redis",
+  "private": true,
+  "egg": {
+    "typescript": true,
+    "declarations": true
+  },
+  "scripts": {
+    "start": "egg-scripts start --daemon --title=super-tool-node",
+    "stop": "egg-scripts stop --title=super-tool-node",
+    "dev": "egg-bin dev --ts",
+    "debug": "egg-bin debug --ts",
+    "test": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts",
+    "test:api": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/api/**/*.test.ts",
+    "test:e2e": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/e2e/**/*.test.ts",
+    "test:auth": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/api/auth.test.ts",
+    "cov": "cross-env EGG_SERVER_ENV=unittest egg-bin cov --ts",
+    "lint": "eslint app config test --ext .ts",
+    "clean": "rimraf dist typings",
+    "build": "tsc -p tsconfig.json",
+    "ci": "npm run lint && npm run cov",
+    "db:cli": "node scripts/db-cli.js",
+    "api": "node scripts/api-test-interactive.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^17.3.1",
+    "egg": "^3.23.0",
+    "egg-cors": "^2.2.3",
+    "egg-jwt": "^3.1.7",
+    "egg-redis": "^2.4.0",
+    "egg-scripts": "^2.17.0",
+    "egg-sequelize": "^6.0.0",
+    "egg-validate": "^2.0.2",
+    "ioredis": "^5.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.0",
+    "mysql2": "^3.9.0",
+    "sequelize": "^6.37.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jest": "^30.0.0",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/lodash": "^4.17.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.11.0",
+    "@types/uuid": "^9.0.8",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "cross-env": "^10.1.0",
+    "egg-bin": "^6.7.0",
+    "egg-mock": "^5.11.0",
+    "eslint": "^8.56.0",
+    "rimraf": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

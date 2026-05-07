@@ -1,0 +1,6 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- 放大镜镜片 -->
+  <circle cx="80" cy="80" r="70" fill="#fff" stroke="#333" stroke-width="8"/>
+  <!-- 放大镜手柄 -->
+  <path d="M130,130 L180,180" stroke="#333" stroke-width="8" stroke-linecap="round"/>
+</svg>

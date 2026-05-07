@@ -1,0 +1,94 @@
+// ============================================================
+// Sidebar 侧边栏样式
+// BEM 命名规范：.sidebar__[element]--[modifier]
+// ============================================================
+
+.sidebar {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  &__list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 12px 8px;
+    position: relative;
+  }
+
+  // 动画指示器（active 背景块）
+  &__indicator {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    background: var(--sidebar-item-active-bg);
+    border-radius: var(--radius-base);
+    transition: top var(--transition-spring), height var(--transition-spring);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: var(--radius-base);
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+    transition: color var(--transition-fast);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    user-select: none;
+
+    &:hover {
+      color: var(--color-text-primary);
+      background: var(--sidebar-item-hover);
+    }
+
+    &--active {
+      color: var(--sidebar-item-active-color);
+      font-weight: var(--font-weight-medium);
+
+      .sidebar__item-icon {
+        color: var(--sidebar-item-active-color);
+      }
+
+      .sidebar__item-count {
+        background: var(--color-primary);
+        color: #fff;
+      }
+    }
+  }
+
+  &__item-icon {
+    font-size: 16px;
+    flex-shrink: 0;
+    color: var(--color-text-tertiary);
+    transition: color var(--transition-fast);
+    width: 18px;
+    text-align: center;
+  }
+
+  &__item-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+
+  &__item-count {
+    flex-shrink: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    background: var(--color-bg-spotlight);
+    border-radius: var(--radius-full);
+    padding: 1px 6px;
+    min-width: 22px;
+    text-align: center;
+    transition: background var(--transition-fast), color var(--transition-fast);
+  }
+}

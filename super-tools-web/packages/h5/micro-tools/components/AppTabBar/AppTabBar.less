@@ -1,0 +1,74 @@
+@import '~@/assets/variables.less';
+
+.app-tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: var(--tabbar-height);
+
+  /* 毛玻璃效果 */
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+
+  /* ==================== 悬浮模式 ==================== */
+  &--float {
+    bottom: calc(16px + var(--safe-area-bottom));
+    left: 16px;
+    right: 16px;
+    border-radius: var(--border-radius-xl);
+    box-shadow: var(--shadow-tabbar);
+    border: var(--glass-border);
+  }
+
+  /* ==================== 平铺模式 ==================== */
+  &--flat {
+    border-top: var(--glass-border);
+    padding-bottom: var(--safe-area-bottom);
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    height: 100%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    gap: 2px;
+    transition: color var(--transition-normal);
+    padding: 0;
+
+    &--active {
+      color: var(--primary-color);
+    }
+
+    &:not(&--active) {
+      color: var(--text-tertiary);
+    }
+  }
+
+  &__icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    transition: transform var(--transition-bounce);
+
+    .app-tabbar__item--active & {
+      transform: scale(1.1);
+    }
+  }
+
+  &__label {
+    font-size: var(--font-size-xs);
+    line-height: 1;
+    transition: color var(--transition-normal);
+  }
+}

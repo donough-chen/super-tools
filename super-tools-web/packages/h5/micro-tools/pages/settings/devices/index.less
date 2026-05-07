@@ -1,0 +1,111 @@
+@import '~@/assets/variables.less';
+
+.page-devices {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+}
+
+.device-list {
+  margin-top: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.device-empty {
+  padding: var(--spacing-xxl) var(--spacing-lg);
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.device-card {
+  background: var(--bg-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-md) var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    min-width: 0;
+  }
+
+  &__icon {
+    font-size: var(--font-size-title);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    display: inline-block;
+    padding: 2px var(--spacing-sm);
+    background: var(--primary-color);
+    color: var(--text-white);
+    font-size: var(--font-size-xxs);
+    border-radius: var(--border-radius-sm);
+    font-weight: normal;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    margin-left: 52px;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+  }
+
+  &__push {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+  }
+
+  &__remove {
+    margin-left: auto;
+    height: 52px;
+    padding: 0 var(--spacing-md);
+    border: 1px solid var(--text-danger);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-white);
+    color: var(--text-danger);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity var(--transition-fast);
+
+    &:active { opacity: 0.7; }
+  }
+}

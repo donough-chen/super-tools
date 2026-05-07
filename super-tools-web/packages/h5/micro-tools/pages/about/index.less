@@ -1,0 +1,89 @@
+@import '~@/assets/variables.less';
+
+.page-about {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__content {
+    padding: var(--spacing-xl);
+    text-align: center;
+  }
+
+  &__logo {
+    margin: var(--spacing-xxl) 0 var(--spacing-lg);
+
+    img {
+      width: 120px;
+      height: 120px;
+      border-radius: var(--border-radius-xl);
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  &__app-name {
+    margin: 0 0 var(--spacing-sm);
+    font-size: var(--font-size-xxl);
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  &__version {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    margin: 0 0 var(--spacing-xxl);
+  }
+
+  &__desc {
+    text-align: left;
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+
+    p {
+      margin: 0 0 var(--spacing-sm);
+      font-size: var(--font-size-md);
+      color: var(--text-secondary);
+      line-height: 1.6;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+  }
+
+  &__links {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+  }
+
+  &__link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    text-align: left;
+    cursor: pointer;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    &:active {
+      background: var(--bg-page);
+    }
+  }
+
+  &__arrow {
+    width: 14px;
+    height: 14px;
+    border-right: 2px solid var(--text-light);
+    border-bottom: 2px solid var(--text-light);
+    transform: rotate(-45deg);
+    flex-shrink: 0;
+  }
+}

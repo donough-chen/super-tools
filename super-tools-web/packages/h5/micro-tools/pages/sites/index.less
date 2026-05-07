@@ -1,0 +1,108 @@
+@import '~@/assets/variables.less';
+
+.page-sites {
+  min-height: 100vh;
+  background: var(--bg-page);
+
+  &__content {
+    padding: var(--spacing-md);
+    will-change: transform, opacity;
+    overflow-x: hidden;
+
+    /* ---- 滑动切换过渡动画 ---- */
+    &--slide-left {
+      animation: sites-slide-in-left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+
+    &--slide-right {
+      animation: sites-slide-in-right 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--bg-white);
+    border-radius: var(--border-radius-md);
+    cursor: pointer;
+    min-width: 0;
+    transition: transform var(--transition-fast);
+
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+
+  &__icon {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: var(--border-radius-md);
+    margin-right: var(--spacing-md);
+    flex-shrink: 0;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__name {
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__count {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    margin-top: var(--spacing-xs);
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    font-size: var(--font-size-md);
+    color: var(--text-tertiary);
+  }
+}
+
+/* 向左切换（切到下一个 Tab）：从右侧滑入 */
+@keyframes sites-slide-in-left {
+  0% {
+    transform: translateX(30%);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* 向右切换（切到上一个 Tab）：从左侧滑入 */
+@keyframes sites-slide-in-right {
+  0% {
+    transform: translateX(-30%);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

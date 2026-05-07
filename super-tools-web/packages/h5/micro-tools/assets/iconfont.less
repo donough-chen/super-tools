@@ -1,0 +1,126 @@
+/**
+ * Iconfont 图标样式
+ *
+ * 使用 font-class 方式引用 iconfont 图标
+ * 待提供具体的 @font-face 和 icon class 代码后填充
+ *
+ * 使用方式：<i className="iconfont icon-xxx" />
+ */
+
+/* ==================== @font-face 定义（待填充） ==================== */
+/* 
+@font-face {
+  font-family: 'iconfont';
+  src: url('iconfont.woff2?t=xxx') format('woff2'),
+       url('iconfont.woff?t=xxx') format('woff'),
+       url('iconfont.ttf?t=xxx') format('truetype');
+  font-display: swap;
+}
+*/
+
+/* ==================== 基础图标样式 ==================== */
+.iconfont {
+  font-family: 'iconfont' !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  vertical-align: middle;
+  display: inline-block;
+
+  /* Better Font Rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==================== 图标尺寸变体 ==================== */
+.iconfont--sm {
+  font-size: 28px;
+}
+
+.iconfont--md {
+  font-size: 36px;
+}
+
+.iconfont--lg {
+  font-size: 48px;
+}
+
+/* ==================== 工具图标专用样式 ==================== */
+.tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+/* ==================== 图标颜色主题预设 ==================== */
+/* 每个工具可通过 data 传入颜色或使用默认主题色 */
+.tool-icon--default {
+  background: var(--primary-color-light);
+  color: var(--primary-color);
+}
+
+.tool-icon--orange {
+  background: rgba(255, 152, 0, 0.12);
+  color: #ff9800;
+}
+
+.tool-icon--green {
+  background: rgba(76, 175, 80, 0.12);
+  color: #4caf50;
+}
+
+.tool-icon--blue {
+  background: rgba(33, 150, 243, 0.12);
+  color: #2196f3;
+}
+
+.tool-icon--purple {
+  background: rgba(156, 39, 176, 0.12);
+  color: #9c27b0;
+}
+
+.tool-icon--red {
+  background: rgba(244, 67, 54, 0.12);
+  color: #f44336;
+}
+
+.tool-icon--teal {
+  background: rgba(0, 150, 136, 0.12);
+  color: #009688;
+}
+
+.tool-icon--pink {
+  background: rgba(233, 30, 99, 0.12);
+  color: #e91e63;
+}
+
+.tool-icon--indigo {
+  background: rgba(63, 81, 181, 0.12);
+  color: #3f51b5;
+}
+
+.tool-icon--amber {
+  background: rgba(255, 193, 7, 0.12);
+  color: #ffc107;
+}
+
+.tool-icon--cyan {
+  background: rgba(0, 188, 212, 0.12);
+  color: #00bcd4;
+}
+
+/* ==================== icon font-class 定义（待填充） ==================== */
+/*
+ * 待提供 iconfont 的 font-class 代码后，在此处补充具体图标类名
+ * 例如：
+ * .icon-json:before { content: "\e001"; }
+ * .icon-timestamp:before { content: "\e002"; }
+ * .icon-base64:before { content: "\e003"; }
+ */

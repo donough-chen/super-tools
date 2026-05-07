@@ -1,0 +1,369 @@
+@import '~@/assets/variables.less';
+
+/* ==================== 页面容器 ==================== */
+.page-profile {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+
+  &__welcome {
+    background: var(--primary-color-light);
+    color: var(--primary-color);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    font-size: var(--font-size-md);
+    line-height: 1.5;
+  }
+
+  /* 右上角保存按钮 */
+  &__save {
+    height: 52px;
+    padding: 0 var(--spacing-md);
+    border: none;
+    border-radius: var(--border-radius-round);
+    background: transparent;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+
+    &--active {
+      background: var(--primary-color);
+      color: var(--text-white);
+
+      &:active { opacity: 0.85; }
+    }
+
+    &:disabled { cursor: not-allowed; }
+  }
+}
+
+/* ==================== 卡片通用 ==================== */
+.profile-card {
+  background: var(--bg-white);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+
+  &__title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-md);
+
+    &--inline {
+      display: inline-block;
+      margin-bottom: 0;
+      margin-right: var(--spacing-md);
+    }
+  }
+
+  /* 头像卡片 */
+  &--avatar {
+    text-align: center;
+    padding: var(--spacing-xl) var(--spacing-lg);
+  }
+
+  &__avatar-btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  &__avatar-img {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--bg-white);
+    box-shadow: var(--shadow-md);
+  }
+
+  &__avatar-tip {
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  /* 会员卡（背景由 inline style 传入 level.color 渐变） */
+  &--member {
+    color: var(--text-white);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+
+    &:active { transform: scale(0.98); }
+
+    .profile-card__title { color: var(--text-white); }
+  }
+
+  /* 邀请码卡片 */
+  &--referral {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+}
+
+/* ==================== 行布局 ==================== */
+.profile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+  border: none;
+  border-top: 1px solid var(--border-color);
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  min-width: 0;
+
+  &:first-of-type { border-top: none; }
+
+  &__label {
+    flex-shrink: 0;
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+  }
+
+  &__value {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    flex: 1;
+    min-width: 0;
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    justify-content: flex-end;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__arrow {
+    flex-shrink: 0;
+    margin-left: var(--spacing-xs);
+    font-size: var(--font-size-md);
+    color: var(--text-light);
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    height: 60px;
+    padding: 0 var(--spacing-sm);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    background: var(--bg-white);
+    box-sizing: border-box;
+    text-align: right;
+    outline: none;
+    transition: border-color var(--transition-fast);
+
+    &::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px var(--primary-color-light);
+    }
+
+    &--date {
+      padding: 0 var(--spacing-xs);
+    }
+  }
+
+  &__textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    background: var(--bg-white);
+    box-sizing: border-box;
+    resize: vertical;
+    font-family: inherit;
+    outline: none;
+    transition: border-color var(--transition-fast);
+
+    &::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    &:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px var(--primary-color-light);
+    }
+  }
+
+  &__counter {
+    display: block;
+    margin-top: var(--spacing-xs);
+    text-align: right;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  &--clickable {
+    cursor: pointer;
+
+    &:active { background: rgba(0, 0, 0, 0.02); }
+  }
+
+  &--column {
+    flex-direction: column;
+    align-items: stretch;
+
+    .profile-row__label {
+      margin-bottom: var(--spacing-xs);
+    }
+  }
+}
+
+/* ==================== 会员卡内部 ==================== */
+.profile-member {
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+  }
+
+  &__name {
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__points {
+    font-size: var(--font-size-md);
+    opacity: 0.92;
+    flex-shrink: 0;
+  }
+
+  &__progress {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+  }
+
+  &__progress-bar {
+    height: 100%;
+    background: var(--bg-white);
+    border-radius: 5px;
+    transition: width var(--transition-normal);
+  }
+
+  &__progress-text {
+    font-size: var(--font-size-xs);
+    opacity: 0.92;
+  }
+
+  &__paid {
+    display: inline-block;
+    margin-top: var(--spacing-sm);
+    padding: 4px var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius-md);
+    font-size: var(--font-size-xs);
+    align-self: flex-start;
+  }
+}
+
+/* ==================== 邀请码 ==================== */
+.profile-referral {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  &__code {
+    font-family: 'SF Mono', Consolas, Monaco, monospace;
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    color: var(--primary-color);
+    letter-spacing: 2px;
+    user-select: all;
+  }
+
+  &__copy {
+    height: 52px;
+    padding: 0 var(--spacing-md);
+    border: 1px solid var(--primary-color);
+    border-radius: var(--border-radius-sm);
+    background: transparent;
+    color: var(--primary-color);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+
+    &:hover:not(:disabled) {
+      background: var(--primary-color-light);
+    }
+
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    &:not(:disabled):active { opacity: 0.7; }
+  }
+}
+
+/* ==================== 选项弹窗（性别/语言/时区等单选列表） ==================== */
+.profile-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
+  max-height: 60vh;
+  overflow-y: auto;
+
+  &__item {
+    width: 100%;
+    height: 80px;
+    padding: 0 var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-white);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+    text-align: center;
+    transition: all var(--transition-fast);
+
+    &--active {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      background: var(--primary-color-lighter);
+    }
+
+    &:not(.profile-options__item--active):active {
+      background: var(--bg-page);
+    }
+  }
+}

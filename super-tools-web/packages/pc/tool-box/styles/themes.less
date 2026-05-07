@@ -1,0 +1,200 @@
+// ============================================================
+// 主题变量覆盖
+// 亮色主题（默认）和暗色主题的变量覆盖规则
+// ============================================================
+
+// 亮色主题（默认）
+[data-theme='light'] {
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-active: #3730a3;
+  --color-primary-light: #e0e7ff;
+  --color-primary-lighter: #f0f4ff;
+
+  --color-bg-base: #f8f9fc;
+  --color-bg-container: #ffffff;
+  --color-bg-elevated: #ffffff;
+  --color-bg-layout: #f0f2f5;
+  --color-bg-spotlight: #f5f5f5;
+
+  --color-text-primary: #1a1a2e;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #9ca3af;
+  --color-text-disabled: #d1d5db;
+  --color-text-inverse: #ffffff;
+
+  --color-border: #e5e7eb;
+  --color-border-secondary: #f3f4f6;
+  --color-divider: #e5e7eb;
+
+  --header-bg: rgba(255, 255, 255, 0.85);
+  --header-border: rgba(229, 231, 235, 0.8);
+
+  --sidebar-bg: #ffffff;
+  --sidebar-item-hover: #f0f4ff;
+  --sidebar-item-active-bg: #e0e7ff;
+  --sidebar-item-active-color: #4f46e5;
+
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.5);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+  --shadow-card-hover: 0 12px 24px -4px rgba(79, 70, 229, 0.15), 0 4px 8px -2px rgba(79, 70, 229, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+// 暗色主题
+[data-theme='dark'] {
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-active: #c7d2fe;
+  --color-primary-light: #312e81;
+  --color-primary-lighter: #1e1b4b;
+
+  --color-bg-base: #0f0f1a;
+  --color-bg-container: #1a1a2e;
+  --color-bg-elevated: #16213e;
+  --color-bg-layout: #0d0d1a;
+  --color-bg-spotlight: #1e1e35;
+
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-tertiary: #64748b;
+  --color-text-disabled: #334155;
+  --color-text-inverse: #0f0f1a;
+
+  --color-border: #2d2d4e;
+  --color-border-secondary: #1e1e35;
+  --color-divider: #2d2d4e;
+
+  --header-bg: rgba(26, 26, 46, 0.88);
+  --header-border: rgba(45, 45, 78, 0.8);
+
+  --sidebar-bg: #1a1a2e;
+  --sidebar-item-hover: #1e1b4b;
+  --sidebar-item-active-bg: #312e81;
+  --sidebar-item-active-color: #818cf8;
+
+  --glass-bg: rgba(26, 26, 46, 0.75);
+  --glass-border: rgba(45, 45, 78, 0.5);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-base: 0 4px 6px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.45), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 12px 24px -4px rgba(129, 140, 248, 0.2), 0 4px 8px -2px rgba(129, 140, 248, 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+// ============================================================
+// 主题色（Accent Color）覆盖
+// 使用 [data-theme][data-accent] 双属性选择器（特异性 0-2-0）
+// 高于单属性 [data-theme]（特异性 0-1-0），彻底消除优先级冲突
+// ============================================================
+
+// 靛蓝 - 亮色
+[data-theme='light'][data-accent='indigo'] {
+  --color-primary: #4f46e5;
+  --color-primary-hover: #4338ca;
+  --color-primary-active: #3730a3;
+  --color-primary-light: #e0e7ff;
+  --color-primary-lighter: #f0f4ff;
+  --sidebar-item-hover: #f0f4ff;
+  --sidebar-item-active-bg: #e0e7ff;
+  --sidebar-item-active-color: #4f46e5;
+  --shadow-card-hover: 0 12px 24px -4px rgba(79, 70, 229, 0.15), 0 4px 8px -2px rgba(79, 70, 229, 0.08);
+}
+
+// 靛蓝 - 暗色
+[data-theme='dark'][data-accent='indigo'] {
+  --color-primary: #818cf8;
+  --color-primary-hover: #a5b4fc;
+  --color-primary-active: #c7d2fe;
+  --color-primary-light: #312e81;
+  --color-primary-lighter: #1e1b4b;
+  --sidebar-item-hover: #1e1b4b;
+  --sidebar-item-active-bg: #312e81;
+  --sidebar-item-active-color: #818cf8;
+  --shadow-card-hover: 0 12px 24px -4px rgba(129, 140, 248, 0.2), 0 4px 8px -2px rgba(129, 140, 248, 0.12);
+}
+
+// 蓝色 - 亮色
+[data-theme='light'][data-accent='blue'] {
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-primary-active: #1e40af;
+  --color-primary-light: #dbeafe;
+  --color-primary-lighter: #eff6ff;
+  --sidebar-item-hover: #eff6ff;
+  --sidebar-item-active-bg: #dbeafe;
+  --sidebar-item-active-color: #2563eb;
+  --shadow-card-hover: 0 12px 24px -4px rgba(37, 99, 235, 0.15), 0 4px 8px -2px rgba(37, 99, 235, 0.08);
+}
+
+// 蓝色 - 暗色
+[data-theme='dark'][data-accent='blue'] {
+  --color-primary: #60a5fa;
+  --color-primary-hover: #93c5fd;
+  --color-primary-active: #bfdbfe;
+  --color-primary-light: #1e3a5f;
+  --color-primary-lighter: #172554;
+  --sidebar-item-hover: #172554;
+  --sidebar-item-active-bg: #1e3a5f;
+  --sidebar-item-active-color: #60a5fa;
+  --shadow-card-hover: 0 12px 24px -4px rgba(96, 165, 250, 0.2), 0 4px 8px -2px rgba(96, 165, 250, 0.12);
+}
+
+// 紫色 - 亮色
+[data-theme='light'][data-accent='purple'] {
+  --color-primary: #7c3aed;
+  --color-primary-hover: #6d28d9;
+  --color-primary-active: #5b21b6;
+  --color-primary-light: #ede9fe;
+  --color-primary-lighter: #f5f3ff;
+  --sidebar-item-hover: #f5f3ff;
+  --sidebar-item-active-bg: #ede9fe;
+  --sidebar-item-active-color: #7c3aed;
+  --shadow-card-hover: 0 12px 24px -4px rgba(124, 58, 237, 0.15), 0 4px 8px -2px rgba(124, 58, 237, 0.08);
+}
+
+// 紫色 - 暗色
+[data-theme='dark'][data-accent='purple'] {
+  --color-primary: #a78bfa;
+  --color-primary-hover: #c4b5fd;
+  --color-primary-active: #ddd6fe;
+  --color-primary-light: #3b1f6e;
+  --color-primary-lighter: #2e1065;
+  --sidebar-item-hover: #2e1065;
+  --sidebar-item-active-bg: #3b1f6e;
+  --sidebar-item-active-color: #a78bfa;
+  --shadow-card-hover: 0 12px 24px -4px rgba(167, 139, 250, 0.2), 0 4px 8px -2px rgba(167, 139, 250, 0.12);
+}
+
+// 绿色 - 亮色
+[data-theme='light'][data-accent='green'] {
+  --color-primary: #059669;
+  --color-primary-hover: #047857;
+  --color-primary-active: #065f46;
+  --color-primary-light: #d1fae5;
+  --color-primary-lighter: #ecfdf5;
+  --sidebar-item-hover: #ecfdf5;
+  --sidebar-item-active-bg: #d1fae5;
+  --sidebar-item-active-color: #059669;
+  --shadow-card-hover: 0 12px 24px -4px rgba(5, 150, 105, 0.15), 0 4px 8px -2px rgba(5, 150, 105, 0.08);
+}
+
+// 绿色 - 暗色
+[data-theme='dark'][data-accent='green'] {
+  --color-primary: #34d399;
+  --color-primary-hover: #6ee7b7;
+  --color-primary-active: #a7f3d0;
+  --color-primary-light: #064e3b;
+  --color-primary-lighter: #022c22;
+  --sidebar-item-hover: #022c22;
+  --sidebar-item-active-bg: #064e3b;
+  --sidebar-item-active-color: #34d399;
+  --shadow-card-hover: 0 12px 24px -4px rgba(52, 211, 153, 0.2), 0 4px 8px -2px rgba(52, 211, 153, 0.12);
+}

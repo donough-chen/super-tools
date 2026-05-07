@@ -1,0 +1,131 @@
+// ============================================================
+// 404 页面样式
+// ============================================================
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 40px 20px;
+  text-align: center;
+
+  // 404 数字
+  &__number {
+    font-size: 120px;
+    font-weight: var(--font-weight-bold);
+    line-height: 1;
+    background: linear-gradient(135deg, var(--color-primary), #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 24px;
+    letter-spacing: -4px;
+
+    @media (max-width: 768px) {
+      font-size: 80px;
+    }
+  }
+
+  // 插图
+  &__illustration {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin-bottom: 32px;
+  }
+
+  &__planet {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.3);
+  }
+
+  &__orbit {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 2px dashed var(--color-primary-light);
+    animation: orbit-rotate 8s linear infinite;
+  }
+
+  &__satellite {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.5);
+    animation: orbit-rotate 8s linear infinite;
+    transform-origin: 0 60px;
+  }
+
+  // 文字
+  &__title {
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
+    margin: 0 0 12px;
+  }
+
+  &__desc {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-tertiary);
+    margin: 0 0 32px;
+    max-width: 400px;
+  }
+
+  // 按钮
+  &__actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  &__btn-home {
+    background: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    border-radius: var(--radius-full) !important;
+    height: 44px !important;
+    padding: 0 24px !important;
+    font-weight: var(--font-weight-medium) !important;
+
+    &:hover {
+      background: var(--color-primary-hover) !important;
+      border-color: var(--color-primary-hover) !important;
+    }
+  }
+
+  &__btn-back {
+    border-radius: var(--radius-full) !important;
+    height: 44px !important;
+    padding: 0 24px !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-text-secondary) !important;
+
+    &:hover {
+      border-color: var(--color-primary) !important;
+      color: var(--color-primary) !important;
+    }
+  }
+}
+
+@keyframes orbit-rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}

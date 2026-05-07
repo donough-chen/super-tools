@@ -1,0 +1,25 @@
+{
+  "name": "pc-tool-box",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Super Tools 在线工具箱 PC端",
+  "scripts": {
+    "dev": "umi dev",
+    "build": "umi build",
+    "prettier": "prettier --write '**/*.{js,jsx,tsx,ts,less,md,json}'",
+    "test": "umi-test",
+    "test:coverage": "umi-test --coverage"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^4.8.3",
+    "antd": "^4.24.16",
+    "classnames": "^2.3.2",
+    "dayjs": "^1.11.10",
+    "zustand": "^4.5.2",
+    "immer": "^10.0.3"
+  },
+  "devDependencies": {
+    "@umijs/preset-react": "1.x",
+    "typescript": "^5.3.3"
+  }
+}

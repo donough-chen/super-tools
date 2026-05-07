@@ -1,0 +1,106 @@
+@import '~@/assets/variables.less';
+
+.page-mine {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+
+  /* 用户信息卡片 */
+  &__user-card {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    margin-bottom: var(--spacing-lg);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--transition-fast);
+
+    &:active {
+      transform: scale(0.99);
+    }
+  }
+
+  &__avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: var(--spacing-md);
+    flex-shrink: 0;
+  }
+
+  &__user-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__nickname {
+    font-size: var(--font-size-xl);
+    color: var(--text-primary);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__badge {
+    display: inline-block;
+    align-self: flex-start;
+    margin-top: var(--spacing-xs);
+    padding: 2px var(--spacing-sm);
+    font-size: var(--font-size-xxs);
+    color: var(--primary-color);
+    background: var(--primary-color-light);
+    border-radius: var(--border-radius-round);
+    white-space: nowrap;
+  }
+
+  &__login-hint {
+    font-size: var(--font-size-lg);
+    color: var(--text-tertiary);
+  }
+
+  /* 功能选项列表 */
+  &__menu {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+
+  &__menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    &:active {
+      background: var(--bg-page);
+    }
+  }
+
+  &__arrow {
+    width: 14px;
+    height: 14px;
+    border-right: 2px solid var(--text-light);
+    border-bottom: 2px solid var(--text-light);
+    transform: rotate(-45deg);
+    flex-shrink: 0;
+  }
+}

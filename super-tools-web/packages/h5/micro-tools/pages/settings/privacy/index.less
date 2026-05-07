@@ -1,0 +1,58 @@
+@import '~@/assets/variables.less';
+
+.page-privacy {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+}
+
+/* 通用卡片 + 开关行（隐私 / 通知 共用结构） */
+.settings-card {
+  background: var(--bg-white);
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md) var(--spacing-lg);
+  gap: var(--spacing-md);
+  min-width: 0;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__sub {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+}
+
+.settings-section-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding: 0 var(--spacing-sm) var(--spacing-sm);
+}

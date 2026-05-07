@@ -1,0 +1,72 @@
+{
+  "private": true,
+  "scripts": {
+    "start": "cross-env UMI_ENV=dev node scripts/start",
+    "build": "node scripts/build",
+    "build-dev": "cross-env UMI_ENV=dev node scripts/build",
+    "build-preview": "cross-env UMI_ENV=preview node scripts/build",
+    "build-prod": "cross-env UMI_ENV=prod node scripts/build",
+    "build-analyze": "cross-env ANALYZE=1 UMI_ENV=prod node scripts/build",
+    "gen": "sao ./scripts/create",
+    "prettier": "prettier --write \"**/*.{js,jsx,tsx,ts,less,md,json}\"",
+    "lint": "eslint --ext .js,.jsx,.ts,.tsx packages/",
+    "lint:fix": "eslint --fix --ext .js,.jsx,.ts,.tsx packages/",
+    "test": "umi-test",
+    "test:coverage": "umi-test --coverage"
+  },
+  "workspaces": [
+    "packages/shared",
+    "packages/pc/*",
+    "packages/h5/*",
+    "packages/other/*"
+  ],
+  "gitHooks": {
+    "pre-commit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "git add ."
+    ]
+  },
+  "dependencies": {
+    "classnames": "^2.3.2",
+    "crypto-js": "^4.2.0",
+    "dayjs": "^1.11.10",
+    "immer": "^10.0.3",
+    "page-lifecycle": "^0.1.2",
+    "query-string": "^6.14.1",
+    "react": "^16.14.0",
+    "react-dom": "^16.14.0",
+    "sao": "^1.7.1",
+    "umi": "^3.5.41",
+    "umi-request": "^1.4.0",
+    "utf8": "^3.0.0",
+    "vconsole": "^3.15.1",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "@umijs/plugin-sass": "^1.1.1",
+    "@umijs/preset-react": "1.x",
+    "@umijs/test": "^3.5.41",
+    "autoprefixer": "^9.8.8",
+    "babel-eslint": "^10.1.0",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.56.0",
+    "eslint-config-umi": "^1.6.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "file-loader": "^6.2.0",
+    "lint-staged": "^13.3.0",
+    "postcss-pxtorem": "^5.1.1",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3",
+    "yorkie": "^2.0.0"
+  },
+  "name": "super-tools-web",
+  "version": "1.0.0",
+  "description": "超级工具",
+  "author": "Donough"
+}

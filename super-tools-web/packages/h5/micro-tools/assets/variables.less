@@ -1,0 +1,92 @@
+/**
+ * CSS 全局变量定义
+ * 统一管理各模块高度、间距、颜色等设计 token
+ * 所有页面和组件应引用此处定义的变量，确保设计一致性
+ */
+
+:root {
+  /* ==================== 布局高度 ==================== */
+  --header-height: 88px;
+  --tabs-height: 80px;
+  --tabbar-height: 100px;
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ==================== 主题色 ====================
+   * 换肤机制：store/global.ts 的 setThemeColor 会同步 setProperty 以下 5 个变量：
+   *   --primary-color       主色 hex
+   *   --primary-color-rgb   主色 "R, G, B" 三元数字串（供 rgba() 现场配透明度使用）
+   *   --primary-color-hover hover 态色（亮 12%）
+   *   --primary-color-active active 态色（暗 12%）
+   * 派生色 --primary-color-light / -lighter / -bg 统一用 rgba(var(--primary-color-rgb), a) 声明，
+   * 主色切换后自动生效，无需 JS 再次写入
+   */
+  --primary-color: #1677ff;
+  --primary-color-rgb: 22, 119, 255;
+  --primary-color-hover: #4096ff;
+  --primary-color-active: #0958d9;
+  --primary-color-light: rgba(var(--primary-color-rgb), 0.1);   /* active 背景 / 选中态背景 */
+  --primary-color-lighter: rgba(var(--primary-color-rgb), 0.06); /* 更浅的背景（卡片 hover 等） */
+  --primary-color-shadow: rgba(var(--primary-color-rgb), 0.2);   /* focus 光晕 */
+
+  /* ==================== 文字色 ==================== */
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-quaternary: #bbbbbb;
+  --text-placeholder: #cccccc;
+  --text-light: #cccccc;
+  --text-white: #ffffff;
+  --text-danger: #ff4d4f;
+  --text-success: #52c41a;
+  --text-warning: #fa8c16;
+
+  /* ==================== 背景色 ==================== */
+  --bg-page: #f5f5f5;
+  --bg-white: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.72);
+  --bg-mask: rgba(0, 0, 0, 0.5);
+  --bg-mask-light: rgba(0, 0, 0, 0.3);
+
+  /* ==================== 边框 ==================== */
+  --border-color: #eeeeee;
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+  --border-radius-round: 999px;
+
+  /* ==================== 间距 ==================== */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+
+  /* ==================== 字号（750px 设计稿） ==================== */
+  --font-size-xxs: 16px;
+  --font-size-xs: 18px;
+  --font-size-sm: 20px;
+  --font-size-md: 24px;
+  --font-size-lg: 26px;
+  --font-size-xl: 28px;
+  --font-size-xxl: 32px;
+  --font-size-title: 36px;
+
+  /* ==================== 毛玻璃效果 ==================== */
+  --glass-blur: 10px;
+  --glass-bg: var(--bg-glass);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.3);
+
+  /* ==================== 动画 ==================== */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  --transition-bounce: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ==================== 阴影 ==================== */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-tabbar: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
