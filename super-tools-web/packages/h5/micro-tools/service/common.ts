@@ -1,30 +1,12 @@
 /**
- * 公共业务接口（不需登录态的资源类接口或与登录无关的业务接口）
- * 来源：原 service.ts 迁移
+ * 公共业务接口（不需登录态）
+ *
+ * 注：旧的 banner/tool/featured 接口已迁移至 service/tool.ts（对接新工具模块）
+ * 本文件保留 favorite/site 等暂未迁移的接口
  */
 import { request } from '@/utils';
 
 const API_BASE = '/api';
-
-// ==================== 首页 ====================
-
-/** 获取广告位 Banner 列表 */
-export const getBannerList = async () => {
-  const result = await request.get(`${API_BASE}/banner/list`);
-  return result || {};
-};
-
-/** 获取工具分类列表（含每个分类下的工具） */
-export const getToolCategories = async () => {
-  const result = await request.get(`${API_BASE}/tool/categories`);
-  return result || {};
-};
-
-/** 搜索工具 */
-export const searchTools = async (keyword: string) => {
-  const result = await request.get(`${API_BASE}/tool/search?keyword=${encodeURIComponent(keyword)}`);
-  return result || {};
-};
 
 // ==================== 收藏 ====================
 
@@ -46,13 +28,6 @@ export const removeFavorite = async (toolId: string) => {
     headers: { 'Content-Type': 'application/json' },
     data: JSON.stringify({ toolId }),
   });
-  return result || {};
-};
-
-// ==================== 特色 ====================
-
-export const getFeaturedTools = async (type: 'featured' | 'vip') => {
-  const result = await request.get(`${API_BASE}/featured/list?type=${encodeURIComponent(type)}`);
   return result || {};
 };
 

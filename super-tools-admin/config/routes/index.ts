@@ -1,5 +1,6 @@
 import type { IRoute } from 'umi';
 import authRoutes from './modules/auth';
+import toolRoutes from './modules/tool';
 
 const routes: IRoute[] = [
   {
@@ -24,8 +25,11 @@ const routes: IRoute[] = [
           {
             path: '/home',
             name: '首页',
+            icon: 'HomeOutlined',
             component: '@/pages/Home',
           },
+          ...toolRoutes,
+          ...authRoutes,
           { path: '/403', component: '@/pages/403' },
           { component: '@/pages/404' },
         ],

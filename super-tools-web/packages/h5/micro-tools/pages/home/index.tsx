@@ -1,50 +1,126 @@
 /**
  * 首页 Home
  *
- * 一级页面：搜索框 + 广告位 Banner + 工具分类列表
+ * 一级页面：搜索框 + 广告位 Banner（特色工具充当） + 工具分类列表
  * 头部按钮：[search, agent, settings]
+ *
+ * 数据来源：useHomeStore.fetchHomeData() — 聚合模式一次性加载全部分类+工具
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useHistory } from 'umi';
-import { utils } from '@/utils';
 import { useHomeStore, useGlobalStore } from '../../store';
+import { useToolClick } from '../../hooks/useToolClick';
 import AppHeader from '../../components/AppHeader';
 import AppTabBar from '../../components/AppTabBar';
+import AppModal from '../../components/AppModal';
 import { TAB_BAR_ITEMS } from '../../constants';
 import { useSwipe } from '../../hooks/useSwipe';
+import type { Tool } from '../../types/tool';
+import { resolveIcon } from '../../utils/icon';
 import './index.less';
 
-/** 图标颜色主题配色映射 */
-const ICON_THEME_COLORS: Record<string, { bg: string; color: string }> = {
-  default: { bg: 'rgba(22, 119, 255, 0.1)', color: '#1677ff' },
-  orange:  { bg: 'rgba(255, 152, 0, 0.12)', color: '#ff9800' },
-  green:   { bg: 'rgba(76, 175, 80, 0.12)', color: '#4caf50' },
-  blue:    { bg: 'rgba(33, 150, 243, 0.12)', color: '#2196f3' },
-  purple:  { bg: 'rgba(156, 39, 176, 0.12)', color: '#9c27b0' },
-  red:     { bg: 'rgba(244, 67, 54, 0.12)', color: '#f44336' },
-  teal:    { bg: 'rgba(0, 150, 136, 0.12)', color: '#009688' },
-  pink:    { bg: 'rgba(233, 30, 99, 0.12)', color: '#e91e63' },
-  indigo:  { bg: 'rgba(63, 81, 181, 0.12)', color: '#3f51b5' },
-  amber:   { bg: 'rgba(255, 193, 7, 0.12)', color: '#ffc107' },
-  cyan:    { bg: 'rgba(0, 188, 212, 0.12)', color: '#00bcd4' },
-};
+/** 图标颜色主题配色映射（保留原始主题色逻辑作为后端 color 字段的兜底） */
+const DEFAULT_THEME = { bg: 'rgba(22, 119, 255, 0.1)', color: '#1677ff' };
+
+/** 根据后端 color(#HEX) 生成透明背景 + 前景色 */
+function colorToTheme(hex?: string): { bg: string; color: string } {
+  if (!hex) return DEFAULT_THEME;
+  // 将 #RRGGBB 转为 rgba(R, G, B, 0.12) 背景
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return DEFAULT_THEME;
+  return { bg: `rgba(${r}, ${g}, ${b}, 0.12)`, color: hex };
+}
+
+/** 带分类的工具数据结构（兼容原有布局） */
+interface CategoryWithTools {
+  id: string;
+  name: string;
+  icon?: string;
+  tools: ToolViewItem[];
+  expanded: boolean;
+}
+
+/** 页面视图层工具 item（从后端 Tool 映射而来） */
+interface ToolViewItem {
+  id: string;
+  name: string;
+  icon?: string;
+  iconResolved?: string;
+  color?: string;
+  subtitle?: string;
+  url: string;
+  _raw: Tool;
+}
+
+/** 将后端 Tool 映射为页面视图 item */
+function mapToolToView(tool: Tool): ToolViewItem {
+  return {
+    id: tool.code,
+    name: tool.name,
+    icon: tool.icon || undefined,
+    iconResolved: resolveIcon(tool.icon),
+    color: tool.color || undefined,
+    subtitle: tool.description || undefined,
+    url: tool.path,
+    _raw: tool,
+  };
+}
 
 const HomePage: React.FC = () => {
-  const { banners, categories, loading, fetchBanners, fetchCategories, toggleCategory, initQuery } = useHomeStore();
+  const {
+    categories: rawCategories,
+    toolsByCategory,
+    bannerTools,
+    loading,
+    fetchHomeData,
+  } = useHomeStore();
   const { toolListMode, tabBarMode, activeTabBarKey, setActiveTabBarKey, isSearchBoxVisible, setSearchBoxVisible } = useGlobalStore();
+  const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   /** 当前 Banner 索引 */
   const [activeBanner, setActiveBanner] = useState(0);
+  /** 分类展开/折叠状态 */
+  const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
 
   const history = useHistory();
 
   useEffect(() => {
-    const query = utils.formatUrl();
-    initQuery(query);
-    fetchBanners();
-    fetchCategories();
+    fetchHomeData();
   }, []);
+
+  // 初始化展开状态（全部展开）
+  useEffect(() => {
+    if (rawCategories.length > 0 && Object.keys(expandedMap).length === 0) {
+      const map: Record<string, boolean> = {};
+      rawCategories.forEach(c => { map[c.code] = true; });
+      setExpandedMap(map);
+    }
+  }, [rawCategories]);
+
+  /** 构造与原始布局兼容的 categories 数据 */
+  const categories: CategoryWithTools[] = rawCategories.map(cat => ({
+    id: cat.code,
+    name: cat.name,
+    icon: cat.icon || undefined,
+    tools: (toolsByCategory[cat.code] || []).map(mapToolToView),
+    expanded: expandedMap[cat.code] !== false,
+  }));
+
+  /** Banner 数据：用特色工具的 icon 和信息充当 */
+  const banners = bannerTools.map(t => ({
+    id: t.code,
+    imageUrl: resolveIcon(t.icon) || '',
+    linkUrl: t.path,
+    title: t.name,
+    _raw: t,
+  }));
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedMap(prev => ({ ...prev, [categoryId]: !prev[categoryId] }));
+  };
 
   // IntersectionObserver 检测搜索框可见性
   useEffect(() => {
@@ -99,21 +175,13 @@ const HomePage: React.FC = () => {
     onSwipeRight: () => scrollToBanner(activeBanner - 1),
   });
 
-  /** 渲染工具图标：优先使用 iconfont，降级到 img */
-  const renderToolIcon = (tool: typeof categories[0]['tools'][0]) => {
-    const theme = ICON_THEME_COLORS[tool.iconTheme || 'default'] || ICON_THEME_COLORS.default;
-    if (tool.fontClass) {
-      return (
-        <i
-          className={`page-home__tool-iconfont iconfont ${tool.fontClass}`}
-          style={{ background: theme.bg, color: theme.color }}
-        />
-      );
+  /** 渲染工具图标：优先使用 resolved icon 图片，降级到颜色占位 */
+  const renderToolIcon = (tool: ToolViewItem) => {
+    const theme = colorToTheme(tool.color);
+    if (tool.iconResolved) {
+      return <img className="page-home__tool-icon" src={tool.iconResolved} alt={tool.name} />;
     }
-    if (tool.icon) {
-      return <img className="page-home__tool-icon" src={tool.icon} alt={tool.name} />;
-    }
-    // 无图标时显示默认占位
+    // 无图标时显示颜色占位
     return (
       <i
         className="page-home__tool-iconfont iconfont"
@@ -148,7 +216,7 @@ const HomePage: React.FC = () => {
           <span className="page-home__search-placeholder">搜索所需功能</span>
         </div>
 
-        {/* 广告位 Banner */}
+        {/* 广告位 Banner（特色工具充当） */}
         {banners.length > 0 && (
           <div className="page-home__banner-wrap">
             <div
@@ -157,7 +225,11 @@ const HomePage: React.FC = () => {
               {...bannerSwipeHandlers}
             >
               {banners.map(banner => (
-                <div key={banner.id} className="page-home__banner-item">
+                <div
+                  key={banner.id}
+                  className="page-home__banner-item"
+                  onClick={() => handleToolClick(banner._raw)}
+                >
                   <img src={banner.imageUrl} alt={banner.title} />
                 </div>
               ))}
@@ -194,7 +266,7 @@ const HomePage: React.FC = () => {
                       <div
                         key={tool.id}
                         className="page-home__tool-item"
-                        onClick={() => history.push(tool.url)}
+                        onClick={() => handleToolClick(tool._raw)}
                       >
                         {renderToolIcon(tool)}
                         {/* double/single 模式：图标 + 名称 + 副标题 */}
@@ -230,6 +302,17 @@ const HomePage: React.FC = () => {
           setActiveTabBarKey(key);
           history.push(key === 'home' ? '/' : `/${key}`);
         }}
+      />
+
+      <AppModal
+        visible={dialog.visible}
+        title={dialog.title}
+        content={dialog.message}
+        confirmText={dialog.confirmText}
+        cancelText="取消"
+        onConfirm={dialog.onConfirm || closeDialog}
+        onCancel={closeDialog}
+        onClose={closeDialog}
       />
     </div>
   );
