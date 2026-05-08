@@ -2,11 +2,11 @@
  * 底部导航栏配置项
  */
 export const TAB_BAR_ITEMS = [
-  { key: 'home', name: '首页', icon: '', activeIcon: '' },
-  { key: 'favorites', name: '收藏', icon: '', activeIcon: '' },
-  { key: 'featured', name: '特色', icon: '', activeIcon: '' },
-  { key: 'sites', name: '网站', icon: '', activeIcon: '' },
-  { key: 'mine', name: '我的', icon: '', activeIcon: '' },
+  { key: 'home', name: '首页', icon: '/assets/icons/home.png', activeIcon: '/assets/icons/home_active.png' },
+  { key: 'favorites', name: '收藏', icon: '/assets/icons/favorites.png', activeIcon: '/assets/icons/favorites_active.png' },
+  { key: 'featured', name: '特色', icon: '/assets/icons/featured.png', activeIcon: '/assets/icons/featured_active.png' },
+  { key: 'sites', name: '网站', icon: '/assets/icons/sites.png', activeIcon: '/assets/icons/sites_active.png' },
+  { key: 'mine', name: '我的', icon: '/assets/icons/mine.png', activeIcon: '/assets/icons/mine_active.png' },
 ];
 
 /**

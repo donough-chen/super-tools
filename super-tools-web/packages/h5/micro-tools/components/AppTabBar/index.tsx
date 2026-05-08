@@ -1,3 +1,4 @@
+import { resolveIcon } from '../../utils/icon';
 /**
  * AppTabBar 底部导航栏组件
  * 支持悬浮模式和平铺模式
@@ -39,7 +40,7 @@ const AppTabBar: FC<AppTabBarProps> = ({ mode, activeKey, items, onChange }) => 
         >
           <img
             className="app-tabbar__icon"
-            src={activeKey === item.key ? item.activeIcon : item.icon}
+            src={resolveIcon(activeKey === item.key ? item.activeIcon : item.icon)}
             alt={item.name}
           />
           <span className="app-tabbar__label">{item.name}</span>
