@@ -7,7 +7,7 @@
  * 微信：V1 显示"敬请期待"按钮 disabled
  */
 import React, { useEffect, useState, useMemo } from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import AppModal from '../../../components/AppModal';
 import { SendCodeButton } from '../../../components';
@@ -30,7 +30,6 @@ const maskEmail = (e: string) => {
 type BindType = 'phone' | 'email';
 
 const BindingPage: React.FC = () => {
-  const history = useHistory();
   const { bindStatus, fetchBindStatus, bindPhone, bindEmail, unbind } = useUserStore();
 
   // 绑定弹窗
@@ -106,7 +105,7 @@ const BindingPage: React.FC = () => {
 
   return (
     <div className="page-binding">
-      <AppHeader title="账号绑定管理" showBack onBack={() => history.goBack()} />
+      <AppHeader title="账号绑定管理" showBack onBack={() => navigateBack()} />
       <main className="page-binding__content">
         {/* 已绑定区 */}
         <div className="binding-section">

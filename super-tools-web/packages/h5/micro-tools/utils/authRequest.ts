@@ -14,19 +14,12 @@
  *      即可触发拦截器注册（副作用导入）
  */
 import { request } from '@/utils';
-import * as umi from 'umi';
+import { navigateReplace, getCurrentPathname } from '@/utils/navigator';
 import {
   isWhitelisted,
   TOKEN_STORAGE_KEY,
 } from '../constants/oauth';
 import type { StoredTokenData } from '../types/auth';
-
-const { history } = umi as unknown as {
-  history: {
-    location: { pathname: string };
-    replace: (to: string) => void;
-  };
-};
 
 let isRefreshing = false;
 let pendingQueue: Array<{
@@ -118,9 +111,9 @@ request.interceptors.response.use(async (response: any, options: any) => {
       const { useUserStore } = require('../store/user');
       useUserStore.getState().reset();
     } catch { /* store 未就绪 */ }
-    const current = history.location.pathname;
+    const current = getCurrentPathname();
     if (!current.startsWith('/login')) {
-      history.replace(`/login?redirect=${encodeURIComponent(current)}`);
+      navigateReplace(`/login?redirect=${encodeURIComponent(current)}`);
     }
     return response;
   } finally {

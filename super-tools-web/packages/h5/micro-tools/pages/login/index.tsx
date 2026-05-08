@@ -12,7 +12,8 @@
  * - 登录成功跳转：isNewUser 走 /profile?from=register；否则 redirect → goBack
  */
 import React, { useState, useCallback, useMemo } from 'react';
-import { useHistory, useLocation } from 'umi';
+import { useLocation } from 'umi';
+import { navigateReplace, navigateBack } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import LoginByPhone from './components/LoginByPhone';
 import LoginByPassword from './components/LoginByPassword';
@@ -29,7 +30,6 @@ const isSafeRedirect = (path?: string | null): boolean =>
   !!path && path.startsWith('/') && !path.includes('://');
 
 const LoginPage: React.FC = () => {
-  const history = useHistory();
   const location = useLocation();
   const query = (location as any).query || {};
   const initialMode: Mode = query.mode === 'register' ? 'register' : 'login';
@@ -64,18 +64,18 @@ const LoginPage: React.FC = () => {
   const onLoginSuccess = useCallback((extra?: { isNewUser?: boolean }) => {
     if (extra?.isNewUser) {
       showMsg('success', '欢迎加入 Super Tools');
-      setTimeout(() => history.replace('/profile?from=register'), 600);
+      setTimeout(() => navigateReplace('/profile?from=register'), 600);
     } else if (redirect) {
-      history.replace(redirect);
+      navigateReplace(redirect);
     } else {
-      history.goBack();
+      navigateBack();
     }
-  }, [history, redirect, showMsg]);
+  }, [redirect, showMsg]);
 
   const onRegisterPhoneSuccess = useCallback(() => {
     showMsg('success', '注册成功，欢迎加入');
-    setTimeout(() => history.replace('/profile?from=register'), 600);
-  }, [history, showMsg]);
+    setTimeout(() => navigateReplace('/profile?from=register'), 600);
+  }, [showMsg]);
 
   const onRegisterEmailSuccess = useCallback(() => {
     showMsg('success', '注册成功，请登录');
@@ -123,7 +123,7 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="page-login">
-      <AppHeader title={isLogin ? '登录' : '注册'} showBack onBack={() => history.goBack()} />
+      <AppHeader title={isLogin ? '登录' : '注册'} showBack onBack={() => navigateBack()} />
       <main className="page-login__content">
         <div className="page-login__logo">
           <div className="page-login__logo-icon">S</div>

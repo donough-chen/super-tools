@@ -1,0 +1,242 @@
+/**
+ * UnderConstruction 样式
+ * 基于 px 单位；在 micro-tools（postcss-pxtorem）下会被自动转成 rem，
+ * 在 pc/tool-box 下保持 px，均能正常显示。
+ */
+
+.st-under-construction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 40px 24px;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #f5f7fb 0%, #eef2ff 100%);
+}
+
+.st-under-construction__card {
+  width: 100%;
+  max-width: 480px;
+  padding: 48px 32px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(79, 70, 229, 0.08);
+  text-align: center;
+}
+
+.st-under-construction__illustration {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 24px;
+}
+
+.st-under-construction__gear {
+  position: absolute;
+  border-radius: 50%;
+  border: 8px solid #a5b4fc;
+  background:
+    radial-gradient(circle, #ffffff 30%, transparent 32%) center/100% 100% no-repeat;
+  box-sizing: border-box;
+}
+
+.st-under-construction__gear::before,
+.st-under-construction__gear::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 0deg,
+      #a5b4fc 0deg 18deg,
+      transparent 18deg 45deg,
+      #a5b4fc 45deg 63deg,
+      transparent 63deg 90deg,
+      #a5b4fc 90deg 108deg,
+      transparent 108deg 135deg,
+      #a5b4fc 135deg 153deg,
+      transparent 153deg 180deg,
+      #a5b4fc 180deg 198deg,
+      transparent 198deg 225deg,
+      #a5b4fc 225deg 243deg,
+      transparent 243deg 270deg,
+      #a5b4fc 270deg 288deg,
+      transparent 288deg 315deg,
+      #a5b4fc 315deg 333deg,
+      transparent 333deg 360deg
+    );
+  -webkit-mask:
+    radial-gradient(circle, transparent 60%, #000 62%);
+          mask:
+    radial-gradient(circle, transparent 60%, #000 62%);
+  z-index: -1;
+}
+
+.st-under-construction__gear--lg {
+  width: 96px;
+  height: 96px;
+  top: 20px;
+  left: 16px;
+  animation: st-uc-spin 6s linear infinite;
+}
+
+.st-under-construction__gear--sm {
+  width: 64px;
+  height: 64px;
+  right: 16px;
+  bottom: 16px;
+  border-color: #c7d2fe;
+  animation: st-uc-spin 4s linear infinite reverse;
+}
+
+.st-under-construction__gear--sm::before,
+.st-under-construction__gear--sm::after {
+  background:
+    conic-gradient(
+      from 0deg,
+      #c7d2fe 0deg 22deg,
+      transparent 22deg 45deg,
+      #c7d2fe 45deg 67deg,
+      transparent 67deg 90deg,
+      #c7d2fe 90deg 112deg,
+      transparent 112deg 135deg,
+      #c7d2fe 135deg 157deg,
+      transparent 157deg 180deg,
+      #c7d2fe 180deg 202deg,
+      transparent 202deg 225deg,
+      #c7d2fe 225deg 247deg,
+      transparent 247deg 270deg,
+      #c7d2fe 270deg 292deg,
+      transparent 292deg 315deg,
+      #c7d2fe 315deg 337deg,
+      transparent 337deg 360deg
+    );
+}
+
+.st-under-construction__cone {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  width: 0;
+  height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-bottom: 28px solid #fb923c;
+  filter: drop-shadow(0 2px 4px rgba(251, 146, 60, 0.4));
+}
+
+.st-under-construction__cone::after {
+  content: '';
+  position: absolute;
+  left: -14px;
+  top: 14px;
+  width: 28px;
+  height: 4px;
+  background: #ffffff;
+  border-radius: 2px;
+}
+
+.st-under-construction__title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.st-under-construction__desc {
+  margin: 0 0 32px;
+  font-size: 16px;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.st-under-construction__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.st-under-construction__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 24px;
+  font-size: 15px;
+  color: #4f46e5;
+  background: #ffffff;
+  border: 1px solid #c7d2fe;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.st-under-construction__btn:hover {
+  background: #eef2ff;
+  border-color: #a5b4fc;
+}
+
+.st-under-construction__btn:active {
+  transform: scale(0.98);
+}
+
+.st-under-construction__btn--primary {
+  color: #ffffff;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.st-under-construction__btn--primary:hover {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+}
+
+@keyframes st-uc-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ===== 桌面端增强：按钮横向排列 ===== */
+@media (min-width: 768px) {
+  .st-under-construction__card {
+    padding: 56px 48px;
+  }
+  .st-under-construction__actions {
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+  }
+  .st-under-construction__btn {
+    min-width: 140px;
+  }
+}
+
+/* ===== 暗色模式 ===== */
+@media (prefers-color-scheme: dark) {
+  .st-under-construction {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  }
+  .st-under-construction__card {
+    background: #1f2937;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  }
+  .st-under-construction__title {
+    color: #f9fafb;
+  }
+  .st-under-construction__desc {
+    color: #9ca3af;
+  }
+  .st-under-construction__btn {
+    color: #a5b4fc;
+    background: transparent;
+    border-color: #4f46e5;
+  }
+  .st-under-construction__btn:hover {
+    background: rgba(79, 70, 229, 0.15);
+  }
+}

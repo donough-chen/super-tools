@@ -5,7 +5,8 @@
  * 头部按钮：[agent, search, add]
  */
 import React, { useEffect } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo } from '@/utils/navigator';
+import { safeNavigate } from '../../utils/safeNavigate';
 import { useFavoritesStore, useGlobalStore } from '../../store';
 import AppHeader from '../../components/AppHeader';
 import AppTabBar from '../../components/AppTabBar';
@@ -29,9 +30,7 @@ const ICON_THEME_COLORS: Record<string, { bg: string; color: string }> = {
 
 const FavoritesPage: React.FC = () => {
   const { list, loading, fetchList } = useFavoritesStore();
-  const { favListMode, tabBarMode, activeTabBarKey, setActiveTabBarKey } = useGlobalStore();
-
-  const history = useHistory();
+  const { favListMode, tabBarMode } = useGlobalStore();
 
   useEffect(() => {
     fetchList();
@@ -66,8 +65,8 @@ const FavoritesPage: React.FC = () => {
         title="收藏"
         buttons={[
           { type: 'agent' },
-          { type: 'search', onClick: () => history.push('/search') },
-          { type: 'add', onClick: () => history.push('/') },
+          { type: 'search', onClick: () => navigateTo('/search') },
+          { type: 'add', onClick: () => navigateTo('/') },
         ]}
       />
 
@@ -82,7 +81,7 @@ const FavoritesPage: React.FC = () => {
               <div
                 key={tool.id}
                 className="page-favorites__item"
-                onClick={() => history.push(tool.url)}
+                onClick={() => safeNavigate(tool.url)}
               >
                 {renderToolIcon(tool)}
                 <div className="page-favorites__tool-info">
@@ -99,15 +98,7 @@ const FavoritesPage: React.FC = () => {
         )}
       </main>
 
-      <AppTabBar
-        mode={tabBarMode}
-        activeKey={activeTabBarKey}
-        items={TAB_BAR_ITEMS}
-        onChange={key => {
-          setActiveTabBarKey(key);
-          history.push(key === 'home' ? '/' : `/${key}`);
-        }}
-      />
+      <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
     </div>
   );
 };

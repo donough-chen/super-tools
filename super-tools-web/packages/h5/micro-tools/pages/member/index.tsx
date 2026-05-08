@@ -4,7 +4,7 @@
  * 二级页面：会员套餐展示与订阅
  */
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import { getMemberInfo } from '../../service';
 import AppHeader from '../../components/AppHeader';
 import './index.less';
@@ -21,8 +21,6 @@ const MemberPage: React.FC = () => {
   const [plans, setPlans] = useState<MemberPlan[]>([]);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
 
-  const history = useHistory();
-
   useEffect(() => {
     getMemberInfo().then(res => {
       const data = (res?.code === 200) ? res.data : null;
@@ -35,7 +33,7 @@ const MemberPage: React.FC = () => {
 
   return (
     <div className="page-member">
-      <AppHeader title="会员" showBack onBack={() => history.goBack()} />
+      <AppHeader title="会员" showBack onBack={() => navigateBack()} />
       <main className="page-member__content">
         <div className="page-member__plans">
           {plans.map(plan => (

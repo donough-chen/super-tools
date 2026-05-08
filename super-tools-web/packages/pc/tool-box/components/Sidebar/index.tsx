@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import classNames from 'classnames';
 import { getToolsByCategory, type CategoryItem } from '@/utils/toolsData';
-import { navigateTo } from '@/utils/navigator';
+import { navigateTo } from '../../../../shared/utils/navigator';
 import { useTabsStore } from '@/store/tabs';
 import './index.less';
 

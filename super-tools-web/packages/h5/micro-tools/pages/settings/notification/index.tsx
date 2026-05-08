@@ -6,7 +6,7 @@
  *  2) 当前设备推送：单独写入 user_devices.pushEnabled（针对 useDeviceInfo().deviceId）
  */
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import Switch from '../../../components/Switch';
 import { useUserStore, useDeviceStore } from '../../../store';
@@ -22,7 +22,6 @@ const DEFAULTS: Required<NotificationSettings> = {
 };
 
 const NotificationPage: React.FC = () => {
-  const history = useHistory();
   const profileExtra = useUserStore(s => s.profileExtra);
   const fetchProfileExtra = useUserStore(s => s.fetchProfileExtra);
   const updateProfile = useUserStore(s => s.updateProfile);
@@ -76,7 +75,7 @@ const NotificationPage: React.FC = () => {
 
   return (
     <div className="page-privacy">
-      <AppHeader title="通知设置" showBack onBack={() => history.goBack()} />
+      <AppHeader title="通知设置" showBack onBack={() => navigateBack()} />
       <main className="page-privacy__content">
         {/* 通知渠道 */}
         <div className="settings-section-title">通知渠道</div>

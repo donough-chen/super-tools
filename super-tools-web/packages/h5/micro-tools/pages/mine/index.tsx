@@ -13,7 +13,8 @@
  *     userType=2 实际是「管理员」（与会员体系无关）。
  */
 import React, { useEffect } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo } from '@/utils/navigator';
+import { safeNavigate } from '../../utils/safeNavigate';
 import { useUserStore, useGlobalStore, useMemberStore } from '../../store';
 import AppHeader from '../../components/AppHeader';
 import AppTabBar from '../../components/AppTabBar';
@@ -31,11 +32,10 @@ const MENU_ITEMS = [
 ];
 
 const MinePage: React.FC = () => {
-  const history = useHistory();
   const { isLoggedIn, userInfo, logout } = useUserStore();
   const memberInfo = useMemberStore(s => s.memberInfo);
   const fetchMemberInfo = useMemberStore(s => s.fetchMemberInfo);
-  const { tabBarMode, activeTabBarKey, setActiveTabBarKey } = useGlobalStore();
+  const { tabBarMode } = useGlobalStore();
   const [logoutModalVisible, setLogoutModalVisible] = React.useState(false);
 
   // 登录后异步拉取会员信息（5 分钟缓存）
@@ -52,13 +52,13 @@ const MinePage: React.FC = () => {
       setLogoutModalVisible(true);
       return;
     }
-    history.push(item.path);
+    safeNavigate(item.path);
   };
 
   const handleLogout = async () => {
     await logout();
     setLogoutModalVisible(false);
-    history.push('/');
+    navigateTo('/');
   };
 
   return (
@@ -75,7 +75,7 @@ const MinePage: React.FC = () => {
         {/* 用户信息栏 */}
         <div
           className="page-mine__user-card"
-          onClick={() => history.push(isLoggedIn ? '/profile' : '/login')}
+          onClick={() => navigateTo(isLoggedIn ? '/profile' : '/login')}
         >
           <img
             className="page-mine__avatar"
@@ -127,15 +127,7 @@ const MinePage: React.FC = () => {
         onClose={() => setLogoutModalVisible(false)}
       />
 
-      <AppTabBar
-        mode={tabBarMode}
-        activeKey={activeTabBarKey}
-        items={TAB_BAR_ITEMS}
-        onChange={key => {
-          setActiveTabBarKey(key);
-          history.push(key === 'home' ? '/' : `/${key}`);
-        }}
-      />
+      <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
     </div>
   );
 };

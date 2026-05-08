@@ -15,7 +15,8 @@
  *  - 离开：dirty > 0 时 AppModal 二次确认
  */
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useHistory, useLocation } from 'umi';
+import { useLocation } from 'umi';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import AppModal from '../../components/AppModal';
 import { useUserStore, useMemberStore } from '../../store';
@@ -52,7 +53,6 @@ const EMPTY_VALUES: FormValues = {
 };
 
 const ProfilePage: React.FC = () => {
-  const history = useHistory();
   const location = useLocation();
   const fromRegister = (location as any).query?.from === 'register';
 
@@ -142,8 +142,8 @@ const ProfilePage: React.FC = () => {
     }
   }, [isDirty]);
 
-  const handleBack = () => tryNavigate(() => history.goBack());
-  const handleGotoMember = () => tryNavigate(() => history.push('/member'));
+  const handleBack = () => tryNavigate(() => navigateBack());
+  const handleGotoMember = () => tryNavigate(() => navigateTo('/member'));
 
   // ==== 头像编辑 ====
   const openAvatarModal = () => {

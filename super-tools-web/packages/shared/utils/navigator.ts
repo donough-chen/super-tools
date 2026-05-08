@@ -96,6 +96,7 @@ export function navigate(options: NavigateOptions): void {
 
 /**
  * 返回上一页
+ * @param delta 回退步数，默认 1
  */
 export function navigateBack(delta = 1): void {
   history.go(-delta);
@@ -109,8 +110,54 @@ export function navigateTo(path: string, state?: Record<string, unknown>): void 
 }
 
 /**
+ * 替换当前路由（navigate 的快捷方式，不产生历史记录）
+ */
+export function navigateReplace(path: string, state?: Record<string, unknown>): void {
+  navigate({ target: path, type: 'replace', state });
+}
+
+/**
  * 在新标签页打开外部链接（navigate 的快捷方式）
  */
 export function openUrl(url: string, openTarget: '_blank' | '_self' = '_blank'): void {
   navigate({ target: url, type: 'url', openTarget });
+}
+
+/**
+ * 获取当前路由 pathname
+ * 供路由守卫 / 401 拦截等场景读取当前路径使用
+ */
+export function getCurrentPathname(): string {
+  try {
+    return history.location.pathname;
+  } catch {
+    return typeof window !== 'undefined' ? window.location.pathname : '/';
+  }
+}
+
+/**
+ * 获取当前路由完整 location 对象（pathname / search / query / state）
+ * 注意：query 由 umi 注入，未开启 qs 解析时可能为 undefined
+ */
+export function getCurrentLocation(): {
+  pathname: string;
+  search: string;
+  query?: Record<string, string | undefined>;
+  state?: unknown;
+} {
+  try {
+    const loc = history.location as any;
+    return {
+      pathname: loc.pathname,
+      search: loc.search || '',
+      query: loc.query,
+      state: loc.state,
+    };
+  } catch {
+    const w = typeof window !== 'undefined' ? window.location : null;
+    return {
+      pathname: w?.pathname || '/',
+      search: w?.search || '',
+    };
+  }
 }

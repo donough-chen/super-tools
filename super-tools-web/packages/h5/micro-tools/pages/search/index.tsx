@@ -5,7 +5,7 @@
  * 接入新后端：GET /api/tools/home?keyword=xxx（分页模式）
  */
 import React, { useState, useCallback, useRef } from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import { getHome } from '../../service/tool';
 import { useToolClick } from '../../hooks/useToolClick';
 import AppHeader from '../../components/AppHeader';
@@ -20,8 +20,6 @@ const SearchPage: React.FC = () => {
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
-
-  const history = useHistory();
 
   const handleSearch = useCallback(async () => {
     if (!keyword.trim()) return;
@@ -43,7 +41,7 @@ const SearchPage: React.FC = () => {
 
   return (
     <div className="page-search">
-      <AppHeader title="搜索" showBack onBack={() => history.goBack()} />
+      <AppHeader title="搜索" showBack onBack={() => navigateBack()} />
 
       <main className="page-search__content">
         <div className="page-search__input-wrap">

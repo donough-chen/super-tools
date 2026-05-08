@@ -5,7 +5,7 @@
  * 实时保存：开关变更后 500ms 防抖合并 → PUT /api/users/profile { privacySettings }
  */
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import Switch from '../../../components/Switch';
 import { useUserStore } from '../../../store';
@@ -20,7 +20,6 @@ const DEFAULTS: Required<PrivacySettings> = {
 };
 
 const PrivacyPage: React.FC = () => {
-  const history = useHistory();
   const profileExtra = useUserStore(s => s.profileExtra);
   const fetchProfileExtra = useUserStore(s => s.fetchProfileExtra);
   const updateProfile = useUserStore(s => s.updateProfile);
@@ -55,7 +54,7 @@ const PrivacyPage: React.FC = () => {
 
   return (
     <div className="page-privacy">
-      <AppHeader title="隐私设置" showBack onBack={() => history.goBack()} />
+      <AppHeader title="隐私设置" showBack onBack={() => navigateBack()} />
       <main className="page-privacy__content">
         <div className="settings-card">
           <div className="settings-row">

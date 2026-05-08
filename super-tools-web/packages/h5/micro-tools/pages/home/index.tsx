@@ -7,7 +7,7 @@
  * 数据来源：useHomeStore.fetchHomeData() — 聚合模式一次性加载全部分类+工具
  */
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo } from '@/utils/navigator';
 import { useHomeStore, useGlobalStore } from '../../store';
 import { useToolClick } from '../../hooks/useToolClick';
 import AppHeader from '../../components/AppHeader';
@@ -76,7 +76,7 @@ const HomePage: React.FC = () => {
     loading,
     fetchHomeData,
   } = useHomeStore();
-  const { toolListMode, tabBarMode, activeTabBarKey, setActiveTabBarKey, isSearchBoxVisible, setSearchBoxVisible } = useGlobalStore();
+  const { toolListMode, tabBarMode, isSearchBoxVisible, setSearchBoxVisible } = useGlobalStore();
   const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -84,8 +84,6 @@ const HomePage: React.FC = () => {
   const [activeBanner, setActiveBanner] = useState(0);
   /** 分类展开/折叠状态 */
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
-
-  const history = useHistory();
 
   useEffect(() => {
     fetchHomeData();
@@ -198,7 +196,7 @@ const HomePage: React.FC = () => {
           {
             type: 'search',
             visible: () => !isSearchBoxVisible,
-            onClick: () => history.push('/search'),
+            onClick: () => navigateTo('/search'),
           },
           { type: 'agent' },
           { type: 'settings' },
@@ -210,7 +208,7 @@ const HomePage: React.FC = () => {
         <div
           ref={searchBoxRef}
           className="page-home__search"
-          onClick={() => history.push('/search')}
+          onClick={() => navigateTo('/search')}
         >
           <i className="page-home__search-icon iconfont icon-search" />
           <span className="page-home__search-placeholder">搜索所需功能</span>
@@ -294,15 +292,7 @@ const HomePage: React.FC = () => {
         )}
       </main>
 
-      <AppTabBar
-        mode={tabBarMode}
-        activeKey={activeTabBarKey}
-        items={TAB_BAR_ITEMS}
-        onChange={key => {
-          setActiveTabBarKey(key);
-          history.push(key === 'home' ? '/' : `/${key}`);
-        }}
-      />
+      <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
 
       <AppModal
         visible={dialog.visible}

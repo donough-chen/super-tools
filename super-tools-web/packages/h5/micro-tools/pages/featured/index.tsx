@@ -5,7 +5,7 @@
  * 接入新后端：/api/tools/feature 和 /api/tools/member
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo } from '@/utils/navigator';
 import { useGlobalStore } from '../../store';
 import { useToolClick } from '../../hooks/useToolClick';
 import { getFeatureTools, getMemberTools } from '../../service/tool';
@@ -25,13 +25,11 @@ const TABS = [
 ];
 
 const FeaturedPage: React.FC = () => {
-  const { tabBarMode, activeTabBarKey, setActiveTabBarKey } = useGlobalStore();
+  const { tabBarMode } = useGlobalStore();
   const [activeIndex, setActiveIndex] = useState(0);
   const [list, setList] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(false);
   const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
-
-  const history = useHistory();
 
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -110,7 +108,7 @@ const FeaturedPage: React.FC = () => {
         title="特色"
         buttons={[
           { type: 'agent' },
-          { type: 'search', onClick: () => history.push('/search') },
+          { type: 'search', onClick: () => navigateTo('/search') },
           { type: 'settings' },
         ]}
       />
@@ -156,15 +154,7 @@ const FeaturedPage: React.FC = () => {
         )}
       </main>
 
-      <AppTabBar
-        mode={tabBarMode}
-        activeKey={activeTabBarKey}
-        items={TAB_BAR_ITEMS}
-        onChange={key => {
-          setActiveTabBarKey(key);
-          history.push(key === 'home' ? '/' : `/${key}`);
-        }}
-      />
+      <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
 
       <AppModal
         visible={dialog.visible}

@@ -8,7 +8,7 @@ import {
 } from '@ant-design/icons';
 import { getToolsByCategory, TOOLS_LIST } from '@/utils/toolsData';
 import { useTabsStore } from '@/store/tabs';
-import { navigateTo } from '@/utils/navigator';
+import { navigateTo } from '../../../../shared/utils/navigator';
 import ToolCard from '@/components/ToolCard';
 import './index.less';
 

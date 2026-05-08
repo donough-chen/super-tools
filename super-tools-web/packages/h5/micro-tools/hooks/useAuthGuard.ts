@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { history } from 'umi';
+import { navigateReplace } from '@/utils/navigator';
 import { PROTECTED_PATHS } from '../constants/oauth';
 
 /**
@@ -24,7 +24,7 @@ export const useAuthGuard = (
       pathname === p || pathname.startsWith(`${p}/`),
     );
     if (needAuth && !isLoggedIn) {
-      history.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+      navigateReplace(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [authChecked, isLoggedIn, pathname]);
 };

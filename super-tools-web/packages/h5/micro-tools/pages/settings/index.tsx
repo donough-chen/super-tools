@@ -11,7 +11,7 @@
  * 子页：账号绑定 / 登录设备 / 隐私 / 通知（独立路由）
  */
 import React, { useEffect, useState, useMemo } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo, navigateBack, navigateReplace } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import AppModal from '../../components/AppModal';
 import { useGlobalStore, useUserStore } from '../../store';
@@ -50,8 +50,6 @@ const Row: React.FC<{
 );
 
 const SettingsPage: React.FC = () => {
-  const history = useHistory();
-
   // 显示偏好（保留旧版）
   const {
     tabBarMode, setTabBarMode,
@@ -111,7 +109,7 @@ const SettingsPage: React.FC = () => {
       // 自动登出 + 跳登录
       setTimeout(async () => {
         await logout();
-        history.replace('/login');
+        navigateReplace('/login');
       }, 1200);
     } else {
       showToast(res.message || '修改失败', 'error');
@@ -132,12 +130,12 @@ const SettingsPage: React.FC = () => {
     setLogoutConfirm(false);
     await logout();
     showToast('已退出登录', 'success');
-    history.replace('/');
+    navigateReplace('/');
   };
 
   return (
     <div className="page-settings">
-      <AppHeader title="设置" showBack onBack={() => history.goBack()} />
+      <AppHeader title="设置" showBack onBack={() => navigateBack()} />
       <main className="page-settings__content">
         {/* === 账号安全（仅登录态显示） === */}
         {isLoggedIn && (
@@ -147,7 +145,7 @@ const SettingsPage: React.FC = () => {
               <Row
                 label="账号绑定管理"
                 value={bindCount > 0 ? `${bindCount} 项已绑` : undefined}
-                onClick={() => history.push('/settings/binding')}
+                onClick={() => navigateTo('/settings/binding')}
               />
               <Row
                 label="修改密码"
@@ -155,7 +153,7 @@ const SettingsPage: React.FC = () => {
               />
               <Row
                 label="登录设备管理"
-                onClick={() => history.push('/settings/devices')}
+                onClick={() => navigateTo('/settings/devices')}
               />
             </div>
 
@@ -174,11 +172,11 @@ const SettingsPage: React.FC = () => {
               />
               <Row
                 label="隐私设置"
-                onClick={() => history.push('/settings/privacy')}
+                onClick={() => navigateTo('/settings/privacy')}
               />
               <Row
                 label="通知设置"
-                onClick={() => history.push('/settings/notification')}
+                onClick={() => navigateTo('/settings/notification')}
               />
             </div>
           </>

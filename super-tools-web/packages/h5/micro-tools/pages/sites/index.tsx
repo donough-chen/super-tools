@@ -6,7 +6,7 @@
  * 头部按钮：[agent, search, sort]
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo, openUrl } from '@/utils/navigator';
 import { useSitesStore, useGlobalStore } from '../../store';
 import AppHeader from '../../components/AppHeader';
 import AppTabs from '../../components/AppTabs';
@@ -17,8 +17,7 @@ import './index.less';
 
 const SitesPage: React.FC = () => {
   const { categories, activeTabIndex, sites, loading, fetchCategories, setActiveTab, fetchSites } = useSitesStore();
-  const { tabBarMode, activeTabBarKey, setActiveTabBarKey, sortType } = useGlobalStore();
-  const history = useHistory();
+  const { tabBarMode, sortType } = useGlobalStore();
 
   /** 跟手偏移量（px） */
   const [swipeOffset, setSwipeOffset] = useState(0);
@@ -100,7 +99,7 @@ const SitesPage: React.FC = () => {
         title="网站"
         buttons={[
           { type: 'agent' },
-          { type: 'search', onClick: () => history.push('/search') },
+          { type: 'search', onClick: () => navigateTo('/search') },
           { type: 'sort' },
         ]}
       />
@@ -125,7 +124,7 @@ const SitesPage: React.FC = () => {
         ) : (
           <div className="page-sites__list">
             {sites.map(site => (
-              <div key={site.id} className="page-sites__item" onClick={() => window.open(site.url, '_blank')}>
+              <div key={site.id} className="page-sites__item" onClick={() => openUrl(site.url)}>
                 <img className="page-sites__icon" src={site.icon || 'https://via.placeholder.com/64'} alt={site.name} />
                 <div className="page-sites__info">
                   <span className="page-sites__name">{site.name}</span>
@@ -137,15 +136,7 @@ const SitesPage: React.FC = () => {
         )}
       </main>
 
-      <AppTabBar
-        mode={tabBarMode}
-        activeKey={activeTabBarKey}
-        items={TAB_BAR_ITEMS}
-        onChange={key => {
-          setActiveTabBarKey(key);
-          history.push(key === 'home' ? '/' : `/${key}`);
-        }}
-      />
+      <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
     </div>
   );
 };

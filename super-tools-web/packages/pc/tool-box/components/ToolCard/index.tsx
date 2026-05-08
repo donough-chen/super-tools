@@ -1,5 +1,5 @@
 import React from 'react';
-import { navigateTo } from '@/utils/navigator';
+import { navigateTo } from '../../../../shared/utils/navigator';
 import classNames from 'classnames';
 import type { ToolItem } from '@/utils/toolsData';
 import { useTabsStore } from '@/store/tabs';

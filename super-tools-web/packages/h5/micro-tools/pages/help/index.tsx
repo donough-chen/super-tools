@@ -4,7 +4,7 @@
  * 二级页面：使用说明与常见问题
  */
 import React from 'react';
-import { history } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import './index.less';
 
@@ -19,7 +19,7 @@ const helpItems = [
 const HelpPage: React.FC = () => {
   return (
     <div className="page-help">
-      <AppHeader title="使用帮助" showBack onBack={() => history.goBack()} />
+      <AppHeader title="使用帮助" showBack onBack={() => navigateBack()} />
       <main className="page-help__content">
         {helpItems.map((item, idx) => (
           <div key={idx} className="page-help__item">

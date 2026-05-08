@@ -18,7 +18,8 @@
  *     onCancel={closeDialog} onClose={closeDialog} />
  */
 import { useCallback, useState } from 'react';
-import { useHistory } from 'umi';
+import { navigateTo } from '@/utils/navigator';
+import { safeNavigate } from '../utils/safeNavigate';
 import { useUserStore } from '../store/user';
 import { checkToolAccess } from '../service/tool';
 import type { Tool, AccessResult } from '../types/tool';
@@ -46,7 +47,6 @@ function reasonToText(r: AccessResult): string {
 }
 
 export function useToolClick() {
-  const history = useHistory();
   const isLoggedIn = useUserStore((s) => s.isLoggedIn);
   const [dialog, setDialog] = useState<DialogState>(initialDialog);
 
@@ -68,9 +68,9 @@ export function useToolClick() {
 
       const needAuth = tool.requiredLevelCode !== 'free' || tool.requirePaid === 1;
 
-      // 2. 纯免费工具直接跳转
+      // 2. 纯免费工具直接跳转（若路径未注册则兜底到 /404）
       if (!needAuth) {
-        history.push(tool.path);
+        safeNavigate(tool.path);
         return;
       }
 
@@ -83,7 +83,7 @@ export function useToolClick() {
           confirmText: '去登录',
           onConfirm: () => {
             setDialog(initialDialog);
-            history.push('/login?redirect=' + encodeURIComponent(tool.path));
+            navigateTo('/login?redirect=' + encodeURIComponent(tool.path));
           },
         });
         return;
@@ -93,7 +93,7 @@ export function useToolClick() {
       try {
         const res: any = await checkToolAccess(tool.code);
         if (res?.code === 200 && res.data?.allowed) {
-          history.push(tool.path);
+          safeNavigate(tool.path);
           return;
         }
         const r = (res?.data || {}) as AccessResult;
@@ -104,7 +104,7 @@ export function useToolClick() {
           confirmText: '去开通',
           onConfirm: () => {
             setDialog(initialDialog);
-            history.push('/member');
+            navigateTo('/member');
           },
         });
       } catch {
@@ -117,7 +117,7 @@ export function useToolClick() {
         });
       }
     },
-    [history, isLoggedIn],
+    [isLoggedIn],
   );
 
   return { onClick, dialog, closeDialog };

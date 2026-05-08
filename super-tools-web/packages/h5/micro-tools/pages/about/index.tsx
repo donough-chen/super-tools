@@ -4,15 +4,14 @@
  * 二级页面：应用介绍、版本信息
  */
 import React from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import './index.less';
 
 const AboutPage: React.FC = () => {
-  const history = useHistory();
   return (
     <div className="page-about">
-      <AppHeader title="关于我们" showBack onBack={() => history.goBack()} />
+      <AppHeader title="关于我们" showBack onBack={() => navigateBack()} />
       <main className="page-about__content">
         <div className="page-about__logo">
           <img src="https://via.placeholder.com/120" alt="Logo" />

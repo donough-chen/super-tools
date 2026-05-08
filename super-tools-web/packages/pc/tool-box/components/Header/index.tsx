@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { navigateTo } from '@/utils/navigator';
+import { navigateTo } from '../../../../shared/utils/navigator';
 import {
   Input,
   Tooltip,

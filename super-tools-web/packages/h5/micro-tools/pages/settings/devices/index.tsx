@@ -11,7 +11,7 @@
  * 安全：本机会话不显示「踢下线」按钮（防止误踢自己）
  */
 import React, { useEffect, useState } from 'react';
-import { useHistory } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import AppModal from '../../../components/AppModal';
 import AppTabs from '../../../components/AppTabs';
@@ -46,7 +46,6 @@ const deviceIcon = (type: string): string => {
 };
 
 const DevicesPage: React.FC = () => {
-  const history = useHistory();
   const currentSessionId = useUserStore(s => s.currentSessionId);
   const { devices, sessions, fetchDevices, fetchSessions, removeDevice, updateDevicePush, kickSession } = useDeviceStore();
   const currentDevice = useDeviceInfo();
@@ -88,7 +87,7 @@ const DevicesPage: React.FC = () => {
 
   return (
     <div className="page-devices">
-      <AppHeader title="登录设备" showBack onBack={() => history.goBack()} />
+      <AppHeader title="登录设备" showBack onBack={() => navigateBack()} />
       <main className="page-devices__content">
         <AppTabs
           mode="double"
