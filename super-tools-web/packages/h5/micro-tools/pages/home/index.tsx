@@ -179,7 +179,7 @@ const HomePage: React.FC = () => {
   const renderToolIcon = (tool: ToolViewItem) => {
     const theme = colorToTheme(tool.color);
     if (tool.iconResolved) {
-      return <img className="page-home__tool-icon" src={tool.iconResolved} alt={tool.name} />;
+      return <img className="page-home__tool-iconfont iconfont" src={tool.iconResolved} alt={tool.name} />;
     }
     // 无图标时显示颜色占位
     return (
@@ -258,7 +258,7 @@ const HomePage: React.FC = () => {
               <div key={cat.id} className="page-home__category">
                 <div className="page-home__category-header" onClick={() => toggleCategory(cat.id)}>
                   <h3>{cat.name}</h3>
-                  <span className={`page-home__expand ${cat.expanded ? 'page-home__expand--open' : ''}`} />
+                  <span className={`page-home__expand ${cat.expanded ? '' : 'page-home__expand--closed'}`} />
                 </div>
                 {cat.expanded && (
                   <div className={`page-home__tool-list page-home__tool-list--${toolListMode}`}>

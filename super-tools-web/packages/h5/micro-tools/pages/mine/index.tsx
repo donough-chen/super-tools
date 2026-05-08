@@ -20,13 +20,14 @@ import AppTabBar from '../../components/AppTabBar';
 import AppModal from '../../components/AppModal';
 import { TAB_BAR_ITEMS } from '../../constants';
 import './index.less';
+import { resolveIcon } from '../../utils/icon';
 
 const MENU_ITEMS = [
-  { key: 'about', name: '关于我们', path: '/about' },
-  { key: 'works', name: '更多作品', path: '/about' },
-  { key: 'settings', name: '设置', path: '/settings' },
-  { key: 'help', name: '使用帮助', path: '/help' },
-  { key: 'logout', name: '退出登录', path: '' },
+  { key: 'about', name: '关于我们', path: '/about', icon: '/assets/icons/about.png'},
+  { key: 'works', name: '更多作品', path: '/about', icon: '/assets/icons/more.png'},
+  { key: 'settings', name: '设置', path: '/settings', icon: '/assets/icons/setting.png'},
+  { key: 'help', name: '使用帮助', path: '/help', icon: '/assets/icons/help.png'},
+  { key: 'logout', name: '退出登录', path: '', icon: '/assets/icons/logout.png'},
 ];
 
 const MinePage: React.FC = () => {
@@ -78,7 +79,7 @@ const MinePage: React.FC = () => {
         >
           <img
             className="page-mine__avatar"
-            src={userInfo?.avatar || 'https://via.placeholder.com/100'}
+            src={userInfo?.avatar || resolveIcon('/assets/icons/avatar.png')}
             alt="头像"
           />
           <div className="page-mine__user-info">
@@ -106,7 +107,10 @@ const MinePage: React.FC = () => {
                 className="page-mine__menu-item"
                 onClick={() => handleMenuClick(item)}
               >
-                <span>{item.name}</span>
+                <div className="page-mine__menu-item-content">
+                  <img className="page-mine__menu-item-content-icon" src={resolveIcon(item.icon)} alt={item.name} />
+                  <span className="page-mine__menu-item-content-name">{item.name}</span>
+                </div>
                 <span className="page-mine__arrow" />
               </div>
             ))}

@@ -15,7 +15,7 @@
   &__search {
     display: flex;
     align-items: center;
-    height: 72px;
+    height: 56px;
     padding: 0 var(--spacing-lg);
     background: var(--bg-white);
     border-radius: var(--border-radius-round);
@@ -116,15 +116,15 @@
   }
 
   &__expand {
-    width: 18px;
-    height: 18px;
-    border-right: 2px solid var(--text-tertiary);
-    border-bottom: 2px solid var(--text-tertiary);
-    transform: rotate(45deg) translateY(-25%);
-    transition: transform var(--transition-normal);
+    width: 32px;
+    height: 32px;
+    background-image: url('~@/assets/icons/down_arrow.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
 
-    &--open {
-      transform: rotate(-135deg) translateY(-25%);
+    &--closed {
+      transform: rotate(-90deg);
     }
   }
 
@@ -275,6 +275,7 @@
     font-size: var(--font-size-md);
     flex-shrink: 0;
     line-height: 1;
+    background: var(--primary-color);
   }
 
   /* grid 模式下图标：圆形，更大 */

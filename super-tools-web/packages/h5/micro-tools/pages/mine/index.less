@@ -93,6 +93,27 @@
     &:active {
       background: var(--bg-page);
     }
+    &-content {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+      flex: 1;
+      min-width: 0;
+      &-icon {
+        width: 28px;
+        height: 28px;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+      &-name {
+        font-size: var(--font-size-md);
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
   }
 
   &__arrow {

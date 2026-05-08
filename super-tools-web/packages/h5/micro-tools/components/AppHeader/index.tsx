@@ -43,7 +43,7 @@ const AppHeader: FC<AppHeaderProps> = ({
     <header className="app-header">
       <div className="app-header__inner">
         {showBack && (
-          <button className="app-header__back" onClick={onBack} aria-label="返回" />
+          <div className="app-header__back" onClick={onBack} aria-label="返回" />
         )}
         <h1 className="app-header__title">{title}</h1>
         <div className="app-header__actions">
@@ -52,7 +52,7 @@ const AppHeader: FC<AppHeaderProps> = ({
             : buttons
               .filter(isButtonVisible)
               .map((btn, idx) => (
-                <button
+                <div
                   key={`${btn.type}-${idx}`}
                   className={classnames('app-header__btn', `app-header__btn--${btn.type}`)}
                   onClick={btn.onClick}
