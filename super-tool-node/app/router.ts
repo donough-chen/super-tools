@@ -105,4 +105,13 @@ export default (app: Application) => {
   router.post('/api/admin/tools', auth, controller.admin.tool.createTool);
   router.put('/api/admin/tools/:id', auth, controller.admin.tool.updateTool);
   router.delete('/api/admin/tools/:id', auth, controller.admin.tool.deleteTool);
+
+  // ==================== 用户收藏工具 ====================
+  // 注意: 精确路径（codes / reorder / check/:toolCode）必须放在 /:toolCode 之前
+  router.get('/api/favorites/codes', auth, controller.favorite.codes);
+  router.put('/api/favorites/reorder', auth, controller.favorite.reorder);
+  router.get('/api/favorites/check/:toolCode', auth, controller.favorite.check);
+  router.get('/api/favorites', auth, controller.favorite.index);
+  router.post('/api/favorites', auth, controller.favorite.create);
+  router.delete('/api/favorites/:toolCode', auth, controller.favorite.destroy);
 };

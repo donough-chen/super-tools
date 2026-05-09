@@ -1,6 +1,6 @@
 # 数据库表结构文档
 
-> 更新于 2026/4/10
+> 更新于 2026/5/8
 
 本文档记录 `superadmin_db` 数据库中所有业务表的结构设计。
 
@@ -23,6 +23,9 @@
 | `system_configs` | 系统配置表 | `001_init.sql` |
 | `user_profiles` | 用户扩展信息表 | `002_add_user_profiles_and_devices.sql` |
 | `user_devices` | 用户设备管理表 | `002_add_user_profiles_and_devices.sql` |
+| `member_levels` / `paid_plans` / `user_members` / ... | 会员等级体系 | `003_add_member_system.sql` |
+| `tool_categories` / `tools` | 工具分类与工具 | `004_add_tools_system.sql` |
+| `user_tool_favorites` | 用户收藏工具表 | `005_add_user_favorites.sql` |
 
 ---
 
@@ -96,12 +99,47 @@
 
 ---
 
+## user_tool_favorites — 用户收藏工具表
+
+> 迁移脚本: `005_add_user_favorites.sql`
+> 关联策略: M:N 关联 `users` 与 `tools`（通过 `(user_id, tool_id)` 联合唯一）
+
+| 字段 | 类型 | 空 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `id` | BIGINT UNSIGNED | NOT NULL | AUTO_INCREMENT | 主键 |
+| `user_id` | BIGINT UNSIGNED | NOT NULL | — | 用户ID |
+| `tool_id` | BIGINT UNSIGNED | NOT NULL | — | 工具ID |
+| `tool_code` | VARCHAR(60) | NOT NULL | — | 工具编码（冗余，便于查询） |
+| `sort` | INT | NOT NULL | 0 | 手动排序（越小越前，步长 10） |
+| `favorited_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 收藏时间 |
+| `created_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP | 创建时间 |
+| `updated_at` | DATETIME | NOT NULL | CURRENT_TIMESTAMP ON UPDATE | 更新时间 |
+
+**索引：**
+- `PRIMARY KEY (id)`
+- `UNIQUE KEY uk_user_tool (user_id, tool_id)` — 防止重复收藏
+- `INDEX idx_user_sort (user_id, sort, id)` — 支撑按手动排序的列表查询
+- `INDEX idx_user_favorited (user_id, favorited_at)` — 兜底排序
+- `INDEX idx_tool (tool_id)` — 外键
+- `INDEX idx_tool_code (tool_code)` — 支撑按 code 的轻量查询
+
+**外键：**
+- `fk_favorite_user`: `user_id` → `users.id` (ON DELETE CASCADE)
+- `fk_favorite_tool`: `tool_id` → `tools.id` (ON DELETE CASCADE)
+
+**对应 Model:** `app/model/user_tool_favorite.ts`
+
+---
+
 ## 迁移记录
 
 | 序号 | 脚本文件 | 说明 | 日期 |
 |------|----------|------|------|
 | 001 | `001_init.sql` | 初始化所有核心表 | 2026-04-01 |
 | 002 | `002_add_user_profiles_and_devices.sql` | 新增用户扩展信息表和设备管理表 + 全平台认证系统配置种子数据 | 2026-04-10 |
+| 003 | `003_add_member_system.sql` | 新增会员等级体系（等级 / 套餐 / 用户会员 / 积分流水） | 2026-04-15 |
+| 004 | `004_add_tools_system.sql` | 新增工具分类与工具表（11 分类 + 233 工具） | 2026-05-06 |
+| 005 | `005_add_user_favorites.sql` | 新增用户收藏工具表 | 2026-05-08 |
 
 ### 002 迁移种子数据
 

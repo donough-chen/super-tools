@@ -1,8 +1,8 @@
 # API 接口总览
 
-> 更新于 2026/5/6 (工具模块新增)
+> 更新于 2026/5/8 (新增用户收藏工具模块)
 
-共 **76** 个接口
+共 **82** 个接口
 
 ## 认证模块 (Auth) [查看文档](auth/README.md)
 
@@ -118,3 +118,14 @@
 | `PUT` | `/api/admin/tools/:id` | ✅ |
 | `DELETE` | `/api/admin/tools/:id` | ✅ |
 | `PUT` | `/api/admin/tools/batch-publish` | ✅ |
+
+## 用户收藏工具 (Favorite) [查看文档](favorite/README.md)
+
+| 方法 | 路径 | 认证 |
+|------|------|------|
+| `POST` | `/api/favorites` | ✅ |
+| `DELETE` | `/api/favorites/:toolCode` | ✅ |
+| `GET` | `/api/favorites` | ✅ |
+| `GET` | `/api/favorites/codes` | ✅ |
+| `GET` | `/api/favorites/check/:toolCode` | ✅ |
+| `PUT` | `/api/favorites/reorder` | ✅ |

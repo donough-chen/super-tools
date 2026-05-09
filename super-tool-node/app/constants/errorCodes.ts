@@ -72,4 +72,10 @@ export const ErrorCodes = {
   TOOL_ACCESS_NEED_LEVEL: { code: 100807, message: '当前等级不足' },
   TOOL_ACCESS_NEED_PAID: { code: 100808, message: '需要付费会员' },
   TOOL_ACCESS_PAID_EXPIRED: { code: 100809, message: '付费会员已过期' },
+
+  // 收藏工具错误 1009xx
+  FAVORITE_TOOL_NOT_AVAILABLE: { code: 100901, message: '工具不存在或已下架' },
+  FAVORITE_ALREADY_EXISTS: { code: 100902, message: '已收藏过该工具' },
+  FAVORITE_NOT_FOUND: { code: 100903, message: '收藏记录不存在' },
+  FAVORITE_REORDER_MISMATCH: { code: 100904, message: '排序参数与当前收藏列表不匹配' },
 };

@@ -105,6 +105,13 @@ const MODULES = {
     routePrefix: '/api/member',
     docsDir:    'member',
   },
+  favorite: {
+    label:      '收藏模块 (Favorite)',
+    ctrlFiles:  ['favorite.ts'],
+    testFile:   'api/favorite.test.ts',
+    routePrefix: '/api/favorites',
+    docsDir:    'favorite',
+  },
   e2e: {
     label:      'E2E 流程测试',
     ctrlFiles:  [],

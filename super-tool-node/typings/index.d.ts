@@ -26,6 +26,7 @@ declare module 'egg' {
     role: any;
     permission: any;
     tool: any;
+    favorite: any;
   }
 
   interface IController {
@@ -40,6 +41,7 @@ declare module 'egg' {
     };
     member: any;
     tool: any;
+    favorite: any;
   }
 
   interface EggAppConfig {
