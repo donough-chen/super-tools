@@ -13,6 +13,7 @@
 | `004_add_tools_system.sql` | v2.2 工具/分类系统 |
 | `005_add_user_favorites.sql` | v2.4 用户收藏工具 |
 | `006_add_rbac_init.sql` | v2.5 RBAC 初始化（5 角色 + 61 权限码） |
+| `007_add_member_module.sql` | v2.6 RBAC 扩展（member 模块 +11 权限码，总数升至 72） |
 
 ## 执行顺序
 
@@ -25,6 +26,7 @@ mysql -u <user> -p < 003_add_member_system.sql
 mysql -u <user> -p < 004_add_tools_system.sql
 mysql -u <user> -p < 005_add_user_favorites.sql
 mysql -u <user> -p < 006_add_rbac_init.sql
+mysql -u <user> -p < 007_add_member_module.sql
 ```
 
 存量库升级：仅执行需要升级的迁移脚本（按文件名前缀编号顺序）。
@@ -152,6 +154,64 @@ pm2 restart super-tool-node
 
 ### 相关文档
 
-- [RBAC 权限体系架构](../docs/architecture/RBAC.md) — 5 角色 / 61 权限码 / 中间件流程 / 缓存策略
+- [RBAC 权限体系架构](../docs/architecture/RBAC.md) — 5 角色 / 72 权限码 / 中间件流程 / 缓存策略
 - [添加新权限指南](../docs/guides/添加新权限指南.md) — 新增权限码 + 路由挂载 SOP
 - 测试覆盖：[`test/api/rbac.test.ts`](../test/api/rbac.test.ts)
+
+---
+
+## v2.6 member 模块权限化（007_add_member_module.sql）
+
+### 背景
+
+v2.5（006）落地了 7 大模块共 61 条权限码，但 `/api/admin/member/*` 11 条管理端路由仍是裸 `auth` 放行，**任意登录用户都可以调积分调整、套餐激活等高敏接口**，构成安全漏洞。本次迁移将 member 模块纳入 RBAC 体系。
+
+### 变更摘要
+
+- **新增 11 条权限码**（`module='member'`）：1 个顶级菜单 + 10 个 API
+- **角色映射**：admin 11 条 / operator 6 条只读 / auditor 6 条只读（含积分流水审计）
+- **不涉及 schema 变更**，仅数据写入
+- **幂等**：脚本顶部按 `module='member'` 清理后重建，可重复执行
+
+### 角色映射要点
+
+| 类别 | admin | operator | auditor |
+|---|:---:|:---:|:---:|
+| 等级/套餐/用户 列表查看 | ✓ | ✓ | ✓ |
+| 等级/套餐 编辑 | ✓ | – | – |
+| **积分调整 / 等级调整 / 套餐激活**（高敏） | ✓ | – | – |
+| 统计 / 积分流水查看 | ✓ | ✓ | ✓ |
+
+### 执行步骤
+
+```bash
+# 1. 备份（可选，本次仅写入数据，不改 schema）
+mysqldump -u <user> -p superadmin_db permissions role_permissions \
+  > backup_before_007_$(date +%Y%m%d_%H%M%S).sql
+
+# 2. 执行迁移
+mysql -u <user> -p superadmin_db < 007_add_member_module.sql
+
+# 3. 校验
+mysql -u <user> -p superadmin_db -e "
+SELECT COUNT(*) FROM permissions WHERE module = 'member';
+"
+# 期望：11
+
+mysql -u <user> -p superadmin_db -e "
+SELECT r.code, COUNT(rp.permission_id) AS cnt FROM roles r
+  INNER JOIN role_permissions rp ON rp.role_id = r.id
+  INNER JOIN permissions p ON p.id = rp.permission_id
+  WHERE p.module = 'member' AND r.type = 1
+  GROUP BY r.id, r.code ORDER BY cnt DESC;
+"
+# 期望：admin=11  operator=6  auditor=6
+
+# 4. 重启服务（清 Redis 权限缓存）
+pm2 restart super-tool-node
+```
+
+### 注意事项
+
+- 仅 admin 及以上角色登录后能继续访问 member 管理端，**operator/auditor 此前若被绑定且依赖 member 写操作的工作流，需要重新梳理**
+- 该迁移**不影响 C 端** `/api/member/*` 路由（用户自查接口未挂权限）

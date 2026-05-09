@@ -1,6 +1,6 @@
 # RBAC 权限体系架构
 
-> 版本：v2.5（2026-05）  
+> 版本：v2.6（2026-05）  
 > 适用范围：super-tool-node 管理端 API 的权限控制
 
 ---
@@ -11,7 +11,7 @@
 
 - **角色 → 权限码 → API 路由** 三段映射，可在不改代码的前提下扩展授权矩阵
 - **5 个系统角色** 覆盖典型管理人员分工
-- **七大业务模块** 共 **61 条权限码** 划清边界
+- **八大业务模块** 共 **72 条权限码** 划清边界
 - **`super_admin` 中间件短路** 保证最高权限永远可恢复
 - **`user_type` 字段保留逐步废弃** 兼容存量代码
 
@@ -40,13 +40,13 @@ users  ─┬─< user_roles >─┬─ roles ─┬─< role_permissions >─�
 | 角色 code | 中文名 | 权限数 | 范围概述 |
 |---|---|---|---|
 | `super_admin` | 超级管理员 | 0（短路） | **全量**，由中间件直接放行；不需要在 `role_permissions` 写入 |
-| `admin` | 管理员 | 47 | 所有业务模块全部 + system 只读/permission-test，**不含** 角色分配/直接授权/审计日志 |
-| `operator` | 运营 | 31 | dashboard + user 只读 + category/tool/feedback 全部 + stats 不含 export |
-| `auditor` | 审计员 | 27 | 全只读 + system 只读 + 审计日志完整（含 export） |
+| `admin` | 管理员 | 58 | 所有业务模块全部 + system 只读/permission-test，**不含** 角色分配/直接授权/审计日志 |
+| `operator` | 运营 | 37 | dashboard + user 只读 + category/tool/feedback 全部 + stats 不含 export + member 只读 |
+| `auditor` | 审计员 | 33 | 全只读 + system 只读 + 审计日志完整（含 export）+ member 只读（含积分流水审计） |
 | `user` | 普通用户 | 0 | Web/H5 端默认占位，**不可登录管理端** |
 | `guest` | 访客 | 0 | 保留位，无 RBAC 权限 |
 
-> 详细权限映射见 `database/006_add_rbac_init.sql` 末尾的校验语句。
+> 详细权限映射见 `database/006_add_rbac_init.sql` 与 `database/007_add_member_module.sql` 末尾的校验语句。
 
 ### 存量用户自动绑定
 
@@ -58,7 +58,7 @@ users  ─┬─< user_roles >─┬─ roles ─┬─< role_permissions >─�
 
 ---
 
-## 4. 七大业务模块 + 命名规范
+## 4. 八大业务模块 + 命名规范
 
 | 模块 | 中文名 | 权限数 | 命名前缀 |
 |---|---|---|---|
@@ -69,6 +69,7 @@ users  ─┬─< user_roles >─┬─ roles ─┬─< role_permissions >─�
 | `tool` | 工具管理 | 10 | `tool:*` |
 | `feedback` | 反馈管理 | 5 | `feedback:*` |
 | `stats` | 数据统计 | 6 | `stats:*` |
+| `member` | 会员管理 | 11 | `member:level:*` / `member:plan:*` / `member:user:*` / `member:points:*` / `member:stats:*` |
 
 **code 命名规则**：
 
@@ -138,9 +139,9 @@ users  ─┬─< user_roles >─┬─ roles ─┬─< role_permissions >─�
 
 ---
 
-## 6. 路由权限挂载现状（P2-B）
+## 6. 路由权限挂载现状
 
-P2-B 完成后，已挂权限的管理端路由分组：
+P2-B（七大模块）+ B1（member 模块）完成后，已挂权限的管理端路由分组：
 
 | 路由前缀 | 权限模块 |
 |---|---|
@@ -150,15 +151,32 @@ P2-B 完成后，已挂权限的管理端路由分组：
 | `/api/admin/tool-categories[/...]` | `category:*` |
 | `/api/admin/tools[/...]` | `tool:*` |
 | `/api/users[/:id]`（管理端） | `user:*` |
+| `/api/admin/member/*` | `member:*`（11 条 API 全部权限化） |
 
 **故意未挂权限的路由**：
 - `/api/auth/*` 认证端点
 - `/api/users/profile` `/addresses` `/devices` C 端用户操作自己的资源
-- `/api/admin/member/*` —— **P0 七大模块未含 member**，挂不存在的 code 会全部 403。  
-  待独立 spec 补 `member` 模块权限码后再挂
 - `/api/member/*` `/api/tools/*`（非 admin） `/api/favorites/*` C/H5 端公开或自用 API
 
 详见 `app/router.ts` 顶部的注释表。
+
+### member 模块角色矩阵
+
+| 权限码 | admin | operator | auditor |
+|---|:---:|:---:|:---:|
+| `member`（顶级菜单） | ✓ | ✓ | ✓ |
+| `member:level:list` | ✓ | ✓ | ✓ |
+| `member:level:update` | ✓ | – | – |
+| `member:plan:list` | ✓ | ✓ | ✓ |
+| `member:plan:update` | ✓ | – | – |
+| `member:user:list` | ✓ | ✓ | ✓ |
+| `member:points:adjust` 🔥 | ✓ | – | – |
+| `member:level:assign` 🔥 | ✓ | – | – |
+| `member:plan:activate` 🔥 | ✓ | – | – |
+| `member:stats:view` | ✓ | ✓ | ✓ |
+| `member:points:log:view` | ✓ | ✓ | ✓ |
+
+🔥 = 涉及金钱与权益的高敏写操作，仅 admin。operator/auditor 无权调用，调用返回 403。
 
 ---
 
@@ -203,6 +221,7 @@ GET /api/auth/me
 ## 9. 相关文档
 
 - 数据库初始化：[`database/006_add_rbac_init.sql`](../../database/006_add_rbac_init.sql)
+- member 模块扩展：[`database/007_add_member_module.sql`](../../database/007_add_member_module.sql)
 - 数据库迁移说明：[`database/README.md`](../../database/README.md)
 - **加新权限 SOP**：[`guides/添加新权限指南.md`](../guides/添加新权限指南.md)
 - 角色管理 API：[`api/role/README.md`](../api/role/README.md)

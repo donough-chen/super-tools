@@ -80,20 +80,18 @@ export default (app: Application) => {
   router.post('/api/member/daily-sign', auth, controller.member.dailySign);
 
   // ==================== 会员管理（管理端） ====================
-  // NOTE: member 模块权限码尚未在 RBAC 初始化（spec P0 七大模块未含 member）
-  // 当前策略：仅 auth 放行，由 super_admin / admin userType 粗粒度管控；
-  // 后续单独提 spec 补 member 模块权限码后再挂 checkPermission。
-  router.get('/api/admin/member/levels', auth, controller.admin.member.levels);
-  router.put('/api/admin/member/levels/:id', auth, controller.admin.member.updateLevel);
-  router.get('/api/admin/member/plans', auth, controller.admin.member.plans);
-  router.put('/api/admin/member/plans/:id', auth, controller.admin.member.updatePlan);
-  router.get('/api/admin/member/users', auth, controller.admin.member.users);
-  router.get('/api/admin/member/users/:id', auth, controller.admin.member.userDetail);
-  router.post('/api/admin/member/users/:id/adjust-points', auth, controller.admin.member.adjustPoints);
-  router.put('/api/admin/member/users/:id/level', auth, controller.admin.member.adjustLevel);
-  router.post('/api/admin/member/users/:id/activate-plan', auth, controller.admin.member.activatePlan);
-  router.get('/api/admin/member/stats', auth, controller.admin.member.stats);
-  router.get('/api/admin/member/points-logs', auth, controller.admin.member.pointsLogs);
+  // 权限码定义见 database/007_add_member_module.sql；矩阵见 docs/architecture/RBAC.md § member
+  router.get('/api/admin/member/levels', auth, perm('member:level:list'), controller.admin.member.levels);
+  router.put('/api/admin/member/levels/:id', auth, perm('member:level:update'), controller.admin.member.updateLevel);
+  router.get('/api/admin/member/plans', auth, perm('member:plan:list'), controller.admin.member.plans);
+  router.put('/api/admin/member/plans/:id', auth, perm('member:plan:update'), controller.admin.member.updatePlan);
+  router.get('/api/admin/member/users', auth, perm('member:user:list'), controller.admin.member.users);
+  router.get('/api/admin/member/users/:id', auth, perm('member:user:list'), controller.admin.member.userDetail);
+  router.post('/api/admin/member/users/:id/adjust-points', auth, perm('member:points:adjust'), controller.admin.member.adjustPoints);
+  router.put('/api/admin/member/users/:id/level', auth, perm('member:level:assign'), controller.admin.member.adjustLevel);
+  router.post('/api/admin/member/users/:id/activate-plan', auth, perm('member:plan:activate'), controller.admin.member.activatePlan);
+  router.get('/api/admin/member/stats', auth, perm('member:stats:view'), controller.admin.member.stats);
+  router.get('/api/admin/member/points-logs', auth, perm('member:points:log:view'), controller.admin.member.pointsLogs);
 
   // ==================== 工具（H5 端） ====================
   router.get('/api/tools/home', controller.tool.home);
