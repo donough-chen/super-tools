@@ -9,6 +9,13 @@ export default class PermissionController extends BaseController {
     this.success(result);
   }
 
+  /** GET /api/admin/permissions/modules — 按模块分组的权限树（用于角色权限分配 UI） */
+  async modules() {
+    const { platform } = this.ctx.query;
+    const result = await this.service.permission.getTreeByModule(platform as string);
+    this.success(result);
+  }
+
   /** GET /api/admin/permissions/:id */
   async show() {
     const perm = await this.service.permission.findById(Number(this.ctx.params.id));

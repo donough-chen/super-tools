@@ -64,4 +64,26 @@ export default class RoleService extends BaseService {
       });
     }
   }
+
+  /**
+   * 获取用户当前有效的角色列表（含未过期绑定）
+   * 返回：[{ id, code, name, type }]
+   */
+  async getUserRoles(userId: number) {
+    const { Op } = require('sequelize');
+    const userRoles = await this.ctx.model.UserRole.findAll({
+      where: {
+        userId,
+        [Op.or]: [{ expireAt: null }, { expireAt: { [Op.gt]: new Date() } }],
+      },
+    });
+    const roleIds = userRoles.map((ur: any) => ur.roleId);
+    if (roleIds.length === 0) return [];
+    const roles = await this.ctx.model.Role.findAll({
+      where: { id: roleIds, status: 1 },
+      attributes: ['id', 'code', 'name', 'type'],
+      order: [['sort', 'ASC'], ['id', 'ASC']],
+    });
+    return roles.map((r: any) => r.toJSON());
+  }
 }

@@ -7,6 +7,7 @@ export interface PermissionAttributes {
   name: string;
   code: string;
   type: number;
+  module: string;
   platform: string;
   icon?: string;
   path?: string;
@@ -22,7 +23,7 @@ export interface PermissionAttributes {
   updatedAt?: Date;
 }
 
-export interface PermissionCreationAttributes extends Optional<PermissionAttributes, 'id' | 'parentId' | 'type' | 'platform' | 'isHidden' | 'isCache' | 'isExternal' | 'sort' | 'status'> {}
+export interface PermissionCreationAttributes extends Optional<PermissionAttributes, 'id' | 'parentId' | 'type' | 'module' | 'platform' | 'isHidden' | 'isCache' | 'isExternal' | 'sort' | 'status'> {}
 
 export default (app: Application) => {
   const { STRING, INTEGER, TINYINT } = DataTypes;
@@ -33,6 +34,7 @@ export default (app: Application) => {
     name: { type: STRING(100), allowNull: false },
     code: { type: STRING(100), allowNull: false, unique: true },
     type: { type: TINYINT.UNSIGNED, defaultValue: 1 },
+    module: { type: STRING(50), allowNull: false, defaultValue: '' },
     platform: { type: STRING(30), defaultValue: 'admin' },
     icon: { type: STRING(100), allowNull: true },
     path: { type: STRING(200), allowNull: true },

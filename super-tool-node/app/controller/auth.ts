@@ -81,6 +81,34 @@ export default class AuthController extends BaseController {
     this.success(null, '退出成功');
   }
 
+  /**
+   * GET /api/auth/me — 获取当前登录用户完整上下文
+   * 返回: { user, roles: [{id,code,name,type}], permissions: string[] }
+   * 前端用途：菜单渲染、按钮级权限控制、用户信息展示的统一入口
+   */
+  async me() {
+    const { id: userId, userType } = this.ctx.state.user;
+
+    // 并发拉基础资料 / 角色 / 权限码
+    const [ user, roles, permissions ] = await Promise.all([
+      this.service.user.findById(userId),
+      this.service.role.getUserRoles(userId),
+      this.service.permission.getUserPermissionCodes(userId),
+    ]);
+    if (!user) this.ctx.throw(404, '用户不存在');
+
+    // super_admin（userType=3）拥有所有权限：返回一个特殊标记，避免前端需要枚举所有 code
+    // 不直接返回全量权限码（数量多、易过期），由前端结合 isSuperAdmin 判定
+    const isSuperAdmin = userType === 3;
+
+    this.success({
+      user,
+      roles,
+      permissions,      // 数组（空数组时表示无任何显式权限）
+      isSuperAdmin,     // true 时前端按"全量通过"处理
+    });
+  }
+
   /** POST /api/auth/send-code — 发送验证码 */
   async sendCode() {
     this.validate({

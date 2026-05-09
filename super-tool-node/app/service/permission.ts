@@ -45,6 +45,46 @@ export default class PermissionService extends BaseService {
   }
 
   /**
+   * 按业务模块分组返回权限树
+   * 返回结构：[{ module: 'dashboard', name: '仪表盘', permissions: [权限树] }, ...]
+   * 仅返回 P0 七大模块（dashboard/system/user/category/tool/feedback/stats）
+   */
+  async getTreeByModule(platform?: string) {
+    const where: any = {};
+    if (platform) where.platform = platform;
+    const all = await this.ctx.model.Permission.findAll({
+      where, order: [['sort', 'ASC'], ['id', 'ASC']],
+    });
+    const list: any[] = all.map((p: any) => p.toJSON());
+
+    // 模块展示顺序与中文名
+    const moduleMeta: Array<{ module: string; name: string }> = [
+      { module: 'dashboard', name: '仪表盘' },
+      { module: 'system',    name: '系统管理' },
+      { module: 'user',      name: '用户管理' },
+      { module: 'category',  name: '分类管理' },
+      { module: 'tool',      name: '工具管理' },
+      { module: 'feedback',  name: '反馈管理' },
+      { module: 'stats',     name: '数据统计' },
+    ];
+
+    return moduleMeta.map(meta => {
+      const modulePerms = list.filter(p => p.module === meta.module);
+      // 在模块内部按 parentId 继续构树（模块内可能有多级）
+      // 找出模块内的"根节点"（parent 不在本模块内视为根）
+      const idsInModule = new Set(modulePerms.map(p => p.id));
+      const roots = modulePerms.filter(p => !idsInModule.has(p.parentId));
+      const rootIds = roots.map(r => r.id);
+      const children = modulePerms.filter(p => !rootIds.includes(p.id));
+      const trees = roots.map(root => ({
+        ...root,
+        children: this.buildTreeFromList(children, root.id),
+      }));
+      return { module: meta.module, name: meta.name, permissions: trees };
+    });
+  }
+
+  /**
    * 获取用户全部权限编码（角色权限 + 直接授权 - 拒绝）
    */
   async getUserPermissionCodes(userId: number): Promise<string[]> {
@@ -100,5 +140,11 @@ export default class PermissionService extends BaseService {
     return list
       .filter(item => item.parentId === parentId)
       .map(item => ({ ...item, children: this.buildTree(list, item.id) }));
+  }
+
+  private buildTreeFromList(list: any[], parentId: number): any[] {
+    return list
+      .filter(item => item.parentId === parentId)
+      .map(item => ({ ...item, children: this.buildTreeFromList(list, item.id) }));
   }
 }

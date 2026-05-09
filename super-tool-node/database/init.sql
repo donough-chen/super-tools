@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS `roles` (
   `name`        VARCHAR(50)       NOT NULL COMMENT '角色名称',
   `code`        VARCHAR(50)       NOT NULL COMMENT '角色编码(唯一)',
   `type`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '类型:1系统角色,2自定义角色',
-  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'all' COMMENT '适用平台:all/admin/web/miniprogram',
+  `platform`    VARCHAR(30)       NOT NULL DEFAULT 'all' COMMENT '适用平台:all/web/h5/miniprogram/ios/android/admin',
   `description` VARCHAR(200)      DEFAULT NULL,
   `sort`        INT               NOT NULL DEFAULT 0 COMMENT '排序',
   `status`      TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '状态:0禁用,1启用',
@@ -271,6 +271,7 @@ CREATE TABLE IF NOT EXISTS `permissions` (
   `name`        VARCHAR(100)      NOT NULL COMMENT '权限名称',
   `code`        VARCHAR(100)      NOT NULL COMMENT '权限编码(唯一)',
   `type`        TINYINT UNSIGNED  NOT NULL DEFAULT 1 COMMENT '类型:1目录,2菜单,3按钮,4API',
+  `module`      VARCHAR(50)       NOT NULL DEFAULT '' COMMENT '所属模块:dashboard/system/user/category/tool/feedback/stats',
   `platform`    VARCHAR(30)       NOT NULL DEFAULT 'admin' COMMENT '适用平台',
   `icon`        VARCHAR(100)      DEFAULT NULL COMMENT '图标',
   `path`        VARCHAR(200)      DEFAULT NULL COMMENT '前端路由路径/API路径',
@@ -287,6 +288,7 @@ CREATE TABLE IF NOT EXISTS `permissions` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_code`      (`code`),
   INDEX `idx_parent_id`     (`parent_id`),
+  INDEX `idx_module`        (`module`),
   INDEX `idx_type_platform` (`type`, `platform`),
   INDEX `idx_path_method`   (`path`(100), `method`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='权限表(菜单/按钮/API)';
@@ -740,8 +742,9 @@ INSERT IGNORE INTO `roles` (`name`, `code`, `type`, `platform`, `description`, `
 ('超级管理员', 'super_admin',  1, 'all',   '拥有所有权限,不受RBAC限制', 0),
 ('管理员',     'admin',        1, 'admin', '后台管理权限',               1),
 ('运营',       'operator',     1, 'admin', '内容运营权限',               2),
-('普通用户',   'user',         1, 'all',   '基础用户权限',               3),
-('访客',       'guest',        1, 'all',   '未登录访客权限',             4);
+('审计员',   'auditor',         1, 'admin',   '只读 + 审计日志查看',               3),
+('普通用户',   'user',         1, 'all',   'Web/H5 端默认角色',               4),
+('访客',       'guest',        1, 'all',   '未登录访客权限',             5);
 
 -- 初始化OAuth客户端
 INSERT IGNORE INTO `oauth_clients`
