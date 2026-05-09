@@ -24,6 +24,15 @@ export const getProfileExtra = (): Promise<ApiResult<FullProfile>> =>
 export const updateProfile = (dto: UpdateProfileDTO): Promise<ApiResult<FullProfile>> =>
   putJson(`${API_BASE}/users/profile`, dto);
 
-/** 修改密码 */
-export const changePassword = (oldPassword: string, newPassword: string): Promise<ApiResult<null>> =>
-  putJson(`${API_BASE}/users/password`, { oldPassword, newPassword });
+/** 修改/设置密码
+ *
+ * 当用户已设密码（hasPassword=true）时，oldPassword 必传；
+ * 当用户未设密码（如手机号注册首次设置）时，oldPassword 可省略。
+ */
+export const changePassword = (
+  oldPassword: string | undefined,
+  newPassword: string,
+): Promise<ApiResult<null>> =>
+  putJson(`${API_BASE}/users/password`, oldPassword
+    ? { oldPassword, newPassword }
+    : { newPassword });

@@ -256,6 +256,13 @@ const { data } = await axios.put(`${BASE_URL}/api/users/profile`,
 
 **控制器：** `controller.user.changePassword`
 **认证：** ✅ 需要 Bearer Token
+**说明：** 修改 / 设置当前用户的登录密码。
+
+**两种模式：**
+- **修改密码**（用户已设密码，`bind-status.hasPassword = true`）：必须传 `oldPassword`，后端会校验原密码
+- **设置密码**（用户未设密码，例如手机号注册账号首次设置，`bind-status.hasPassword = false`）：`oldPassword` 可省略，后端会跳过原密码校验直接落库
+
+前端可通过 `GET /api/auth/bind-status` 的 `hasPassword` 字段判断当前用户是哪种模式，并相应地决定是否展示"原密码"输入框。
 
 ### 请求体 (application/json)
 
@@ -266,9 +273,17 @@ const { data } = await axios.put(`${BASE_URL}/api/users/profile`,
 }
 ```
 
+或（首次设置密码场景）：
+
+```json
+{
+  "newPassword": "NewPass@123"
+}
+```
+
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| oldPassword | string | ✅ | 原密码 |
+| oldPassword | string | 条件必填 | 原密码；当 `hasPassword=true` 时必传，`hasPassword=false` 时可省略 |
 | newPassword | string | ✅ | 新密码（至少8字符） |
 
 ### 前端调用示例
@@ -310,6 +325,8 @@ const { data } = await axios.put(`${BASE_URL}/api/users/password`,
 | HTTP 状态码 | code | 说明 |
 |-------------|------|------|
 | 400 | 100204 | 原密码错误 |
+| 400 | - | 请输入原密码（已设密码用户未传 oldPassword） |
+| 400 | - | 新密码不能与原密码相同 |
 | 401 | 401 | 未认证或 Token 已失效 |
 | 404 | 100201 | 用户不存在 |
 | 422 | 422 | 请求参数校验失败 |

@@ -178,6 +178,14 @@ export default class AuthService extends BaseService {
 
   /**
    * 手机号验证码登录（登录即注册）
+   *
+   * 唯一性保障：手机号全局唯一，一号一账号。
+   * - 号码已存在且状态正常 → 直接登录
+   * - 号码已存在但状态非 1（禁用/待审/注销） → 抛 403
+   * - 号码不存在 → 自动注册并登录
+   *
+   * 验证码类型兼容：phone-login 同时承担登录/注册入口，前端可能用
+   * type=login 或 type=register 发码，两者都允许通过。
    */
   async phoneLogin(dto: {
     phone: string;
@@ -186,47 +194,75 @@ export default class AuthService extends BaseService {
     clientSecret: string;
     platform?: string;
   }) {
-    const { phone, code, clientId, clientSecret, platform } = dto;
+    const { code, clientId, clientSecret, platform } = dto;
+    const phone = (dto.phone || '').trim();
 
     // 1. 验证 OAuth 客户端
     const { clientData } = await this.validateClient(clientId, clientSecret);
 
-    // 2. 验证短信验证码
-    const isValid = await this.service.sms.verifyCode(phone, code, 'login');
+    // 2. 验证短信验证码（兼容 login / register 两种 type）
+    const isValid = await this.service.sms.verifyCode(phone, code, ['login', 'register']);
     if (!isValid) {
       this.ctx.throw(401, '验证码错误或已过期');
     }
 
-    // 3. 查找或创建用户（登录即注册）
-    let user = await this.ctx.model.User.findOne({ where: { phone, status: 1 } });
+    // 3. 查找该手机号对应的用户（不带 status 过滤，以便对禁用账号做区分提示）
+    let user = await this.ctx.model.User.findOne({ where: { phone } });
     let isNewUser = false;
 
-    if (!user) {
-      // 自动注册
-      user = await this.ctx.model.User.create({
-        uuid: uuidv4(),
-        phone,
-        nickname: `用户_${phone.slice(-4)}`,
-        registerSource: platform || 'h5',
-        registerIp: this.ctx.ip,
-      } as any);
-
-      // 分配默认角色
-      const defaultRole = await this.ctx.model.Role.findOne({ where: { code: 'user' } });
-      if (defaultRole) {
-        await this.ctx.model.UserRole.create({ userId: (user as any).id, roleId: (defaultRole as any).id } as any);
+    if (user) {
+      // 3a. 号码已存在 → 状态校验
+      const status = (user as any).status;
+      if (status !== 1) {
+        // 0 禁用 / 2 待审核 / 3 已注销
+        const reasonMap: Record<number, string> = {
+          0: '该账号已被禁用，请联系管理员',
+          2: '该账号待审核中，暂不能登录',
+          3: '该账号已注销，无法登录',
+        };
+        this.ctx.throw(403, reasonMap[status] || '账号状态异常，无法登录');
+      }
+    } else {
+      // 3b. 号码不存在 → 自动注册（unique 冲突兜底）
+      try {
+        user = await this.ctx.model.User.create({
+          uuid: uuidv4(),
+          phone,
+          nickname: `用户_${phone.slice(-4)}`,
+          registerSource: platform || 'h5',
+          registerIp: this.ctx.ip,
+        } as any);
+      } catch (err: any) {
+        if (err?.name === 'SequelizeUniqueConstraintError') {
+          // 并发场景：两次请求同时走到 create，其中一次胜出。
+          // 重新按 phone 查出用户继续后续登录流程。
+          user = await this.ctx.model.User.findOne({ where: { phone } });
+          if (!user) this.ctx.throw(500, '账号创建异常，请重试');
+        } else {
+          throw err;
+        }
       }
 
-      // 自动创建 profile
-      await this.ctx.model.UserProfile.create({
-        userId: (user as any).id,
-        referralCode: this.generateReferralCode(),
-      } as any);
+      isNewUser = true;
+
+      // 分配默认角色（并发下可能已存在，冲突忽略）
+      const defaultRole = await this.ctx.model.Role.findOne({ where: { code: 'user' } });
+      if (defaultRole) {
+        try {
+          await this.ctx.model.UserRole.create({ userId: (user as any).id, roleId: (defaultRole as any).id } as any);
+        } catch { /* 并发冲突忽略 */ }
+      }
+
+      // 自动创建 profile（唯一索引冲突忽略）
+      try {
+        await this.ctx.model.UserProfile.create({
+          userId: (user as any).id,
+          referralCode: this.generateReferralCode(),
+        } as any);
+      } catch { /* 并发冲突忽略 */ }
 
       // 初始化会员记录
       try { await this.service.member.initMember((user as any).id); } catch (e) { this.ctx.logger.warn('[phoneLogin] initMember failed', e); }
-
-      isNewUser = true;
     }
 
     const userData = (user as any).toJSON();
@@ -253,45 +289,74 @@ export default class AuthService extends BaseService {
   }
 
   /**
-   * 注册
+   * 注册（邮箱 + 用户名 + 密码）
+   *
+   * 唯一性保障：
+   * - 用户名（username）全局唯一
+   * - 邮箱（email）全局唯一
+   * - 可选手机号（phone）若传入则也校验唯一
+   *
+   * 命中已有账号时精确返回冲突字段，而不是含糊的"已被注册"。
    */
-  async register(dto: { username: string; email: string; password: string; nickname?: string; clientId: string; platform?: string }) {
-    const { username, email, password, nickname, clientId, platform } = dto;
+  async register(dto: { username: string; email: string; password: string; nickname?: string; clientId: string; platform?: string; phone?: string }) {
+    const { password, nickname, platform } = dto;
+    const username = (dto.username || '').trim();
+    const email = (dto.email || '').trim().toLowerCase();
+    const phone = (dto.phone || '').trim();
     const { Op } = require('sequelize');
 
-    // 检查重复
-    const existing = await this.ctx.model.User.findOne({
-      where: { [Op.or]: [{ username }, { email }] },
-    });
-    if (existing) {
-      const field = (existing as any).username === username ? '用户名' : '邮箱';
-      this.ctx.throw(400, `${field}已被注册`);
+    // 1. 唯一性校验：为每个字段分别查询，明确指出冲突项
+    if (username) {
+      const hit = await this.ctx.model.User.findOne({ where: { username } });
+      if (hit) this.ctx.throw(400, '用户名已被注册');
+    }
+    if (email) {
+      const hit = await this.ctx.model.User.findOne({ where: { email } });
+      if (hit) this.ctx.throw(400, '邮箱已被注册');
+    }
+    if (phone) {
+      const hit = await this.ctx.model.User.findOne({ where: { phone } });
+      if (hit) this.ctx.throw(400, '手机号已被注册');
     }
 
+    // 2. 创建用户
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await this.ctx.model.User.create({
-      uuid: uuidv4(),
-      username,
-      email,
-      passwordHash,
-      nickname: nickname || username,
-      registerSource: platform || 'web',
-      registerIp: this.ctx.ip,
-    } as any);
+    let user: any;
+    try {
+      user = await this.ctx.model.User.create({
+        uuid: uuidv4(),
+        username,
+        email,
+        phone: phone || null,
+        passwordHash,
+        nickname: nickname || username,
+        registerSource: platform || 'web',
+        registerIp: this.ctx.ip,
+      } as any);
+    } catch (err: any) {
+      // 并发双写兜底：唯一索引冲突
+      if (err?.name === 'SequelizeUniqueConstraintError') {
+        const field = Object.keys(err?.fields || {})[0] || '';
+        const fieldMap: Record<string, string> = { username: '用户名', email: '邮箱', phone: '手机号' };
+        const label = fieldMap[field] || '该账号信息';
+        this.ctx.throw(400, `${label}已被注册`);
+      }
+      throw err;
+    }
 
-    // 分配默认角色(user)
+    // 3. 分配默认角色(user)
     const defaultRole = await this.ctx.model.Role.findOne({ where: { code: 'user' } });
     if (defaultRole) {
       await this.ctx.model.UserRole.create({ userId: (user as any).id, roleId: (defaultRole as any).id } as any);
     }
 
-    // 自动创建 profile
+    // 4. 自动创建 profile
     await this.ctx.model.UserProfile.create({
       userId: (user as any).id,
       referralCode: this.generateReferralCode(),
     } as any);
 
-    // 初始化会员记录
+    // 5. 初始化会员记录
     try { await this.service.member.initMember((user as any).id); } catch (e) { this.ctx.logger.warn('[register] initMember failed', e); }
 
     return { id: (user as any).id, uuid: (user as any).uuid };

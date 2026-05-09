@@ -212,7 +212,15 @@ const { data } = await axios.post(`${BASE_URL}/api/auth/wechat-login`, {
 
 **控制器：** `controller.auth.phoneLogin`
 **认证：** ❌ 无需认证
-**说明：** 手机号验证码登录，首次登录自动创建账户（登录即注册）
+**说明：** 手机号验证码登录，首次登录自动创建账户（登录即注册）。
+
+**验证码类型兼容：** 该接口同时承担"登录"与"首次注册"两种场景，发码时可使用
+`type=login` 或 `type=register`，后端按数组 `['login','register']` 兼容校验，任一命中即通过。
+
+**账号状态处理：**
+- 手机号已存在 + `status=1` → 直接登录
+- 手机号已存在 + `status∈{0,2,3}` → 返回 403 + 具体原因（禁用 / 待审核 / 已注销）
+- 手机号不存在 → 自动创建用户、分配默认角色、初始化 profile 与会员信息
 
 ### 请求体 (application/json)
 
@@ -283,6 +291,7 @@ const { data } = await axios.post(`${BASE_URL}/api/auth/phone-login`, {
 |-------------|------|------|
 | 401 | 100301 | 验证码错误或已过期 |
 | 401 | 100605 | 无效的客户端 |
+| 403 | - | 账号已被禁用 / 待审核 / 已注销 |
 | 422 | 422 | 请求参数校验失败 |
 | 500 | 500 | 服务器内部错误 |
 
@@ -346,6 +355,7 @@ window.location.href = data.data.url;
 
 **控制器：** `controller.auth.register`
 **认证：** ❌ 无需认证
+**说明：** 邮箱 + 用户名 + 密码 注册。用户名、邮箱、（若传入）手机号均全局唯一，命中任一已注册字段将分别返回精确错误提示。
 
 ### 请求体 (application/json)
 
@@ -356,18 +366,20 @@ window.location.href = data.data.url;
   "password": "Pass@123456",
   "nickname": "新用户",
   "clientId": "web",
-  "platform": "web"
+  "platform": "web",
+  "phone": "13800138000"
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| username | string | ✅ | 用户名（3-50字符） |
-| email | string | ✅ | 邮箱 |
+| username | string | ✅ | 用户名（3-50字符，全局唯一） |
+| email | string | ✅ | 邮箱（全局唯一，自动 trim + 小写） |
 | password | string | ✅ | 密码（至少8字符） |
 | clientId | string | ✅ | OAuth 客户端ID |
 | nickname | string | ❌ | 昵称 |
 | platform | string | ❌ | 注册平台 |
+| phone | string | ❌ | 手机号（如传入则校验唯一性，格式 `1[3-9]\d{9}`） |
 
 ### 前端调用示例
 
@@ -415,8 +427,9 @@ const { data } = await axios.post(`${BASE_URL}/api/auth/register`, {
 
 | HTTP 状态码 | code | 说明 |
 |-------------|------|------|
-| 400 | 100202 | 用户名已存在 |
+| 400 | 100202 | 用户名已被注册 |
 | 400 | 100203 | 邮箱已被注册 |
+| 400 | 100204 | 手机号已被注册 |
 | 422 | 422 | 请求参数校验失败 |
 | 500 | 500 | 服务器内部错误 |
 

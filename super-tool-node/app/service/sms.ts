@@ -71,8 +71,13 @@ export default class SmsService extends BaseService {
 
   /**
    * 验证验证码 — Redis 分布式锁保证原子消费
+   *
+   * @param phone 手机号/邮箱
+   * @param code  用户填写的验证码
+   * @param type  验证码类型，支持单个字符串或字符串数组；数组时任一命中即算通过
+   *              （用于 phone-login 这类"登录即注册"场景，login / register 任一有效即可）
    */
-  async verifyCode(phone: string, code: string, type: string): Promise<boolean> {
+  async verifyCode(phone: string, code: string, type: string | string[]): Promise<boolean> {
     // 1. 检查验证失败锁定
     const lockKey = `verify:lock:${phone}`;
     try {
@@ -85,36 +90,47 @@ export default class SmsService extends BaseService {
       // Redis 不可用继续走数据库
     }
 
-    // 2. 尝试从 Redis 快速校验
-    try {
-      const cacheKey = `verify:code:${phone}:${type}`;
-      const cachedCode = await this.app.redis.get(cacheKey);
+    const types = Array.isArray(type) ? type : [type];
 
-      if (cachedCode) {
+    // 2. 尝试从 Redis 快速校验（按传入顺序依次探测）
+    try {
+      let redisSeenAny = false;
+      for (const t of types) {
+        const cacheKey = `verify:code:${phone}:${t}`;
+        const cachedCode = await this.app.redis.get(cacheKey);
+        if (!cachedCode) continue;
+        redisSeenAny = true;
+
         if (cachedCode !== code) {
-          await this.recordVerifyFailure(phone);
-          return false;
+          // 当前 type 的码存在但不匹配 → 继续尝试其他 type
+          continue;
         }
 
-        // 原子消费: 分布式锁 + 删除
+        // 命中：原子消费
         const lockValue = await this.service.cache.acquireLock(`verify:consume:${phone}`, 10);
         if (lockValue) {
           try {
             await this.app.redis.del(cacheKey);
-            await this.markCodeUsed(phone, code, type);
+            await this.markCodeUsed(phone, code, t);
             return true;
           } finally {
             await this.service.cache.releaseLock(`verify:consume:${phone}`, lockValue);
           }
         }
       }
+
+      // Redis 中存在候选类型的码但都不匹配 → 记失败并直接返回
+      if (redisSeenAny) {
+        await this.recordVerifyFailure(phone);
+        return false;
+      }
     } catch (err: any) {
       if (err.status === 429) throw err;
       // Redis 不可用，降级到数据库
     }
 
-    // 3. 降级: 从数据库校验
-    return this.verifyFromDB(phone, code, type);
+    // 3. 降级: 从数据库校验（type 用 IN 查询）
+    return this.verifyFromDB(phone, code, types);
   }
 
   // ===== 私有方法 =====
@@ -154,13 +170,13 @@ export default class SmsService extends BaseService {
   /**
    * 数据库降级验证
    */
-  private async verifyFromDB(phone: string, code: string, type: string): Promise<boolean> {
+  private async verifyFromDB(phone: string, code: string, types: string[]): Promise<boolean> {
     const { Op } = require('sequelize');
 
     const record = await this.ctx.model.VerifyCode.findOne({
       where: {
         target: phone,
-        type,
+        type: { [Op.in]: types },
         code,
         isUsed: 0,
         expireAt: { [Op.gt]: new Date() },

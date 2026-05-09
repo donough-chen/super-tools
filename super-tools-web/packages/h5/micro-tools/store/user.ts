@@ -77,7 +77,7 @@ interface UserActions {
   fetchProfile: () => Promise<void>;
   fetchProfileExtra: () => Promise<void>;
   updateProfile: (dto: UpdateProfileDTO) => Promise<ActionResult>;
-  changePassword: (oldPassword: string, newPassword: string) => Promise<ActionResult>;
+  changePassword: (oldPassword: string | undefined, newPassword: string) => Promise<ActionResult>;
   // === 绑定 ===
   fetchBindStatus: () => Promise<void>;
   bindPhone: (phone: string, code: string) => Promise<ActionResult>;

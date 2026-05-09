@@ -77,14 +77,22 @@ export default class UserService extends BaseService {
     await this.clearCache(`${this.CACHE_PREFIX}${id}`);
   }
 
-  async changePassword(id: number, oldPassword: string, newPassword: string) {
+  async changePassword(id: number, oldPassword: string | undefined, newPassword: string) {
     const user = await this.ctx.model.User.findByPk(id);
     if (!user) this.ctx.throw(404, '用户不存在');
     const userData = (user as any).toJSON();
+
     if (userData.passwordHash) {
+      // 已设密码：必须校验原密码（防止未持有 oldPassword 的攻击者绕过）
+      if (!oldPassword) this.ctx.throw(400, '请输入原密码');
       const isValid = await bcrypt.compare(oldPassword, userData.passwordHash);
       if (!isValid) this.ctx.throw(400, '原密码错误');
+      // 防止设置与原密码相同
+      const isSame = await bcrypt.compare(newPassword, userData.passwordHash);
+      if (isSame) this.ctx.throw(400, '新密码不能与原密码相同');
     }
+    // 未设密码（手机号/微信首次登录场景）：直接落库，等同"首次设置密码"
+
     await (user as any).update({ passwordHash: await bcrypt.hash(newPassword, 12) });
   }
 

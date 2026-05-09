@@ -93,27 +93,43 @@ const SettingsPage: React.FC = () => {
     return (bindStatus.phone ? 1 : 0) + (bindStatus.email ? 1 : 0) + (bindStatus.wechat?.length || 0);
   }, [bindStatus]);
 
+  /** 是否为"首次设置密码"模式（手机号/微信注册账号尚未设置过密码） */
+  const isSetPasswordMode = !!bindStatus && !bindStatus.hasPassword;
+  const pwdModalTitle = isSetPasswordMode ? '设置密码' : '修改密码';
+  const pwdRowLabel = isSetPasswordMode ? '设置密码' : '修改密码';
+
+  const resetPwdForm = () => {
+    setOldPwd(''); setNewPwd(''); setConfirmPwd('');
+  };
+
   const handleChangePassword = async () => {
-    if (!oldPwd) { showToast('请输入原密码', 'error'); return; }
+    if (!isSetPasswordMode && !oldPwd) { showToast('请输入原密码', 'error'); return; }
     if (!PASSWORD_REGEX.test(newPwd)) { showToast('新密码至少 8 位，需含大小写字母+数字', 'error'); return; }
-    if (newPwd === oldPwd) { showToast('新密码不能与原密码相同', 'error'); return; }
+    if (!isSetPasswordMode && newPwd === oldPwd) { showToast('新密码不能与原密码相同', 'error'); return; }
     if (newPwd !== confirmPwd) { showToast('两次密码不一致', 'error'); return; }
 
     setPwdSubmitting(true);
-    const res = await changePassword(oldPwd, newPwd);
+    const res = await changePassword(isSetPasswordMode ? undefined : oldPwd, newPwd);
     setPwdSubmitting(false);
     if (res.success) {
-      showToast('密码修改成功，请重新登录', 'success');
+      const successMsg = isSetPasswordMode ? '密码设置成功，请重新登录' : '密码修改成功，请重新登录';
+      showToast(successMsg, 'success');
       setPwdModalVisible(false);
-      setOldPwd(''); setNewPwd(''); setConfirmPwd('');
+      resetPwdForm();
       // 自动登出 + 跳登录
       setTimeout(async () => {
         await logout();
         navigateReplace('/login');
       }, 1200);
     } else {
-      showToast(res.message || '修改失败', 'error');
+      showToast(res.message || (isSetPasswordMode ? '设置失败' : '修改失败'), 'error');
     }
+  };
+
+  const closePwdModal = () => {
+    if (pwdSubmitting) return;
+    setPwdModalVisible(false);
+    resetPwdForm();
   };
 
   const handleSelectOption = async (key: 'language' | 'timezone', value: string) => {
@@ -148,7 +164,7 @@ const SettingsPage: React.FC = () => {
                 onClick={() => navigateTo('/settings/binding')}
               />
               <Row
-                label="修改密码"
+                label={pwdRowLabel}
                 onClick={() => setPwdModalVisible(true)}
               />
               <Row
@@ -252,21 +268,28 @@ const SettingsPage: React.FC = () => {
         )}
       </main>
 
-      {/* 修改密码弹窗 */}
+      {/* 修改/设置密码弹窗 */}
       <AppModal
         visible={pwdModalVisible}
-        title="修改密码"
+        title={pwdModalTitle}
         contentType="text"
         content={
           <div className="pwd-form">
-            <input
-              className="pwd-form__input"
-              type="password"
-              placeholder="原密码"
-              value={oldPwd}
-              autoComplete="current-password"
-              onChange={e => setOldPwd(e.target.value)}
-            />
+            {isSetPasswordMode && (
+              <div className="pwd-form__tip">
+                检测到您尚未设置密码，请设置一个用于账号密码登录的密码。
+              </div>
+            )}
+            {!isSetPasswordMode && (
+              <input
+                className="pwd-form__input"
+                type="password"
+                placeholder="原密码"
+                value={oldPwd}
+                autoComplete="current-password"
+                onChange={e => setOldPwd(e.target.value)}
+              />
+            )}
             <input
               className="pwd-form__input"
               type="password"
@@ -283,7 +306,11 @@ const SettingsPage: React.FC = () => {
               autoComplete="new-password"
               onChange={e => setConfirmPwd(e.target.value)}
             />
-            <div className="pwd-form__hint">修改成功后会自动退出，请用新密码重新登录</div>
+            <div className="pwd-form__hint">
+              {isSetPasswordMode
+                ? '设置成功后会自动退出，请用新密码重新登录'
+                : '修改成功后会自动退出，请用新密码重新登录'}
+            </div>
           </div>
         }
         confirmText={pwdSubmitting ? '提交中...' : '确认'}
@@ -291,8 +318,8 @@ const SettingsPage: React.FC = () => {
         showClose={!pwdSubmitting}
         maskClosable={!pwdSubmitting}
         onConfirm={handleChangePassword}
-        onCancel={() => setPwdModalVisible(false)}
-        onClose={() => setPwdModalVisible(false)}
+        onCancel={closePwdModal}
+        onClose={closePwdModal}
       />
 
       {/* 语言/时区选项弹窗 */}

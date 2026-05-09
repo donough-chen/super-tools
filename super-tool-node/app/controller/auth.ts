@@ -61,6 +61,7 @@ export default class AuthController extends BaseController {
       clientId: { type: 'string' },
       nickname: { type: 'string', required: false },
       platform: { type: 'string', required: false },
+      phone: { type: 'string', required: false, format: /^1[3-9]\d{9}$/ },
     });
     const result = await this.service.auth.register(this.ctx.request.body);
     this.created(result, '注册成功');

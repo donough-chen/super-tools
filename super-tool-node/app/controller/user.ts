@@ -63,9 +63,20 @@ export default class UserController extends BaseController {
     this.success(result, '资料更新成功');
   }
 
-  /** PUT /api/users/password */
+  /** PUT /api/users/password
+   *
+   * 兼容两种场景：
+   * - 已设密码用户（hasPassword=true）：必须传 oldPassword 做原密码校验
+   * - 未设密码用户（hasPassword=false，例如手机号注册账户）：oldPassword 可省略，直接设置新密码
+   *
+   * 是否需要原密码由 service 层根据用户当前 passwordHash 是否存在判定，
+   * 这里仅在请求体携带 oldPassword 时做类型校验。
+   */
   async changePassword() {
-    this.validate({ oldPassword: { type: 'string' }, newPassword: { type: 'string', min: 8 } });
+    this.validate({
+      oldPassword: { type: 'string', required: false, allowEmpty: true },
+      newPassword: { type: 'string', min: 8 },
+    });
     const { oldPassword, newPassword } = this.ctx.request.body;
     await this.service.user.changePassword(this.ctx.state.user.id, oldPassword, newPassword);
     this.success(null, '密码修改成功');
