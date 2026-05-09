@@ -4,15 +4,26 @@
  * 一级页面：搜索框 + 广告位 Banner（特色工具充当） + 工具分类列表
  * 头部按钮：[search, agent, settings]
  *
- * 数据来源：useHomeStore.fetchHomeData() — 聚合模式一次性加载全部分类+工具
+ * 数据来源：
+ *  - useHomeStore.fetchHomeData() — 聚合模式一次性加载全部分类+工具
+ *  - useFavoritesStore.fetchCodes() — 登录态下拉取已收藏 code 集合，用于心形标注
+ *
+ * 交互：
+ *  - 普通点击工具：走 useToolClick（权限校验 + 跳转）
+ *  - 长按工具项：右下角弹出操作浮层（收藏 / 取消收藏）
+ *  - 已收藏工具：右下角心形角标
  */
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { navigateTo } from '@/utils/navigator';
-import { useHomeStore, useGlobalStore } from '../../store';
+import { useHomeStore, useGlobalStore, useFavoritesStore, useUserStore } from '../../store';
+import type { ToolListMode } from '../../store/global';
 import { useToolClick } from '../../hooks/useToolClick';
+import { useLongPress } from '../../hooks/useLongPress';
 import AppHeader from '../../components/AppHeader';
 import AppTabBar from '../../components/AppTabBar';
 import AppModal from '../../components/AppModal';
+import ToolActionPopup from '../../components/ToolActionPopup';
+import type { ToolActionItem } from '../../components/ToolActionPopup';
 import { TAB_BAR_ITEMS } from '../../constants';
 import { useSwipe } from '../../hooks/useSwipe';
 import type { Tool } from '../../types/tool';
@@ -68,6 +79,91 @@ function mapToolToView(tool: Tool): ToolViewItem {
   };
 }
 
+/** 渲染工具图标：优先使用 resolved icon 图片，降级到颜色占位 */
+function renderToolIcon(tool: ToolViewItem) {
+  const theme = colorToTheme(tool.color);
+  if (tool.iconResolved) {
+    return <img className="page-home__tool-iconfont iconfont" src={tool.iconResolved} alt={tool.name} />;
+  }
+  return (
+    <i
+      className="page-home__tool-iconfont iconfont"
+      style={{ background: theme.bg, color: theme.color }}
+    />
+  );
+}
+
+/**
+ * 单个工具 item 子组件（提取到组件外部）。
+ *
+ * 关键：**绝不能**把它定义在 HomePage 内部——那样每次父组件 re-render，
+ * ToolItem 会成为新的函数引用，React 视为新的组件类型，整棵子树卸载重建，
+ * 导致 useRef/useLongPress 内部状态全部重置，长按弹浮层彻底失效。
+ */
+interface ToolItemProps {
+  tool: ToolViewItem;
+  favorited: boolean;
+  isPopupOpen: boolean;
+  toolListMode: ToolListMode;
+  onLongPress: (toolCode: string) => void;
+  onItemClick: (tool: Tool) => void;
+  onClosePopup: () => void;
+  popupActions: ToolActionItem[];
+}
+
+const ToolItem: React.FC<ToolItemProps> = React.memo(({
+  tool,
+  favorited,
+  isPopupOpen,
+  toolListMode,
+  onLongPress,
+  onItemClick,
+  onClosePopup,
+  popupActions,
+}) => {
+  const itemRef = useRef<HTMLDivElement>(null);
+  const longPressBind = useLongPress({
+    onLongPress: () => onLongPress(tool.id),
+    onClick: () => onItemClick(tool._raw),
+    delay: 500,
+  });
+
+  return (
+    <div
+      ref={itemRef}
+      className={`page-home__tool-item${isPopupOpen ? ' page-home__tool-item--active' : ''}`}
+      {...longPressBind}
+    >
+      {renderToolIcon(tool)}
+      {(toolListMode === 'double' || toolListMode === 'single') ? (
+        <>
+          <div className="page-home__tool-info">
+            <span className="page-home__tool-name">{tool.name}</span>
+            {tool.subtitle && (
+              <span className="page-home__tool-subtitle">{tool.subtitle}</span>
+            )}
+          </div>
+          <span className="page-home__tool-arrow" />
+        </>
+      ) : (
+        <span className="page-home__tool-name">{tool.name}</span>
+      )}
+
+      {favorited && (
+        <span className="page-home__tool-fav-badge" aria-label="已收藏" />
+      )}
+
+      <ToolActionPopup
+        visible={isPopupOpen}
+        actions={popupActions}
+        targetRef={itemRef}
+        onClose={onClosePopup}
+      />
+    </div>
+  );
+});
+ToolItem.displayName = 'ToolItem';
+
 const HomePage: React.FC = () => {
   const {
     categories: rawCategories,
@@ -77,6 +173,11 @@ const HomePage: React.FC = () => {
     fetchHomeData,
   } = useHomeStore();
   const { toolListMode, tabBarMode, isSearchBoxVisible, setSearchBoxVisible } = useGlobalStore();
+  const favoritesCodes = useFavoritesStore(s => s.codes);
+  const fetchFavoriteCodes = useFavoritesStore(s => s.fetchCodes);
+  const addFavorite = useFavoritesStore(s => s.addFavorite);
+  const removeFavorite = useFavoritesStore(s => s.removeFavorite);
+  const isLoggedIn = useUserStore(s => s.isLoggedIn);
   const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -84,10 +185,19 @@ const HomePage: React.FC = () => {
   const [activeBanner, setActiveBanner] = useState(0);
   /** 分类展开/折叠状态 */
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
+  /** 长按弹出操作浮层的目标工具 code（同一时间只能有一个） */
+  const [popupToolCode, setPopupToolCode] = useState<string | null>(null);
+  /** 轻提示 toast */
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
     fetchHomeData();
   }, []);
+
+  // 登录后拉取收藏 code 集合（用于心形标注）
+  useEffect(() => {
+    if (isLoggedIn) fetchFavoriteCodes();
+  }, [isLoggedIn]);
 
   // 初始化展开状态（全部展开）
   useEffect(() => {
@@ -97,6 +207,9 @@ const HomePage: React.FC = () => {
       setExpandedMap(map);
     }
   }, [rawCategories]);
+
+  /** 收藏 code Set（O(1) 查询） */
+  const favSet = useMemo(() => new Set(favoritesCodes), [favoritesCodes]);
 
   /** 构造与原始布局兼容的 categories 数据 */
   const categories: CategoryWithTools[] = rawCategories.map(cat => ({
@@ -173,20 +286,52 @@ const HomePage: React.FC = () => {
     onSwipeRight: () => scrollToBanner(activeBanner - 1),
   });
 
-  /** 渲染工具图标：优先使用 resolved icon 图片，降级到颜色占位 */
-  const renderToolIcon = (tool: ToolViewItem) => {
-    const theme = colorToTheme(tool.color);
-    if (tool.iconResolved) {
-      return <img className="page-home__tool-iconfont iconfont" src={tool.iconResolved} alt={tool.name} />;
+  /** 3 秒后自动隐藏 toast */
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 2400);
+    return () => clearTimeout(id);
+  }, [toast]);
+
+  /** 长按工具项 → 打开操作浮层 */
+  const handleLongPressTool = useCallback((toolCode: string) => {
+    if (!isLoggedIn) {
+      setToast('请先登录后再收藏');
+      return;
     }
-    // 无图标时显示颜色占位
-    return (
-      <i
-        className="page-home__tool-iconfont iconfont"
-        style={{ background: theme.bg, color: theme.color }}
-      />
-    );
-  };
+    setPopupToolCode(toolCode);
+  }, [isLoggedIn]);
+
+  /** 关闭浮层 */
+  const handleClosePopup = useCallback(() => setPopupToolCode(null), []);
+
+  /** item 普通点击 */
+  const handleItemClick = useCallback((tool: Tool) => {
+    handleToolClick(tool);
+  }, [handleToolClick]);
+
+  /** 生成某个工具的 popupActions（根据收藏态） */
+  const buildPopupActions = useCallback((toolId: string, favorited: boolean): ToolActionItem[] => (
+    favorited
+      ? [{
+        key: 'unfavorite',
+        label: '取消收藏',
+        variant: 'danger',
+        onClick: async () => {
+          const ok = await removeFavorite(toolId);
+          setToast(ok ? '已取消收藏' : '操作失败');
+        },
+      }]
+      : [{
+        key: 'favorite',
+        label: '收藏工具',
+        variant: 'primary',
+        onClick: async () => {
+          const ok = await addFavorite(toolId);
+          setToast(ok ? '已收藏' : '收藏失败');
+        },
+      }]
+  ), [addFavorite, removeFavorite]);
 
   return (
     <div className="page-home">
@@ -260,30 +405,22 @@ const HomePage: React.FC = () => {
                 </div>
                 {cat.expanded && (
                   <div className={`page-home__tool-list page-home__tool-list--${toolListMode}`}>
-                    {cat.tools.map(tool => (
-                      <div
-                        key={tool.id}
-                        className="page-home__tool-item"
-                        onClick={() => handleToolClick(tool._raw)}
-                      >
-                        {renderToolIcon(tool)}
-                        {/* double/single 模式：图标 + 名称 + 副标题 */}
-                        {(toolListMode === 'double' || toolListMode === 'single') ? (
-                          <>
-                            <div className="page-home__tool-info">
-                              <span className="page-home__tool-name">{tool.name}</span>
-                              {tool.subtitle && (
-                                <span className="page-home__tool-subtitle">{tool.subtitle}</span>
-                              )}
-                            </div>
-                            {/* single 模式右侧箭头 */}
-                            <span className="page-home__tool-arrow" />
-                          </>
-                        ) : (
-                          <span className="page-home__tool-name">{tool.name}</span>
-                        )}
-                      </div>
-                    ))}
+                    {cat.tools.map(tool => {
+                      const favorited = favSet.has(tool.id);
+                      return (
+                        <ToolItem
+                          key={tool.id}
+                          tool={tool}
+                          favorited={favorited}
+                          isPopupOpen={popupToolCode === tool.id}
+                          toolListMode={toolListMode}
+                          onLongPress={handleLongPressTool}
+                          onItemClick={handleItemClick}
+                          onClosePopup={handleClosePopup}
+                          popupActions={buildPopupActions(tool.id, favorited)}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -293,6 +430,9 @@ const HomePage: React.FC = () => {
       </main>
 
       <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
+
+      {/* 轻提示 */}
+      {toast && <div className="page-home__toast">{toast}</div>}
 
       <AppModal
         visible={dialog.visible}

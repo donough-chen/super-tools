@@ -1,104 +1,284 @@
 /**
  * 收藏页 Favorites
  *
- * 一级页面：展示用户收藏工具列表
- * 头部按钮：[agent, search, add]
+ * 一级页面：展示已登录用户的收藏工具列表
+ *
+ * 头部按钮（初始态）：[agent, search, add]
+ *   - search：切换到"本地搜索模式"——头部变为搜索输入框，范围限定在当前收藏列表
+ *
+ * 交互：
+ *   - 点击 item：走 useToolClick（权限校验 + 安全跳转）
+ *   - 长按 item：右下角弹出动画操作浮层
+ *       · 取消收藏（removeFavorite）
+ *       · 调整排序 → 跳转 /favorites/reorder
+ *
+ * 数据：
+ *   - 进入页面后 fetchList 拉取完整收藏列表（一次性 100 条足以）
+ *   - 从排序页返回时会自动 fetchList 刷新（排序 store 中 reorder 会调用 fetchList）
  */
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { navigateTo } from '@/utils/navigator';
-import { safeNavigate } from '../../utils/safeNavigate';
-import { useFavoritesStore, useGlobalStore } from '../../store';
+import { useFavoritesStore, useGlobalStore, useUserStore } from '../../store';
+import { useToolClick } from '../../hooks/useToolClick';
+import { useLongPress } from '../../hooks/useLongPress';
 import AppHeader from '../../components/AppHeader';
 import AppTabBar from '../../components/AppTabBar';
+import AppModal from '../../components/AppModal';
+import ToolActionPopup from '../../components/ToolActionPopup';
+import type { ToolActionItem } from '../../components/ToolActionPopup';
 import { TAB_BAR_ITEMS } from '../../constants';
+import { resolveIcon } from '../../utils/icon';
+import type { Favorite } from '../../types/favorite';
 import './index.less';
 
-/** 图标颜色主题配色映射（与首页保持一致） */
-const ICON_THEME_COLORS: Record<string, { bg: string; color: string }> = {
-  default: { bg: 'rgba(22, 119, 255, 0.1)', color: '#1677ff' },
-  orange:  { bg: 'rgba(255, 152, 0, 0.12)', color: '#ff9800' },
-  green:   { bg: 'rgba(76, 175, 80, 0.12)', color: '#4caf50' },
-  blue:    { bg: 'rgba(33, 150, 243, 0.12)', color: '#2196f3' },
-  purple:  { bg: 'rgba(156, 39, 176, 0.12)', color: '#9c27b0' },
-  red:     { bg: 'rgba(244, 67, 54, 0.12)', color: '#f44336' },
-  teal:    { bg: 'rgba(0, 150, 136, 0.12)', color: '#009688' },
-  pink:    { bg: 'rgba(233, 30, 99, 0.12)', color: '#e91e63' },
-  indigo:  { bg: 'rgba(63, 81, 181, 0.12)', color: '#3f51b5' },
-  amber:   { bg: 'rgba(255, 193, 7, 0.12)', color: '#ffc107' },
-  cyan:    { bg: 'rgba(0, 188, 212, 0.12)', color: '#00bcd4' },
-};
+/** 默认主题色（当 tool.color 未提供时的兜底） */
+const DEFAULT_THEME = { bg: 'rgba(22, 119, 255, 0.1)', color: '#1677ff' };
+
+/** 根据后端 color(#HEX) 生成透明背景 + 前景色 */
+function colorToTheme(hex?: string): { bg: string; color: string } {
+  if (!hex) return DEFAULT_THEME;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return DEFAULT_THEME;
+  return { bg: `rgba(${r}, ${g}, ${b}, 0.12)`, color: hex };
+}
+
+/** 渲染工具图标：优先 iconResolved，降级到色块占位 */
+function renderFavIcon(fav: Favorite) {
+  const theme = colorToTheme(fav.tool.color);
+  const iconUrl = resolveIcon(fav.tool.icon);
+  if (iconUrl) {
+    return <img className="page-favorites__tool-iconfont iconfont" src={iconUrl} alt={fav.tool.name} />;
+  }
+  return (
+    <i
+      className="page-favorites__tool-iconfont iconfont"
+      style={{ background: theme.bg, color: theme.color }}
+    />
+  );
+}
+
+/**
+ * 单个收藏项（提取到组件外部）。
+ *
+ * 关键：**绝不能**定义在 FavoritesPage 内部——那样每次父组件 re-render
+ * 此组件会被 React 视为全新类型整棵子树卸载重建，导致 useRef/长按状态丢失，
+ * 长按浮层永远无法显示。
+ */
+interface FavoriteItemProps {
+  fav: Favorite;
+  isPopupOpen: boolean;
+  onLongPress: (toolCode: string) => void;
+  onItemClick: (tool: Favorite['tool']) => void;
+  onClosePopup: () => void;
+  actions: ToolActionItem[];
+}
+
+const FavoriteItem: React.FC<FavoriteItemProps> = React.memo(({
+  fav,
+  isPopupOpen,
+  onLongPress,
+  onItemClick,
+  onClosePopup,
+  actions,
+}) => {
+  const itemRef = useRef<HTMLDivElement>(null);
+  const longPressBind = useLongPress({
+    onLongPress: () => onLongPress(fav.toolCode),
+    onClick: () => onItemClick(fav.tool),
+    delay: 500,
+  });
+
+  return (
+    <div
+      ref={itemRef}
+      className={`page-favorites__item${isPopupOpen ? ' page-favorites__item--active' : ''}`}
+      {...longPressBind}
+    >
+      {renderFavIcon(fav)}
+      <div className="page-favorites__tool-info">
+        <span className="page-favorites__tool-name">{fav.tool.name}</span>
+        {fav.tool.description && (
+          <span className="page-favorites__tool-subtitle">{fav.tool.description}</span>
+        )}
+      </div>
+      <span className="page-favorites__tool-arrow" />
+
+      <ToolActionPopup
+        visible={isPopupOpen}
+        actions={actions}
+        targetRef={itemRef}
+        onClose={onClosePopup}
+      />
+    </div>
+  );
+});
+FavoriteItem.displayName = 'FavoriteItem';
 
 const FavoritesPage: React.FC = () => {
-  const { list, loading, fetchList } = useFavoritesStore();
+  const list = useFavoritesStore(s => s.list);
+  const loading = useFavoritesStore(s => s.loading);
+  const fetchList = useFavoritesStore(s => s.fetchList);
+  const removeFavorite = useFavoritesStore(s => s.removeFavorite);
+  const isLoggedIn = useUserStore(s => s.isLoggedIn);
   const { favListMode, tabBarMode } = useGlobalStore();
 
+  const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
+
+  /** 搜索模式开关 */
+  const [searchMode, setSearchMode] = useState(false);
+  /** 搜索关键词（本地过滤） */
+  const [keyword, setKeyword] = useState('');
+  /** 当前长按打开浮层的 toolCode */
+  const [popupToolCode, setPopupToolCode] = useState<string | null>(null);
+  /** 轻提示 */
+  const [toast, setToast] = useState<string | null>(null);
+
+  // 登录态下拉取完整收藏列表
   useEffect(() => {
-    fetchList();
+    if (isLoggedIn) fetchList();
+  }, [isLoggedIn]);
+
+  // toast 自动消失
+  useEffect(() => {
+    if (!toast) return;
+    const id = setTimeout(() => setToast(null), 2400);
+    return () => clearTimeout(id);
+  }, [toast]);
+
+  /** 本地过滤后的展示列表（按 sort ASC，store 已保证） */
+  const filteredList = useMemo(() => {
+    if (!keyword.trim()) return list;
+    const kw = keyword.trim().toLowerCase();
+    return list.filter((f) => {
+      const t = f.tool;
+      return (
+        (t.name || '').toLowerCase().includes(kw) ||
+        (t.description || '').toLowerCase().includes(kw) ||
+        (t.keyword || '').toLowerCase().includes(kw) ||
+        (t.code || '').toLowerCase().includes(kw)
+      );
+    });
+  }, [list, keyword]);
+
+  const handleToggleSearch = useCallback(() => {
+    setSearchMode((m) => {
+      const next = !m;
+      if (!next) setKeyword(''); // 关闭搜索时清空 keyword
+      return next;
+    });
   }, []);
 
-  /** 渲染工具图标：优先使用 iconfont，降级到 img（与首页逻辑一致） */
-  const renderToolIcon = (tool: typeof list[0]) => {
-    const theme = ICON_THEME_COLORS[tool.iconTheme || 'default'] || ICON_THEME_COLORS.default;
-    if (tool.fontClass) {
-      return (
-        <i
-          className={`page-favorites__tool-iconfont iconfont ${tool.fontClass}`}
-          style={{ background: theme.bg, color: theme.color }}
-        />
-      );
+  /** 长按 → 打开浮层 */
+  const handleLongPress = useCallback((toolCode: string) => {
+    setPopupToolCode(toolCode);
+  }, []);
+
+  /** 关闭浮层 */
+  const handleClosePopup = useCallback(() => setPopupToolCode(null), []);
+
+  /** 点击 item */
+  const handleItemClick = useCallback((tool: Favorite['tool']) => {
+    handleToolClick(tool);
+  }, [handleToolClick]);
+
+  /** 构造某个 item 的操作列表 */
+  const buildActions = useCallback((toolCode: string): ToolActionItem[] => [
+    {
+      key: 'unfavorite',
+      label: '取消收藏',
+      variant: 'danger',
+      onClick: async () => {
+        const ok = await removeFavorite(toolCode);
+        setToast(ok ? '已取消收藏' : '操作失败');
+      },
+    },
+    {
+      key: 'reorder',
+      label: '调整排序',
+      variant: 'primary',
+      onClick: () => {
+        navigateTo('/favorites/reorder');
+      },
+    },
+  ], [removeFavorite]);
+
+  /** 头部：搜索模式下替换为 rightSlot 的输入框形态 */
+  const headerProps = searchMode
+    ? {
+      title: '',
+      rightSlot: (
+        <div className="page-favorites__header-search">
+          <input
+            className="page-favorites__header-input"
+            type="text"
+            autoFocus
+            value={keyword}
+            placeholder="在收藏中搜索..."
+            onChange={(e) => setKeyword(e.target.value)}
+          />
+          <div
+            className="page-favorites__header-cancel"
+            onClick={handleToggleSearch}
+          >
+            取消
+          </div>
+        </div>
+      ),
     }
-    if (tool.icon) {
-      return <img className="page-favorites__tool-icon" src={tool.icon} alt={tool.name} />;
-    }
-    // 无图标时显示默认占位
-    return (
-      <i
-        className="page-favorites__tool-iconfont iconfont"
-        style={{ background: theme.bg, color: theme.color }}
-      />
-    );
-  };
+    : {
+      title: '收藏',
+      buttons: [
+        { type: 'agent' as const },
+        { type: 'search' as const, onClick: handleToggleSearch },
+        { type: 'add' as const, onClick: () => navigateTo('/') },
+      ],
+    };
 
   return (
     <div className="page-favorites">
-      <AppHeader
-        title="收藏"
-        buttons={[
-          { type: 'agent' },
-          { type: 'search', onClick: () => navigateTo('/search') },
-          { type: 'add', onClick: () => navigateTo('/') },
-        ]}
-      />
+      <AppHeader {...headerProps} />
 
       <main className="page-favorites__content">
         {loading ? (
           <div className="page-favorites__loading">加载中...</div>
-        ) : list.length === 0 ? (
-          <div className="page-favorites__empty">暂无收藏，去首页发现更多工具吧</div>
+        ) : filteredList.length === 0 ? (
+          <div className="page-favorites__empty">
+            {keyword ? '未搜索到相关收藏' : '暂无收藏，去首页发现更多工具吧'}
+          </div>
         ) : (
           <div className={`page-favorites__list page-favorites__list--${favListMode}`}>
-            {list.map(tool => (
-              <div
-                key={tool.id}
-                className="page-favorites__item"
-                onClick={() => safeNavigate(tool.url)}
-              >
-                {renderToolIcon(tool)}
-                <div className="page-favorites__tool-info">
-                  <span className="page-favorites__tool-name">{tool.name}</span>
-                  {tool.subtitle && (
-                    <span className="page-favorites__tool-subtitle">{tool.subtitle}</span>
-                  )}
-                </div>
-                {/* single 模式右侧箭头 */}
-                <span className="page-favorites__tool-arrow" />
-              </div>
+            {filteredList.map(fav => (
+              <FavoriteItem
+                key={fav.toolCode}
+                fav={fav}
+                isPopupOpen={popupToolCode === fav.toolCode}
+                onLongPress={handleLongPress}
+                onItemClick={handleItemClick}
+                onClosePopup={handleClosePopup}
+                actions={buildActions(fav.toolCode)}
+              />
             ))}
           </div>
         )}
       </main>
 
-      <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />
+      {!searchMode && <AppTabBar mode={tabBarMode} items={TAB_BAR_ITEMS} />}
+
+      {/* 轻提示 */}
+      {toast && <div className="page-favorites__toast">{toast}</div>}
+
+      <AppModal
+        visible={dialog.visible}
+        title={dialog.title}
+        content={dialog.message}
+        confirmText={dialog.confirmText}
+        cancelText="取消"
+        onConfirm={dialog.onConfirm || closeDialog}
+        onCancel={closeDialog}
+        onClose={closeDialog}
+      />
     </div>
   );
 };

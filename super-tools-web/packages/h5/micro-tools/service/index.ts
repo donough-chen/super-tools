@@ -9,3 +9,4 @@ export * from './user';
 export * from './member';
 export * from './device';
 export * from './tool';
+export * from './favorite';

@@ -1,0 +1,181 @@
+@import '~@/assets/variables.less';
+@import '~@/assets/iconfont.less';
+
+.page-fav-reorder {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+  overflow-x: hidden;
+  position: relative;
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+
+  /* ==================== 顶部提示 ==================== */
+  &__hint {
+    text-align: center;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    padding: var(--spacing-sm) 0 var(--spacing-md);
+  }
+
+  /* ==================== 列表 ==================== */
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    position: relative;
+    /* 禁止拖拽过程中的文本选中 */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ==================== 列表项 ==================== */
+  &__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-white);
+    border-radius: var(--border-radius-md);
+    box-shadow: none;
+    height: 72px; /* 与 tsx 中 ITEM_HEIGHT 常量保持一致；实际高度 = 72px */
+    box-sizing: border-box;
+    transition: transform var(--transition-bounce), box-shadow var(--transition-fast);
+    will-change: transform;
+    touch-action: none; /* 阻止浏览器对 touchmove 的默认滚动处理 */
+
+    &--dragging {
+      background: var(--bg-white);
+      transform-origin: center;
+      scale: 1.02;
+    }
+  }
+
+  /* ==================== 拖拽手柄图标 ==================== */
+  &__drag-handle {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    /* 三条横线图标（纯 CSS） */
+    background:
+      linear-gradient(var(--text-tertiary), var(--text-tertiary)) no-repeat 0 4px / 100% 2px,
+      linear-gradient(var(--text-tertiary), var(--text-tertiary)) no-repeat 0 9px / 100% 2px,
+      linear-gradient(var(--text-tertiary), var(--text-tertiary)) no-repeat 0 14px / 100% 2px;
+  }
+
+  /* ==================== 工具图标 ==================== */
+  &__item-icon {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--primary-color-lighter);
+
+    &--placeholder {
+      display: inline-block;
+    }
+  }
+
+  /* ==================== 工具文字信息 ==================== */
+  &__item-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+    flex: 1;
+    gap: 4px;
+  }
+
+  &__item-name {
+    font-size: var(--font-size-md);
+    color: var(--text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__item-sub {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ==================== 空状态 ==================== */
+  &__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 400px;
+    font-size: var(--font-size-md);
+    color: var(--text-tertiary);
+  }
+
+  /* ==================== 顶部右侧确认按钮 ==================== */
+  &__confirm {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: rgba(var(--primary-color-rgb), 0.12);
+    /* 用 CSS 画一个 ✓ */
+    position: relative;
+    transition: background var(--transition-fast);
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 16px;
+      height: 8px;
+      border-left: 3px solid var(--primary-color);
+      border-bottom: 3px solid var(--primary-color);
+      transform: translate(-50%, -70%) rotate(-45deg);
+    }
+
+    &:active {
+      background: rgba(var(--primary-color-rgb), 0.22);
+    }
+
+    &--disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
+
+  /* ==================== 轻提示 Toast ==================== */
+  &__toast {
+    position: fixed;
+    left: 50%;
+    top: 40%;
+    transform: translate(-50%, -50%);
+    z-index: 2000;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.72);
+    color: var(--text-white);
+    font-size: var(--font-size-sm);
+    border-radius: var(--border-radius-md);
+    pointer-events: none;
+    box-shadow: var(--shadow-lg);
+    animation: page-fav-reorder__toast-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes page-fav-reorder__toast-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, calc(-50% + 10px)) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+}

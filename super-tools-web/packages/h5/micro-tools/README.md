@@ -194,6 +194,7 @@ yarn workspace h5-micro-tools add some-package
 |------|------|------|------|
 | `/search` | 搜索 | 工具关键词搜索 | — |
 | `/login` | 登录 | 多 Tab 登录注册（手机号 / 账号密码 / 邮箱注册） | — |
+| `/favorites/reorder` | 收藏排序 | 长按拖拽调整收藏顺序 | 强 |
 | `/settings` | 设置 | 账号安全 / 偏好设置 / 显示偏好（3 大分组） | 强 |
 | `/settings/binding` | 账号绑定 | 手机号 / 邮箱 / 微信 绑定与解绑 | 强 |
 | `/settings/devices` | 登录设备 | 设备 / 会话两 Tab 管理 | 强 |

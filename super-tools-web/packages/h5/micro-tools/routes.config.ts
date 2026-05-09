@@ -43,6 +43,9 @@ export const PAGE_ROUTES: MicroToolsRoute[] = [
   { path: '/search', component: '@/pages/search', title: '搜索' },
   { path: '/login', component: '@/pages/login', title: '登录' },
 
+  // 收藏相关二级页
+  { path: '/favorites/reorder', component: '@/pages/favorites/reorder', title: '长按拖动排序' },
+
   // 设置相关（子路径在前以保持视觉顺序）
   { path: '/settings/binding', component: '@/pages/settings/binding', title: '账号绑定' },
   { path: '/settings/devices', component: '@/pages/settings/devices', title: '登录设备' },

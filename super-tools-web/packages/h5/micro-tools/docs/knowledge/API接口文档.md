@@ -144,65 +144,158 @@ const results = await searchTools('JSON'); // ToolItem[] | null
 
 ### 2.2 收藏模块
 
-#### 获取收藏列表
+> 后端路由前缀：`/api/favorites`（2026-05-08 起）。所有接口均需登录，Authorization 头由 `utils/authRequest` 拦截器统一注入。
+> **响应码：GET/DELETE/PUT = 200，POST = 201。**
+
+#### 2.2.1 收藏工具
 
 ```
-GET /api/favorite/list
+POST /api/favorites
 ```
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| — | — | — | 无参数 |
+| `toolCode` | `string` | ✅ | 工具唯一编码（推荐） |
 
-**返回数据：** `ToolItem[]`
-
-**调用方式：**
+**成功响应：** `code = 201`
 
 ```typescript
-import { getFavoriteTools } from '../service';
-const favorites = await getFavoriteTools(); // ToolItem[] | null
+interface AddFavoriteResult {
+  id: number;
+  toolId: number;
+  toolCode: string;
+  sort: number;
+}
+```
+
+**幂等：** 若已收藏，后端返回 `code = 409`（前端 store 将其视作成功）。
+
+```typescript
+import { addFavoriteApi } from '../service/favorite';
+const res = await addFavoriteApi('tool-json-format');
+// res.code === 201 | 409 即视为成功
 ```
 
 ---
 
-#### 添加收藏
+#### 2.2.2 取消收藏
 
 ```
-POST /api/favorite/add
+DELETE /api/favorites/:toolCode
 ```
 
-| 参数 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `toolId` | `string` | ✅ | 工具 ID |
+**成功响应：** `code = 200`
 
-**返回数据：** `boolean`
-
-**调用方式：**
+**幂等：** 若未收藏，后端返回 `code = 404`（前端 store 将其视作成功）。
 
 ```typescript
-import { addFavorite } from '../service';
-const success = await addFavorite('tool-123'); // boolean | null
+import { removeFavoriteApi } from '../service/favorite';
+const res = await removeFavoriteApi('tool-json-format');
 ```
 
 ---
 
-#### 取消收藏
+#### 2.2.3 分页收藏列表
 
 ```
-POST /api/favorite/remove
+GET /api/favorites
 ```
 
 | 参数 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `toolId` | `string` | ✅ | 工具 ID |
+| `page` | `number` | ❌ | 页码，默认 1 |
+| `pageSize` | `number` | ❌ | 每页数量，默认 20，最大 100 |
+| `keyword` | `string` | ❌ | 关键词过滤（匹配工具 name / description / keyword / code） |
+| `categoryCode` | `string` | ❌ | 分类 code 过滤 |
 
-**返回数据：** `boolean`
-
-**调用方式：**
+**成功响应：** `code = 200`
 
 ```typescript
-import { removeFavorite } from '../service';
-const success = await removeFavorite('tool-123'); // boolean | null
+interface FavoriteListResult {
+  list: Favorite[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+interface Favorite {
+  id: number;
+  toolId: number;
+  toolCode: string;
+  sort: number;           // 用户自定义排序（ASC）
+  favoritedAt: string;
+  tool: Tool & { categoryName?: string };
+}
+```
+
+```typescript
+import { getFavoriteListApi } from '../service/favorite';
+const res = await getFavoriteListApi({ page: 1, pageSize: 100 });
+```
+
+---
+
+#### 2.2.4 已收藏 code 集合（轻量）
+
+```
+GET /api/favorites/codes
+```
+
+用于首页 / 工具列表页批量标注心形，不包含工具详情。
+
+**成功响应：** `code = 200`
+
+```typescript
+interface FavoriteCodesResult {
+  code: 200;
+  data: string[];   // ['tool-a', 'tool-b', ...]
+}
+```
+
+---
+
+#### 2.2.5 单工具收藏态
+
+```
+GET /api/favorites/check/:toolCode
+```
+
+**成功响应：** `code = 200`
+
+```typescript
+interface FavoriteCheckResult {
+  favorited: boolean;
+  sort?: number;
+  favoritedAt?: string;
+}
+```
+
+---
+
+#### 2.2.6 手动拖拽排序
+
+```
+PUT /api/favorites/reorder
+```
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `orderedToolCodes` | `string[]` | ✅ | **必须包含当前用户全部已收藏工具 code**，顺序为期望展示顺序 |
+
+**成功响应：** `code = 200`
+
+```typescript
+interface ReorderResult {
+  affected: number;    // 受影响行数
+}
+```
+
+**事务保证：** 后端以事务方式写入，若数组与实际收藏集合不一致则返回 400。
+
+```typescript
+import { reorderFavoritesApi } from '../service/favorite';
+const res = await reorderFavoritesApi(['tool-a', 'tool-c', 'tool-b']);
 ```
 
 ---
