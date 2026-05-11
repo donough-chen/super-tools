@@ -70,8 +70,22 @@ export default (app: Application) => {
 
   // ==================== 管理端用户自查（菜单/权限码） ====================
   // 注意：仅挂 auth，不挂 perm —— 用户登录即可访问
-  router.get('/api/admin/auth/menus',       auth, controller.admin.auth.menus);
-  router.get('/api/admin/auth/permissions', auth, controller.admin.auth.permissions);
+  // 类型断言绕过 egg-ts-helper typings 滞后；运行时由 Egg 按文件系统加载，无问题
+  const adminCtrl = controller.admin as any;
+  router.get('/api/admin/auth/menus',       auth, adminCtrl.auth.menus);
+  router.get('/api/admin/auth/permissions', auth, adminCtrl.auth.permissions);
+
+  // ==================== 审计日志 ====================
+  // 注意：export 路由必须放在 :id 之前，否则 /export 被 :id 吞掉
+  router.get('/api/admin/audit-logs',
+    auth, perm('system:audit-log:list'),
+    adminCtrl.auditLog.list);
+  router.get('/api/admin/audit-logs/export',
+    auth, perm('system:audit-log:export'),
+    adminCtrl.auditLog.exportCsv);
+  router.get('/api/admin/audit-logs/:id',
+    auth, perm('system:audit-log:detail'),
+    adminCtrl.auditLog.detail);
 
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
