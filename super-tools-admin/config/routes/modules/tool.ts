@@ -1,24 +1,19 @@
 import type { IRoute } from 'umi';
 
-/** 工具管理相关路由 */
+/**
+ * 工具管理路由（DB 顶级目录 tool，type=1）
+ * - /tool → 重定向到 /tool/list
+ * - /tool/list 对应 DB 权限码 tool:menu（type=2）
+ */
 const toolRoutes: IRoute[] = [
   {
-    path: '/tools',
-    name: 'Tools管理',
-    icon: 'AppstoreOutlined',
+    path: '/tool',
     routes: [
-      { path: '/tools', redirect: '/tools/list' },
+      { path: '/tool', redirect: '/tool/list' },
       {
-        path: '/tools/categories',
-        name: '工具分类管理',
-        icon: 'TagsOutlined',
-        component: '@/pages/Tool/Categories',
-      },
-      {
-        path: '/tools/list',
-        name: '工具列表管理',
-        icon: 'ToolOutlined',
+        path: '/tool/list',
         component: '@/pages/Tool/List',
+        wrappers: ['@/components/AuthWrapper'],
       },
     ],
   },

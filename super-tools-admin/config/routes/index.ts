@@ -1,6 +1,12 @@
 import type { IRoute } from 'umi';
-import authRoutes from './modules/auth';
+import dashboardRoutes from './modules/dashboard';
+import systemRoutes from './modules/system';
+import userRoutes from './modules/user';
+import categoryRoutes from './modules/category';
 import toolRoutes from './modules/tool';
+import feedbackRoutes from './modules/feedback';
+import statsRoutes from './modules/stats';
+import memberRoutes from './modules/member';
 
 const routes: IRoute[] = [
   {
@@ -22,14 +28,18 @@ const routes: IRoute[] = [
         component: '@/layouts/BasicLayout',
         routes: [
           { path: '/', redirect: '/home' },
-          {
-            path: '/home',
-            name: '首页',
-            icon: 'HomeOutlined',
-            component: '@/pages/Home',
-          },
+          // 首页不挂 AuthWrapper - 登录用户必见（公告 / 业务模块 / 快捷入口）
+          { path: '/home', component: '@/pages/Home' },
+
+          ...dashboardRoutes,
+          ...systemRoutes,
+          ...userRoutes,
+          ...categoryRoutes,
           ...toolRoutes,
-          ...authRoutes,
+          ...feedbackRoutes,
+          ...statsRoutes,
+          ...memberRoutes,
+
           { path: '/403', component: '@/pages/403' },
           { component: '@/pages/404' },
         ],
