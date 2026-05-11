@@ -9,6 +9,7 @@ import {
   getCurrentUser,
   isAuthenticated,
 } from '@/utils/authority';
+import { clearRbacCache } from '@/utils/menuCache';
 
 /** 用户状态 */
 export interface UserModelState {
@@ -66,6 +67,8 @@ const UserModel: UserModelType = {
 
           // 获取用户信息
           yield put({ type: 'fetchCurrent' });
+          // === Spec-B 新增：登录后初始化 RBAC（菜单 + 权限码） ===
+          yield put({ type: 'global/initRBAC' });
 
           // 跳转至首页或回调地址
           const redirect = new URLSearchParams(window.location.search).get('redirect');
@@ -116,6 +119,9 @@ const UserModel: UserModelType = {
         // 即使接口调用失败也清除本地状态
       }
       clearAuth();
+      // === Spec-B 新增：清 RBAC 缓存与 store 状态 ===
+      clearRbacCache();
+      yield put({ type: 'global/resetRBAC' });
       yield put({ type: 'reset' });
       history.replace('/login');
       message.success('已退出登录');
