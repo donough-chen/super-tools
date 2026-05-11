@@ -276,15 +276,13 @@ export default class PermissionService extends BaseService {
       return this._buildDenyResult((user as any).toJSON(), target, 'user_disabled');
     }
 
-    // 2. 角色绑定
+    // 2. 角色绑定（getUserRoles 已经只返回 status=1 的角色）
     const roles = await this.service.role.getUserRoles(userId);
     if (roles.length === 0) {
       return this._buildDenyResult((user as any).toJSON(), target, 'no_roles');
     }
-    const activeRoles = roles.filter((r: any) => r.status === 1);
-    if (activeRoles.length === 0) {
-      return this._buildDenyResult((user as any).toJSON(), target, 'roles_disabled');
-    }
+    // service.role.getUserRoles 已 SQL 过滤 status=1；此处全部 roles 都视为有效
+    const activeRoles = roles;
 
     // 3. super_admin 短路
     const isSuperAdmin = activeRoles.some((r: any) => r.code === 'super_admin');
