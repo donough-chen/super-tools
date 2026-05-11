@@ -129,3 +129,21 @@ describe('Feedback Service contract', () => {
     });
   });
 });
+
+describe('Feedback Controller (C 端)', () => {
+  it('7. 无 token + 无 contact → 422', async () => {
+    // 正常参数（type/content/platform 齐全），但未登录 + 未传 contact
+    const result = await app.httpRequest()
+      .post('/api/feedback')
+      .set('Content-Type', 'application/json')
+      .send({
+        type: 'bug',
+        content: 'no token no contact test content',
+        platform: 'tool-box',
+      })
+      .expect(422);
+    // errorHandler 会把所有 422 的 message 统一改为 '参数验证失败'，
+    // 具体错误放在 errors 字段。只要 status=422 就证明未登录校验链路走通。
+    assert.strictEqual(result.body.code, 422);
+  });
+});
