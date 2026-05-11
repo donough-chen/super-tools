@@ -30,23 +30,81 @@ export default class AdminToolController extends BaseController {
       sort: { type: 'number', required: false },
       status: { type: 'enum', values: [0, 1], required: false },
     });
-    const data = await this.service.tool.createCategory(this.ctx.request.body);
-    this.created(data);
+    const body = this.ctx.request.body;
+    try {
+      const data = await this.service.tool.createCategory(body);
+      await this.service.audit.log({
+        module: 'category', action: 'create',
+        bizType: 'category', bizId: (data as any)?.id,
+        afterData: data,
+        description: `创建分类 ${body?.code || ''}`,
+        status: 1,
+      });
+      this.created(data);
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'category', action: 'create',
+        description: `尝试创建分类 ${body?.code || '(未知)'}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/admin/tool-categories/:id */
   async updateCategory() {
-    const data = await this.service.tool.updateCategory(
-      Number(this.ctx.params.id),
-      this.ctx.request.body,
-    );
-    this.success(data, '更新成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.tool.getCategoryById?.(id); } catch { /* ignore */ }
+
+    try {
+      const data = await this.service.tool.updateCategory(id, this.ctx.request.body);
+      await this.service.audit.log({
+        module: 'category', action: 'update',
+        bizType: 'category', bizId: id,
+        beforeData, afterData: data,
+        description: `更新分类 #${id}`,
+        status: 1,
+      });
+      this.success(data, '更新成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'category', action: 'update',
+        bizType: 'category', bizId: id,
+        beforeData,
+        description: `尝试更新分类 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** DELETE /api/admin/tool-categories/:id */
   async deleteCategory() {
-    await this.service.tool.deleteCategory(Number(this.ctx.params.id));
-    this.success(null, '删除成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.tool.getCategoryById?.(id); } catch { /* ignore */ }
+
+    try {
+      await this.service.tool.deleteCategory(id);
+      await this.service.audit.log({
+        module: 'category', action: 'delete',
+        bizType: 'category', bizId: id,
+        beforeData,
+        description: `删除分类 #${id}`,
+        status: 1,
+      });
+      this.success(null, '删除成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'category', action: 'delete',
+        bizType: 'category', bizId: id,
+        beforeData,
+        description: `尝试删除分类 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   // ==================== 工具 ====================
@@ -92,23 +150,81 @@ export default class AdminToolController extends BaseController {
       status: { type: 'enum', values: [0, 1], required: false },
       sort: { type: 'number', required: false },
     });
-    const data = await this.service.tool.createTool(this.ctx.request.body);
-    this.created(data);
+    const body = this.ctx.request.body;
+    try {
+      const data = await this.service.tool.createTool(body);
+      await this.service.audit.log({
+        module: 'tool', action: 'create',
+        bizType: 'tool', bizId: (data as any)?.id,
+        afterData: data,
+        description: `创建工具 ${body?.code || ''}`,
+        status: 1,
+      });
+      this.created(data);
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'tool', action: 'create',
+        description: `尝试创建工具 ${body?.code || '(未知)'}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/admin/tools/:id */
   async updateTool() {
-    const data = await this.service.tool.updateTool(
-      Number(this.ctx.params.id),
-      this.ctx.request.body,
-    );
-    this.success(data, '更新成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.tool.getToolById(id); } catch { /* ignore */ }
+
+    try {
+      const data = await this.service.tool.updateTool(id, this.ctx.request.body);
+      await this.service.audit.log({
+        module: 'tool', action: 'update',
+        bizType: 'tool', bizId: id,
+        beforeData, afterData: data,
+        description: `更新工具 #${id}`,
+        status: 1,
+      });
+      this.success(data, '更新成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'tool', action: 'update',
+        bizType: 'tool', bizId: id,
+        beforeData,
+        description: `尝试更新工具 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** DELETE /api/admin/tools/:id */
   async deleteTool() {
-    await this.service.tool.deleteTool(Number(this.ctx.params.id));
-    this.success(null, '删除成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.tool.getToolById(id); } catch { /* ignore */ }
+
+    try {
+      await this.service.tool.deleteTool(id);
+      await this.service.audit.log({
+        module: 'tool', action: 'delete',
+        bizType: 'tool', bizId: id,
+        beforeData,
+        description: `删除工具 #${id}`,
+        status: 1,
+      });
+      this.success(null, '删除成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'tool', action: 'delete',
+        bizType: 'tool', bizId: id,
+        beforeData,
+        description: `尝试删除工具 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/admin/tools/batch-publish */
@@ -118,7 +234,25 @@ export default class AdminToolController extends BaseController {
       status: { type: 'enum', values: [0, 1], required: true },
     });
     const { ids, status } = this.ctx.request.body;
-    const data = await this.service.tool.batchPublish(ids, status);
-    this.success(data, '批量处理成功');
+    const idsLabel = (ids as number[]).slice(0, 10).join(',');  // 防 bizId 超长
+    try {
+      const data = await this.service.tool.batchPublish(ids, status);
+      await this.service.audit.log({
+        module: 'tool', action: 'batch_update',
+        bizType: 'tool', bizId: idsLabel,
+        afterData: { ids, status },
+        description: `批量${status === 1 ? '上架' : '下架'} ${ids.length} 个工具`,
+        status: 1,
+      });
+      this.success(data, '批量处理成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'tool', action: 'batch_update',
+        bizType: 'tool', bizId: idsLabel,
+        description: `尝试批量${status === 1 ? '上架' : '下架'} ${ids.length} 个工具`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 }
