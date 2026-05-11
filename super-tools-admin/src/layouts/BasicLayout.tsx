@@ -4,6 +4,7 @@ import * as Icons from '@ant-design/icons';
 import {
   LogoutOutlined,
   UserOutlined,
+  ReloadOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
@@ -11,102 +12,102 @@ import { useSelector, useDispatch, history, useLocation } from 'umi';
 import type { MenuProps } from 'antd';
 import type { UserModelState } from '@/models/user';
 import type { GlobalModelState } from '@/models/global';
-import routes from '../../config/routes';
 import styles from './BasicLayout.less';
 
 const { Header, Sider, Content } = Layout;
 
-interface RouteMeta {
-  path?: string;
-  name?: string;
-  icon?: string;
-  redirect?: string;
-  routes?: RouteMeta[];
-}
+/**
+ * 静态前置「首页」菜单项（不入库、不走 RBAC，登录用户必见）
+ * - code 用 __home__ 占位避免与 DB 权限码冲突
+ */
+const HOME_MENU: MenuNode = {
+  id: -1,
+  code: '__home__',
+  name: '首页',
+  module: '__home__',
+  path: '/home',
+  icon: 'HomeOutlined',
+  sort: 0,
+  children: [],
+};
 
-/** 从路由配置动态构建 AntD Menu items */
-function buildMenuFromRoutes(list: RouteMeta[]): MenuProps['items'] {
-  return list
-    .filter((r) => !!r.name && !!r.path)
-    .map((r) => {
-      const IconComp: any = r.icon ? (Icons as any)[r.icon] : null;
-      const icon = IconComp ? <IconComp /> : undefined;
-      const childRoutes = (r.routes || []).filter((c) => !!c.name && !!c.path);
-      if (childRoutes.length > 0) {
-        return {
-          key: r.path!,
-          icon,
-          label: r.name,
-          children: buildMenuFromRoutes(childRoutes),
-        };
-      }
+/** 把 MenuNode[] 转成 AntD Menu items（递归） */
+function buildMenuFromAPI(nodes: MenuNode[]): MenuProps['items'] {
+  return nodes.map((n) => {
+    const IconComp: any = n.icon ? (Icons as any)[n.icon] : null;
+    const icon = IconComp ? <IconComp /> : undefined;
+    if (n.children && n.children.length > 0) {
       return {
-        key: r.path!,
+        key: n.path,
         icon,
-        label: r.name,
-        onClick: () => history.push(r.path!),
+        label: n.name,
+        children: buildMenuFromAPI(n.children),
       };
-    });
+    }
+    return {
+      key: n.path,
+      icon,
+      label: n.name,
+      onClick: () => history.push(n.path),
+    };
+  });
 }
 
-/** 提取 BasicLayout 下所有有 name 的子路由，作为顶层菜单输入 */
-function getMenuRoutes(): RouteMeta[] {
-  const sec = (routes as any[]).find(
-    (r) => r.component === '@/layouts/SecurityLayout',
-  );
-  const basic = sec?.routes?.find(
-    (r: any) => r.component === '@/layouts/BasicLayout',
-  );
-  return (basic?.routes || []) as RouteMeta[];
+/** 收集所有叶子菜单的 path（用于 selectedKeys 匹配） */
+function collectLeafPaths(nodes: MenuNode[]): string[] {
+  const out: string[] = [];
+  for (const n of nodes) {
+    if (n.children && n.children.length > 0) {
+      out.push(...collectLeafPaths(n.children));
+    } else {
+      out.push(n.path);
+    }
+  }
+  return out;
 }
 
 /**
  * BasicLayout — 主框架布局
- * 包含侧边菜单（路由驱动）、顶部工具栏和内容区域
+ * - 菜单：首页（静态前置）+ 后端 RBAC 菜单树
+ * - 用户下拉：刷新菜单 + 退出登录
  */
 const BasicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector(
     (state: { user: UserModelState }) => state.user,
   );
-  const { collapsed } = useSelector(
+  const { collapsed, menus } = useSelector(
     (state: { global: GlobalModelState }) => state.global,
   );
   const { pathname } = useLocation();
 
-  const menuRoutes = useMemo(() => getMenuRoutes(), []);
-  const menuItems = useMemo(() => buildMenuFromRoutes(menuRoutes), [menuRoutes]);
+  const finalMenus = useMemo(() => [HOME_MENU, ...menus], [menus]);
+  const menuItems = useMemo(() => buildMenuFromAPI(finalMenus), [finalMenus]);
 
   /** 当前选中菜单项 */
   const selectedKeys = useMemo(() => {
-    const allLeafPaths = menuRoutes
-      .flatMap((r) => (r.routes && r.routes.length > 0 ? r.routes : [r]))
-      .map((r) => r.path)
-      .filter(Boolean) as string[];
-    const exact = allLeafPaths.find((p) => p === pathname);
+    const all = collectLeafPaths(finalMenus);
+    const exact = all.find((p) => p === pathname);
     if (exact) return [exact];
     const prefix =
-      allLeafPaths.find((p) => pathname.startsWith(p + '/')) ||
-      allLeafPaths.find((p) => pathname.startsWith(p));
+      all.find((p) => pathname.startsWith(p + '/')) ||
+      all.find((p) => pathname.startsWith(p));
     return prefix ? [prefix] : [];
-  }, [pathname, menuRoutes]);
+  }, [pathname, finalMenus]);
 
   /** 默认展开的父菜单 */
-  const openKeys = useMemo(() => {
-    return menuRoutes
-      .filter(
-        (r) =>
-          r.routes &&
-          r.routes.length > 0 &&
-          r.path &&
-          pathname.startsWith(r.path),
-      )
-      .map((r) => r.path!);
-  }, [pathname, menuRoutes]);
-
-  const handleLogout = () => {
-    dispatch({ type: 'user/logout' });
-  };
+  const openKeys = useMemo(
+    () =>
+      finalMenus
+        .filter(
+          (n) =>
+            n.children &&
+            n.children.length > 0 &&
+            pathname.startsWith(n.path),
+        )
+        .map((n) => n.path),
+    [pathname, finalMenus],
+  );
 
   const toggleCollapsed = () => {
     dispatch({ type: 'global/setCollapsed', payload: !collapsed });
@@ -115,10 +116,16 @@ const BasicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const userMenu = {
     items: [
       {
+        key: 'refresh-menu',
+        icon: <ReloadOutlined />,
+        label: '刷新菜单',
+        onClick: () => dispatch({ type: 'global/refreshRBAC' }),
+      },
+      {
         key: 'logout',
         icon: <LogoutOutlined />,
         label: '退出登录',
-        onClick: handleLogout,
+        onClick: () => dispatch({ type: 'user/logout' }),
       },
     ],
   };
