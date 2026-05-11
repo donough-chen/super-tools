@@ -29,20 +29,102 @@ export default class UserController extends BaseController {
       phone: { type: 'string', required: false },
       nickname: { type: 'string', required: false },
     });
-    const user = await this.service.user.create(this.ctx.request.body);
-    this.created(user);
+    const body = this.ctx.request.body;
+    try {
+      const user = await this.service.user.create(body);
+      // afterData 中剔除 password / passwordHash
+      const safeAfter = this._stripSensitive(user);
+      await this.service.audit.log({
+        module: 'user', action: 'create',
+        bizType: 'user', bizId: (user as any)?.id,
+        afterData: safeAfter,
+        description: `创建用户 ${body?.username || ''}`,
+        status: 1,
+      });
+      this.created(user);
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'user', action: 'create',
+        description: `尝试创建用户 ${body?.username || '(未知)'}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/users/:id */
   async update() {
-    const user = await this.service.user.update(Number(this.ctx.params.id), this.ctx.request.body);
-    this.success(user, '更新成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try {
+      const raw = await this.service.user.findById(id);
+      beforeData = this._stripSensitive(raw);
+    } catch { /* ignore */ }
+
+    try {
+      const user = await this.service.user.update(id, this.ctx.request.body);
+      const safeAfter = this._stripSensitive(user);
+      await this.service.audit.log({
+        module: 'user', action: 'update',
+        bizType: 'user', bizId: id,
+        beforeData, afterData: safeAfter,
+        description: `更新用户 #${id}`,
+        status: 1,
+      });
+      this.success(user, '更新成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'user', action: 'update',
+        bizType: 'user', bizId: id,
+        beforeData,
+        description: `尝试更新用户 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** DELETE /api/users/:id */
   async destroy() {
-    await this.service.user.delete(Number(this.ctx.params.id));
-    this.success(null, '删除成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try {
+      const raw = await this.service.user.findById(id);
+      beforeData = this._stripSensitive(raw);
+    } catch { /* ignore */ }
+
+    try {
+      await this.service.user.delete(id);
+      await this.service.audit.log({
+        module: 'user', action: 'delete',
+        bizType: 'user', bizId: id,
+        beforeData,
+        description: `删除用户 #${id}`,
+        status: 1,
+      });
+      this.success(null, '删除成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'user', action: 'delete',
+        bizType: 'user', bizId: id,
+        beforeData,
+        description: `尝试删除用户 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
+
+  /** 剔除用户对象中的敏感字段（password / passwordHash） */
+  private _stripSensitive(u: any): any {
+    if (!u) return u;
+    try {
+      const cloned = JSON.parse(JSON.stringify(u));
+      delete cloned.password;
+      delete cloned.passwordHash;
+      delete cloned.password_hash;
+      return cloned;
+    } catch { return null; }
   }
 
   /** GET /api/users/profile — 基础资料 */
