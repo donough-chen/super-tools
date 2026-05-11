@@ -1,8 +1,8 @@
 # API 接口总览
 
-> 更新于 2026/5/11 (新增管理端用户自查接口)
+> 更新于 2026/5/11 (新增审计日志 + 权限测试接口)
 
-共 **84** 个接口
+共 **88** 个接口
 
 ## 认证模块 (Auth) [查看文档](auth/README.md)
 
@@ -73,6 +73,20 @@
 |------|------|------|
 | `GET` | `/api/admin/auth/menus` | ✅ |
 | `GET` | `/api/admin/auth/permissions` | ✅ |
+
+## 审计日志 (Audit Log) [查看文档](audit-log/README.md)
+
+| 方法 | 路径 | 认证 |
+|------|------|------|
+| `GET` | `/api/admin/audit-logs` | ✅ |
+| `GET` | `/api/admin/audit-logs/:id` | ✅ |
+| `GET` | `/api/admin/audit-logs/export` | ✅ |
+
+## 权限测试 (Permission Test) [查看文档](permission-test/README.md)
+
+| 方法 | 路径 | 认证 |
+|------|------|------|
+| `GET` | `/api/admin/permissions/test` | ✅ |
 
 ## 仪表盘 (Dashboard) [查看文档](dashboard/README.md)
 

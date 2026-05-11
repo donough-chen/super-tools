@@ -29,6 +29,8 @@
 | [角色管理](api/role/README.md)                         | 角色 CRUD + 权限分配（6个）        | ✅ 已发布 |
 | [权限管理](api/permission/README.md)                   | 权限树 + CRUD（5个）              | ✅ 已发布 |
 | [管理端用户自查](api/admin-auth/README.md)              | 当前用户菜单树 + 权限码（2个）     | 🆕 已发布 |
+| [审计日志](api/audit-log/README.md)                     | 列表 + 详情 + CSV 导出（3个）       | 🆕 已发布 |
+| [权限测试](api/permission-test/README.md)               | 综合权限调试工具（3 mode）          | 🆕 已发布 |
 | [仪表盘](api/dashboard/README.md)                      | 统计面板（1个）                   | ✅ 已发布 |
 | [会员模块](api/member/README.md)                       | 成长等级/付费套餐/积分流水（17个） | ✅ 已发布 |
 | [工具模块（H5）](api/tool/README.md)                   | 首页聚合/特色/会员/权限校验（4个） | 🆕 已发布 |
