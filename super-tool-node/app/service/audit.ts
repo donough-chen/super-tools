@@ -102,9 +102,90 @@ export default class AuditService extends Service {
     return this.ctx.model.AuditLog.findByPk(id);
   }
 
-  /** 流式 CSV 导出（在 Task 3 实现） */
-  async exportCsv(_q: AuditLogQuery, _max = 10000): Promise<void> {
-    throw new Error('exportCsv not implemented yet — see Spec-A1 Task 3');
+  /**
+   * 流式 CSV 导出
+   * - PassThrough Stream 写入 ctx.body
+   * - UTF-8 BOM + 中文表头（Excel 识别中文）
+   * - 分批查询（500/批）避免内存峰值
+   * - 超过 max 截断 + Header X-Audit-Truncated:true
+   */
+  async exportCsv(q: AuditLogQuery, max = 10000): Promise<void> {
+    const { ctx } = this;
+    const where = this._buildWhere(q);
+
+    ctx.set('Content-Type', 'text/csv; charset=utf-8');
+    ctx.set('Content-Disposition',
+      `attachment; filename="audit-logs-${Date.now()}.csv"`);
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { PassThrough } = require('stream');
+    const stream = new PassThrough();
+    ctx.body = stream;
+
+    // UTF-8 BOM（Excel 识别中文）
+    stream.write('\uFEFF');
+
+    const HEADERS = [
+      'ID', '时间', '用户', '模块', '动作', '业务类型', '业务ID',
+      '描述', 'IP', 'URL', '方法', '耗时(ms)', '状态', '失败原因',
+    ];
+    stream.write(HEADERS.join(',') + '\n');
+
+    const BATCH = 500;
+    let offset = 0;
+    while (offset < max) {
+      const limit = Math.min(BATCH, max - offset);
+      const rows = await ctx.model.AuditLog.findAll({
+        where,
+        order: [['id', 'DESC']],
+        offset,
+        limit,
+        attributes: { exclude: ['beforeData', 'afterData', 'requestParams'] },
+      });
+      if (rows.length === 0) break;
+      for (const r of rows) {
+        stream.write(this._rowToCsv(r as any) + '\n');
+      }
+      offset += rows.length;
+      if (rows.length < limit) break;  // 数据已全部导出
+    }
+
+    // 检查是否还有更多数据未导出 → 标记 truncated
+    if (offset >= max) {
+      const remain = await ctx.model.AuditLog.count({ where });
+      if (remain > max) {
+        ctx.set('X-Audit-Truncated', 'true');
+        stream.write(
+          `\n[NOTE] 已截断，仅导出最新 ${max} 行；如需更多请缩小时间范围\n`,
+        );
+      }
+    }
+
+    stream.end();
+  }
+
+  /** 一行 CSV 输出（处理逗号 / 引号 / 换行转义） */
+  protected _rowToCsv(r: any): string {
+    return [
+      r.id,
+      r.createdAt ? new Date(r.createdAt).toISOString() : '',
+      r.username || r.userId || '',
+      r.module, r.action,
+      r.bizType || '', r.bizId || '',
+      r.description || '',
+      r.ip || '', r.requestUrl || '', r.requestMethod || '',
+      r.costTime ?? '',
+      r.status === 1 ? '成功' : '失败',
+      r.failReason || '',
+    ].map((v) => this._csvField(v)).join(',');
+  }
+
+  /** CSV 字段转义 */
+  protected _csvField(v: any): string {
+    if (v == null) return '';
+    const s = String(v);
+    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
   }
 
   /** 构造列表/导出共用的 where */
