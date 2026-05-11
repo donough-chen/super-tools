@@ -25,20 +25,81 @@ export default class PermissionController extends BaseController {
   /** POST /api/admin/permissions */
   async create() {
     this.validate({ name: { type: 'string' }, code: { type: 'string' } });
-    const perm = await this.service.permission.create(this.ctx.request.body);
-    this.created(perm);
+    const body = this.ctx.request.body;
+    try {
+      const perm = await this.service.permission.create(body);
+      await this.service.audit.log({
+        module: 'permission', action: 'create',
+        bizType: 'permission', bizId: (perm as any)?.id,
+        afterData: perm,
+        description: `创建权限码 ${body?.code || ''}`,
+        status: 1,
+      });
+      this.created(perm);
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'permission', action: 'create',
+        description: `尝试创建权限码 ${body?.code || '(未知)'}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/admin/permissions/:id */
   async update() {
-    const perm = await this.service.permission.update(Number(this.ctx.params.id), this.ctx.request.body);
-    this.success(perm, '更新成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.permission.findById(id); } catch { /* ignore */ }
+
+    try {
+      const perm = await this.service.permission.update(id, this.ctx.request.body);
+      await this.service.audit.log({
+        module: 'permission', action: 'update',
+        bizType: 'permission', bizId: id,
+        beforeData, afterData: perm,
+        description: `更新权限码 #${id}`,
+        status: 1,
+      });
+      this.success(perm, '更新成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'permission', action: 'update',
+        bizType: 'permission', bizId: id,
+        beforeData,
+        description: `尝试更新权限码 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** DELETE /api/admin/permissions/:id */
   async destroy() {
-    await this.service.permission.delete(Number(this.ctx.params.id));
-    this.success(null, '删除成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.permission.findById(id); } catch { /* ignore */ }
+
+    try {
+      await this.service.permission.delete(id);
+      await this.service.audit.log({
+        module: 'permission', action: 'delete',
+        bizType: 'permission', bizId: id,
+        beforeData,
+        description: `删除权限码 #${id}`,
+        status: 1,
+      });
+      this.success(null, '删除成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'permission', action: 'delete',
+        bizType: 'permission', bizId: id,
+        beforeData,
+        description: `尝试删除权限码 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   // ============================================================

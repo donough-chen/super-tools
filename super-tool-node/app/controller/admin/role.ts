@@ -21,26 +21,106 @@ export default class RoleController extends BaseController {
   /** POST /api/admin/roles */
   async create() {
     this.validate({ name: { type: 'string' }, code: { type: 'string' } });
-    const role = await this.service.role.create(this.ctx.request.body);
-    this.created(role);
+    const body = this.ctx.request.body;
+    try {
+      const role = await this.service.role.create(body);
+      await this.service.audit.log({
+        module: 'role', action: 'create',
+        bizType: 'role', bizId: (role as any)?.id,
+        afterData: role,
+        description: `创建角色 ${body?.code || ''}`,
+        status: 1,
+      });
+      this.created(role);
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'role', action: 'create',
+        description: `尝试创建角色 ${body?.code || '(未知)'}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/admin/roles/:id */
   async update() {
-    const role = await this.service.role.update(Number(this.ctx.params.id), this.ctx.request.body);
-    this.success(role, '更新成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.role.findById(id); } catch { /* ignore */ }
+
+    try {
+      const role = await this.service.role.update(id, this.ctx.request.body);
+      await this.service.audit.log({
+        module: 'role', action: 'update', bizType: 'role', bizId: id,
+        beforeData, afterData: role,
+        description: `更新角色 #${id}`, status: 1,
+      });
+      this.success(role, '更新成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'role', action: 'update', bizType: 'role', bizId: id,
+        beforeData,
+        description: `尝试更新角色 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** DELETE /api/admin/roles/:id */
   async destroy() {
-    await this.service.role.delete(Number(this.ctx.params.id));
-    this.success(null, '删除成功');
+    const id = Number(this.ctx.params.id);
+    let beforeData: any = null;
+    try { beforeData = await this.service.role.findById(id); } catch { /* ignore */ }
+
+    try {
+      await this.service.role.delete(id);
+      await this.service.audit.log({
+        module: 'role', action: 'delete', bizType: 'role', bizId: id,
+        beforeData,
+        description: `删除角色 #${id}`,
+        status: 1,
+      });
+      this.success(null, '删除成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'role', action: 'delete', bizType: 'role', bizId: id,
+        beforeData,
+        description: `尝试删除角色 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 
   /** PUT /api/admin/roles/:id/permissions */
   async assignPermissions() {
     this.validate({ permissionIds: { type: 'array', itemType: 'number' } });
-    await this.service.role.assignPermissions(Number(this.ctx.params.id), this.ctx.request.body.permissionIds);
-    this.success(null, '权限分配成功');
+    const id = Number(this.ctx.params.id);
+    const permissionIds: number[] = this.ctx.request.body.permissionIds;
+    let beforeData: any = null;
+    try { beforeData = await this.service.role.findById(id); } catch { /* ignore */ }
+
+    try {
+      await this.service.role.assignPermissions(id, permissionIds);
+      await this.service.audit.log({
+        module: 'role', action: 'assign_permissions',
+        bizType: 'role', bizId: id,
+        beforeData,
+        afterData: { permissionIds },
+        description: `为角色 #${id} 分配 ${permissionIds.length} 个权限`,
+        status: 1,
+      });
+      this.success(null, '权限分配成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'role', action: 'assign_permissions',
+        bizType: 'role', bizId: id,
+        beforeData,
+        description: `尝试为角色 #${id} 分配权限`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
   }
 }
