@@ -1,8 +1,8 @@
 # API 接口总览
 
-> 更新于 2026/5/8 (新增用户收藏工具模块)
+> 更新于 2026/5/11 (新增管理端用户自查接口)
 
-共 **82** 个接口
+共 **84** 个接口
 
 ## 认证模块 (Auth) [查看文档](auth/README.md)
 
@@ -66,6 +66,13 @@
 | `POST` | `/api/admin/permissions` | ✅ |
 | `PUT` | `/api/admin/permissions/:id` | ✅ |
 | `DELETE` | `/api/admin/permissions/:id` | ✅ |
+
+## 管理端用户自查 (Admin Auth) [查看文档](admin-auth/README.md)
+
+| 方法 | 路径 | 认证 |
+|------|------|------|
+| `GET` | `/api/admin/auth/menus` | ✅ |
+| `GET` | `/api/admin/auth/permissions` | ✅ |
 
 ## 仪表盘 (Dashboard) [查看文档](dashboard/README.md)
 
