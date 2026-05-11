@@ -116,6 +116,23 @@ export default (app: Application) => {
     auth, perm('feedback:detail'),
     adminCtrl.feedback.detail);
 
+  // ==================== 数据统计 ====================
+  router.get('/api/admin/stats/overview',
+    auth, perm('stats:overview'),
+    adminCtrl.stats.overview);
+  router.get('/api/admin/stats/tool-usage',
+    auth, perm('stats:tool-usage'),
+    adminCtrl.stats.toolUsage);
+  router.get('/api/admin/stats/user-active',
+    auth, perm('stats:user-active'),
+    adminCtrl.stats.userActive);
+  router.get('/api/admin/stats/trend',
+    auth, perm('stats:trend'),
+    adminCtrl.stats.trend);
+  router.get('/api/admin/stats/export',
+    auth, perm('stats:export'),
+    adminCtrl.stats.exportCsv);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
 
