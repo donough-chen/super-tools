@@ -1,8 +1,8 @@
 # API 接口总览
 
-> 更新于 2026/5/11 (新增审计日志 + 权限测试接口)
+> 更新于 2026/5/11 (新增反馈与数据统计)
 
-共 **88** 个接口
+共 **99** 个接口
 
 ## 认证模块 (Auth) [查看文档](auth/README.md)
 
@@ -87,6 +87,27 @@
 | 方法 | 路径 | 认证 |
 |------|------|------|
 | `GET` | `/api/admin/permissions/test` | ✅ |
+
+## 反馈 (Feedback) [查看文档](feedback/README.md)
+
+| 方法 | 路径 | 认证 |
+|------|------|------|
+| `POST` | `/api/feedback` | 可选 |
+| `GET` | `/api/admin/feedbacks` | ✅ |
+| `GET` | `/api/admin/feedbacks/:id` | ✅ |
+| `POST` | `/api/admin/feedbacks/:id/reply` | ✅ |
+| `PUT` | `/api/admin/feedbacks/:id` | ✅ |
+| `DELETE` | `/api/admin/feedbacks/:id` | ✅ |
+
+## 数据统计 (Stats) [查看文档](stats/README.md)
+
+| 方法 | 路径 | 认证 |
+|------|------|------|
+| `GET` | `/api/admin/stats/overview` | ✅ |
+| `GET` | `/api/admin/stats/tool-usage` | ✅ |
+| `GET` | `/api/admin/stats/user-active` | ✅ |
+| `GET` | `/api/admin/stats/trend` | ✅ |
+| `GET` | `/api/admin/stats/export` | ✅ |
 
 ## 仪表盘 (Dashboard) [查看文档](dashboard/README.md)
 
