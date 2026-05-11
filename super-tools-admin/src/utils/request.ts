@@ -28,6 +28,15 @@ const errorHandler = (error: ResponseError) => {
     return;
   }
 
+  // Spec-B：接口级 403 → notification 提示，不跳转（路由级权限由 AuthWrapper 负责）
+  if (response?.status === HttpCode.FORBIDDEN) {
+    notification.error({
+      message: '操作被拒绝',
+      description: data?.message || '当前账号没有此操作权限，请联系管理员',
+    });
+    return data;
+  }
+
   if (response?.status === HttpCode.VALIDATION_ERROR && data?.errors) {
     notification.error({
       message: '参数验证失败',
