@@ -87,6 +87,11 @@ export default (app: Application) => {
     auth, perm('system:audit-log:detail'),
     adminCtrl.auditLog.detail);
 
+  // ==================== 权限测试 ====================
+  router.get('/api/admin/permissions/test',
+    auth, perm('system:permission-test:run'),
+    adminCtrl.permission.test);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
 
