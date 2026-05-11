@@ -92,6 +92,13 @@ export default (app: Application) => {
     auth, perm('system:permission-test:run'),
     adminCtrl.permission.test);
 
+  // ==================== 反馈（C 端） ====================
+  // 可登录可不登录（controller 内手动解析 token）；限流 10 req/h/IP
+  const userCtrl = controller as any;
+  router.post('/api/feedback',
+    app.middleware.rateLimit({ max: 10, window: 3600 }, app),
+    userCtrl.feedback.create);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
 
