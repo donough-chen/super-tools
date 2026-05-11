@@ -12,7 +12,8 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
   config.keys = (appInfo.name || 'super-tool-node') + '_secret_key_2026';
 
   // 中间件配置（按顺序执行）
-  config.middleware = ['errorHandler', 'rateLimit'];
+  // requestStartTime 必须放在最前面 — service.audit.log 依赖 ctx.state.requestStartTime
+  config.middleware = ['requestStartTime', 'errorHandler', 'rateLimit'];
 
   // 安全配置
   config.security = {
