@@ -40,3 +40,15 @@ interface CurrentUser {
   avatar?: string;
   userType?: string;
 }
+
+/** RBAC 菜单节点（来自后端 GET /api/admin/auth/menus） */
+interface MenuNode {
+  id: number;
+  code: string;
+  name: string;
+  module: string;
+  path: string;
+  icon: string | null;
+  sort: number;
+  children: MenuNode[];
+}
