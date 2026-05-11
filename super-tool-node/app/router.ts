@@ -99,6 +99,23 @@ export default (app: Application) => {
     app.middleware.rateLimit({ max: 10, window: 3600 }, app),
     userCtrl.feedback.create);
 
+  // ==================== 反馈（管理端） ====================
+  router.get('/api/admin/feedbacks',
+    auth, perm('feedback:list'),
+    adminCtrl.feedback.list);
+  router.post('/api/admin/feedbacks/:id/reply',
+    auth, perm('feedback:reply'),
+    adminCtrl.feedback.reply);
+  router.put('/api/admin/feedbacks/:id',
+    auth, perm('feedback:update'),
+    adminCtrl.feedback.update);
+  router.delete('/api/admin/feedbacks/:id',
+    auth, perm('feedback:delete'),
+    adminCtrl.feedback.destroy);
+  router.get('/api/admin/feedbacks/:id',
+    auth, perm('feedback:detail'),
+    adminCtrl.feedback.detail);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
 
