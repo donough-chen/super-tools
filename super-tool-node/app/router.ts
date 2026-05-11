@@ -68,6 +68,11 @@ export default (app: Application) => {
   router.put('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.update);
   router.delete('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.destroy);
 
+  // ==================== 管理端用户自查（菜单/权限码） ====================
+  // 注意：仅挂 auth，不挂 perm —— 用户登录即可访问
+  router.get('/api/admin/auth/menus',       auth, controller.admin.auth.menus);
+  router.get('/api/admin/auth/permissions', auth, controller.admin.auth.permissions);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
 
