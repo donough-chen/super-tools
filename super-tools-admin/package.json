@@ -61,7 +61,8 @@
       "/.umi/"
     ],
     "transform": {
-      "^.+\\.(ts|tsx)$": [
+      "^.+\\.tsx$": ["babel-jest", { "configFile": "./babel.config.jest.js" }],
+      "^.+\\.ts$": [
         "ts-jest",
         {
           "diagnostics": false,
