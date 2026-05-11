@@ -14,6 +14,7 @@
 | `005_add_user_favorites.sql` | v2.4 用户收藏工具 |
 | `006_add_rbac_init.sql` | v2.5 RBAC 初始化（5 角色 + 61 权限码） |
 | `007_add_member_module.sql` | v2.6 RBAC 扩展（member 模块 +11 权限码，总数升至 72） |
+| `008_add_permission_icon_and_menu_normalize.sql` | v2.7 RBAC 基础设施 v1：permissions 加 icon；单页模块拆为目录+二级菜单；admin/operator/auditor 补齐 *:menu |
 
 ## 执行顺序
 
@@ -27,6 +28,7 @@ mysql -u <user> -p < 004_add_tools_system.sql
 mysql -u <user> -p < 005_add_user_favorites.sql
 mysql -u <user> -p < 006_add_rbac_init.sql
 mysql -u <user> -p < 007_add_member_module.sql
+mysql -u <user> -p < 008_add_permission_icon_and_menu_normalize.sql
 ```
 
 存量库升级：仅执行需要升级的迁移脚本（按文件名前缀编号顺序）。
@@ -215,3 +217,74 @@ pm2 restart super-tool-node
 
 - 仅 admin 及以上角色登录后能继续访问 member 管理端，**operator/auditor 此前若被绑定且依赖 member 写操作的工作流，需要重新梳理**
 - 该迁移**不影响 C 端** `/api/member/*` 路由（用户自查接口未挂权限）
+
+---
+
+## v2.7 RBAC 基础设施 v1（008_add_permission_icon_and_menu_normalize.sql）
+
+### 背景
+
+v2.5（006）+ v2.6（007）确立了 8 大模块共 72 条权限码，但 `permissions` 表缺少 `icon` 字段（前端菜单无法直接拿到图标），且单页模块（user / category / tool / feedback / stats / member）的顶级菜单 `type=2`、直接挂在 `parent_id=0`，缺少二级菜单层级，导致前端菜单树与实际页面路径（如 `/tool/list`）无法严格对齐。本次迁移配合 Spec-B（管理端 RBAC 基础设施）完成结构规范化与图标补齐。
+
+### 变更摘要
+
+- **新增 `permissions.icon` 字段**（`VARCHAR(60) NULL`，存 AntD Icon 名称）
+- **单页模块顶级菜单 type=2 → type=1**（升级为目录）：user / category / tool / feedback / stats / member（dashboard 保留 type=2，因其本身即叶子菜单）
+- **新增 6 条 `*:menu` 二级菜单**（type=2，path 指向实际页面，如 `/tool/list`）
+- **回填 8 大顶级模块图标**
+- **admin / operator / auditor 三个角色补齐 6 条 `*:menu` 权限映射**（菜单可见即可，不影响业务码）
+- **不涉及 schema 字段语义变更，仅追加 + 数据规范化**
+
+### 角色映射要点
+
+| 类别 | admin | operator | auditor |
+|---|:---:|:---:|:---:|
+| user/category/tool/feedback/stats/member 的 `*:menu` 二级菜单可见 | ✓ | ✓ | ✓ |
+
+> 三个角色都拥有这 6 条 `*:menu`，原因：只要原模块该角色有任意业务权限，就应能进入对应列表页菜单（菜单可见性 ≠ 业务操作权限）。
+
+### 执行步骤
+
+```bash
+# 1. 备份（可选，本次仅写入数据 + 追加字段，不修改字段语义）
+mysqldump -u <user> -p superadmin_db permissions role_permissions \
+  > backup_before_008_$(date +%Y%m%d_%H%M%S).sql
+
+# 2. 执行迁移
+mysql -u <user> -p superadmin_db < 008_add_permission_icon_and_menu_normalize.sql
+
+# 3. 校验
+mysql -u <user> -p superadmin_db -e "
+SELECT COUNT(*) FROM permissions WHERE code LIKE '%:menu';
+"
+# 期望：6
+
+mysql -u <user> -p superadmin_db -e "
+SELECT code, type, path FROM permissions
+  WHERE code IN ('user','category','tool','feedback','stats','member');
+"
+# 期望：全部 type=1
+
+mysql -u <user> -p superadmin_db -e "
+SELECT r.code, COUNT(*) FROM role_permissions rp
+  JOIN roles r ON rp.role_id=r.id
+  JOIN permissions p ON rp.permission_id=p.id
+  WHERE p.code LIKE '%:menu' GROUP BY r.code;
+"
+# 期望：admin=6  operator=6  auditor=6
+
+# 4. 重启服务（清 Redis 权限缓存）
+pm2 restart super-tool-node
+```
+
+### 注意事项
+
+- ⚠️ MySQL 5.7 不支持 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`，重复执行迁移脚本会因为 `icon` 列已存在而失败。生产环境建议执行前用 `SHOW COLUMNS FROM permissions LIKE 'icon'` 检查；如已存在，**注释掉脚本第二节的 ALTER TABLE 后再执行**。
+- ⚠️ `:menu` 后缀为系统保留命名，禁止业务自定义权限码使用 `*:menu` 形式，否则会被本脚本幂等清理段误删。
+- 迁移完成后需要让现有登录用户**手动点击「刷新菜单」或重新登录**，否则 sessionStorage 内缓存的旧菜单结构与新菜单不一致。
+
+### 相关文档
+
+- [管理端 RBAC 基础设施设计文档](../docs/superpowers/specs/2026-05-11-管理端RBAC基础设施设计文档.md) — Spec-B § 4.4 schema 调整
+- [管理端 RBAC 基础设施实施计划](../docs/superpowers/plans/2026-05-11-管理端RBAC基础设施实施计划.md) — 14 任务实施计划
+
