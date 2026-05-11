@@ -136,6 +136,51 @@ export default class PermissionService extends BaseService {
     return codes;
   }
 
+  /**
+   * 获取用户可见的菜单树（type=2，按用户权限过滤）
+   * - super_admin 短路：返回所有 admin 平台 type=2 菜单
+   * - 普通用户：取 type=2 ∩ 用户权限码
+   * - 剪枝：父节点子菜单全空且本应有子节点 → 父节点也剪掉
+   */
+  async getMenusForUser(userId: number, platform = 'admin'): Promise<any[]> {
+    const all = await this.ctx.model.Permission.findAll({
+      where: { platform, type: 2, status: 1 },
+      order: [['sort', 'ASC'], ['id', 'ASC']],
+      attributes: ['id', 'code', 'name', 'module', 'path', 'icon', 'parentId', 'sort'],
+    });
+    const list: any[] = all.map((p: any) => p.toJSON());
+
+    // super_admin 短路
+    const userRoles = await this.service.role.getUserRoles(userId);
+    const isSuperAdmin = userRoles.some((r: any) => r.code === 'super_admin');
+    if (isSuperAdmin) return this.buildMenuTree(list, list, 0);
+
+    const codes = await this.getUserPermissionCodes(userId);
+    if (codes.length === 0) return [];
+    const codeSet = new Set(codes);
+    const owned = list.filter(m => codeSet.has(m.code));
+    return this.buildMenuTree(owned, list, 0);
+  }
+
+  /**
+   * 组菜单树 + 剪枝
+   * @param owned 用户拥有的节点
+   * @param raw 原始全量节点（用于剪枝判定）
+   */
+  private buildMenuTree(owned: any[], raw: any[], parentId: number): any[] {
+    const result: any[] = [];
+    for (const node of owned.filter(n => n.parentId === parentId)) {
+      const children = this.buildMenuTree(owned, raw, node.id);
+      const hasChildrenInRaw = raw.some(r => r.parentId === node.id);
+      if (hasChildrenInRaw && children.length === 0) continue;
+      result.push({
+        id: node.id, code: node.code, name: node.name, module: node.module,
+        path: node.path, icon: node.icon, sort: node.sort, children,
+      });
+    }
+    return result;
+  }
+
   private buildTree(list: any[], parentId: number): any[] {
     return list
       .filter(item => item.parentId === parentId)
