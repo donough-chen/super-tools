@@ -5,33 +5,31 @@
 -- 新增：user:device:list / user:address:list 两条 type=4 权限
 -- 影响：super_admin 自动具备
 -- 回滚：见末尾
+--
+-- 幂等策略：
+-- - permissions：INSERT IGNORE（依赖 uk_code 唯一索引）
+-- - role_permissions：INSERT IGNORE（依赖 (role_id, permission_id) 主键）
+-- - 可重复执行
 -- ============================================================
 
--- 1. 新增权限（type=4 API 级，幂等 INSERT）
-INSERT INTO `permissions`
+-- 1. 新增权限（type=4 API 级，幂等：INSERT IGNORE 依赖 uk_code）
+INSERT IGNORE INTO `permissions`
   (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
 SELECT 'user:device:list', '查看用户设备列表', 4, 'user', 'admin',
        '/api/admin/users/:id/devices', 'GET',
        (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'user') t), 110
-WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE code = 'user:device:list')
 UNION ALL
 SELECT 'user:address:list', '查看用户地址列表', 4, 'user', 'admin',
        '/api/admin/users/:id/addresses', 'GET',
-       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'user') t), 120
-WHERE NOT EXISTS (SELECT 1 FROM `permissions` WHERE code = 'user:address:list');
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'user') t), 120;
 
--- 2. 关联 super_admin（确保超管自动具备新权限，幂等）
-INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+-- 2. 关联 super_admin（幂等：INSERT IGNORE 依赖 (role_id, permission_id) 主键）
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT
   (SELECT id FROM `roles` WHERE code = 'super_admin'),
   p.id
 FROM `permissions` p
-WHERE p.code IN ('user:device:list', 'user:address:list')
-  AND NOT EXISTS (
-    SELECT 1 FROM `role_permissions` rp
-    WHERE rp.role_id = (SELECT id FROM `roles` WHERE code = 'super_admin')
-      AND rp.permission_id = p.id
-  );
+WHERE p.code IN ('user:device:list', 'user:address:list');
 
 -- 3. 校验
 SELECT '新增权限' AS step, code, name, path, method
