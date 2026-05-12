@@ -127,6 +127,94 @@ export default class UserController extends BaseController {
     } catch { return null; }
   }
 
+  // ===== Spec-C2a：管理端用户行为 =====
+
+  /** POST /api/admin/users/:id/reset-password */
+  async resetPassword() {
+    this.validate({ newPassword: { type: 'string', min: 8, max: 50 } });
+    const id = Number(this.ctx.params.id);
+    const adminId = (this.ctx.state as any).user.id;
+    const { newPassword } = this.ctx.request.body;
+
+    let beforeData: any = null;
+    try {
+      const u = await this.service.user.findById(id);
+      beforeData = this._stripSensitive(u);
+    } catch { /* ignore */ }
+
+    try {
+      await this.service.user.adminResetPassword(adminId, id, newPassword);
+      await this.service.audit.log({
+        module: 'user', action: 'reset-password',
+        bizType: 'user', bizId: id,
+        beforeData,
+        // 不写 afterData：避免明文/hash 泄漏；newPassword 由 audit._sanitizeParams 自动脱敏
+        description: `重置用户 #${id} 密码`,
+        status: 1,
+      });
+      this.success(null, '密码已重置');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'user', action: 'reset-password',
+        bizType: 'user', bizId: id,
+        beforeData,
+        description: `尝试重置用户 #${id} 密码`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
+
+  /** PUT /api/admin/users/:id/status */
+  async changeStatus() {
+    this.validate({ status: { type: 'number' } });
+    const id = Number(this.ctx.params.id);
+    const adminId = (this.ctx.state as any).user.id;
+    const status = Number(this.ctx.request.body.status) as 0 | 1;
+
+    let beforeData: any = null;
+    try {
+      const u = await this.service.user.findById(id);
+      beforeData = this._stripSensitive(u);
+    } catch { /* ignore */ }
+
+    try {
+      const updated = await this.service.user.adminChangeStatus(adminId, id, status);
+      await this.service.audit.log({
+        module: 'user', action: 'update',
+        bizType: 'user', bizId: id,
+        beforeData, afterData: updated,
+        description: status === 0 ? `禁用用户 #${id}` : `启用用户 #${id}`,
+        status: 1,
+      });
+      this.success(updated, '状态已更新');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'user', action: 'update',
+        bizType: 'user', bizId: id,
+        beforeData,
+        description: `尝试切换用户 #${id} 状态为 ${status}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
+
+  /** GET /api/admin/users/:id/devices */
+  async adminListDevices() {
+    const id = Number(this.ctx.params.id);
+    const result = await this.service.user.listDevices(id);
+    this.success(result);
+  }
+
+  /** GET /api/admin/users/:id/addresses */
+  async adminListAddresses() {
+    const id = Number(this.ctx.params.id);
+    const result = await this.service.user.listAddresses(id);
+    this.success(result);
+  }
+
+
   /** GET /api/users/profile — 基础资料 */
   async profile() {
     const user = await this.service.user.findById(this.ctx.state.user.id);
