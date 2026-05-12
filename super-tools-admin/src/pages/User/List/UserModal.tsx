@@ -20,11 +20,9 @@ const UserModal: React.FC<Props> = ({ visible, editing, onClose, onSuccess }) =>
           email: editing.email,
           phone: editing.phone,
           nickname: editing.nickname,
-          userType: editing.userType,
         });
       } else {
         form.resetFields();
-        form.setFieldsValue({ userType: 1 });
       }
     }
   }, [visible, editing, form]);
@@ -91,12 +89,6 @@ const UserModal: React.FC<Props> = ({ visible, editing, onClose, onSuccess }) =>
         </Form.Item>
         <Form.Item label="昵称" name="nickname">
           <Input />
-        </Form.Item>
-        <Form.Item label="用户类型" name="userType">
-          <Select options={[
-            { label: '普通用户', value: 1 },
-            { label: '管理员', value: 2 },
-          ]} />
         </Form.Item>
       </Form>
     </Modal>

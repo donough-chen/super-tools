@@ -9,7 +9,7 @@ import {
   listUsers, deleteUser, changeUserStatus,
   UserListQuery, User,
 } from '@/services/user';
-import { USER_TYPE_LABELS, isSelf } from '@/utils/userType';
+import { REGISTER_SOURCE_LABELS, REGISTER_SOURCE_OPTIONS, isSelf } from '@/utils/userType';
 import { formatDateTime } from '@/utils/format';
 import { getCurrentUser } from '@/utils/authority';
 import UserModal from './UserModal';
@@ -93,9 +93,9 @@ const UsersPage: React.FC = () => {
     { title: '邮箱', dataIndex: 'email', width: 180, render: (v: string) => v || '-' },
     { title: '手机', dataIndex: 'phone', width: 130, render: (v: string) => v || '-' },
     {
-      title: '类型', dataIndex: 'userType', width: 100,
-      render: (v: number) =>
-        <Tag color={v === 2 ? 'blue' : 'default'}>{USER_TYPE_LABELS[v] || v}</Tag>,
+      title: '注册来源', dataIndex: 'registerSource', width: 120,
+      render: (v: string) =>
+        <Tag>{REGISTER_SOURCE_LABELS[v] || v || '-'}</Tag>,
     },
     {
       title: '状态', dataIndex: 'status', width: 90,
@@ -158,7 +158,7 @@ const UsersPage: React.FC = () => {
           setFilters({
             keyword: v.keyword || undefined,
             status: v.status,
-            userType: v.userType,
+            registerSource: v.registerSource,
             startDate: v.range?.[0]?.toISOString(),
             endDate: v.range?.[1]?.toISOString(),
           });
@@ -174,10 +174,10 @@ const UsersPage: React.FC = () => {
             options={[{ label: '正常', value: 1 }, { label: '禁用', value: 0 }]}
           />
         </Form.Item>
-        <Form.Item name="userType">
+        <Form.Item name="registerSource">
           <Select
-            placeholder="类型" allowClear style={{ width: 110 }}
-            options={[{ label: '普通用户', value: 1 }, { label: '管理员', value: 2 }]}
+            placeholder="注册来源" allowClear style={{ width: 140 }}
+            options={REGISTER_SOURCE_OPTIONS}
           />
         </Form.Item>
         <Form.Item name="range">

@@ -87,15 +87,10 @@ export default class PermissionService extends BaseService {
   /**
    * 判断给定 userId 是否 super_admin
    *
-   * 双重判定（任一为真即视为超管），与 middleware/checkPermission.ts 对齐：
-   *   1) JWT 登录态 userType === 3（最快、无 SQL；适用于已登录的请求上下文）
-   *   2) user_roles 表绑定了 code='super_admin' 的角色（兜底，适用于无登录态的内部调用）
+   * 统一通过 RBAC 角色判定：user_roles 表绑定了 code='super_admin' 的角色。
+   * 不再依赖已废弃的 user_type 字段。
    */
   async isSuperAdmin(userId: number): Promise<boolean> {
-    const stateUser = (this.ctx.state && (this.ctx.state as any).user) || null;
-    if (stateUser && Number(stateUser.id) === Number(userId) && Number(stateUser.userType) === 3) {
-      return true;
-    }
     const roles = await this.service.role.getUserRoles(userId);
     return roles.some((r: any) => r.code === 'super_admin');
   }
@@ -103,7 +98,7 @@ export default class PermissionService extends BaseService {
   /**
    * 获取用户全部权限编码（角色权限 + 直接授权 - 拒绝）
    *
-   * super_admin 短路：与 middleware/checkPermission.ts 的"userType=3 直接放行"语义保持一致。
+   * super_admin 短路：与 middleware/checkPermission.ts 的"super_admin 角色直接放行"语义保持一致。
    * 直接返回 admin 平台所有启用权限码，并独立缓存（key 标注 :sa）以便和普通用户结果隔离，
    * 避免普通用户曾被错误升级为 super_admin 时残留缓存。
    */

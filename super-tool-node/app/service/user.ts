@@ -7,7 +7,7 @@ export default class UserService extends BaseService {
   private readonly CACHE_TTL = 600;
 
   async create(dto: any) {
-    const { username, email, password, phone, nickname, userType, registerSource } = dto;
+    const { username, email, password, phone, nickname, registerSource } = dto;
     const { Op } = require('sequelize');
     const conditions: any[] = [];
     if (username) conditions.push({ username });
@@ -22,7 +22,7 @@ export default class UserService extends BaseService {
     const passwordHash = password ? await bcrypt.hash(password, 12) : undefined;
     const user = await this.ctx.model.User.create({
       uuid: uuidv4(), username, email, phone, passwordHash, nickname,
-      userType: userType || 1, registerSource: registerSource || 'web', registerIp: this.ctx.ip,
+      registerSource: registerSource || 'admin', registerIp: this.ctx.ip,
     } as any);
 
     await this.clearCache(`${this.CACHE_PREFIX}list:*`);
@@ -42,7 +42,7 @@ export default class UserService extends BaseService {
   }
 
   async findList(query: any): Promise<PaginationResult<any>> {
-    const { keyword, status, userType, startDate, endDate, ...pagination } = query;
+    const { keyword, status, registerSource, startDate, endDate, ...pagination } = query;
     const { Op } = require('sequelize');
     const where: any = {};
     if (keyword) {
@@ -54,7 +54,7 @@ export default class UserService extends BaseService {
       ];
     }
     if (status !== undefined) where.status = status;
-    if (userType !== undefined) where.userType = userType;
+    if (registerSource !== undefined) where.registerSource = registerSource;
     if (startDate && endDate) where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
 
     return this.paginate(this.ctx.model.User, { where, attributes: { exclude: ['password_hash'] } }, pagination);

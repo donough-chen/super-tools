@@ -72,7 +72,7 @@ const { data } = await axios.get(`${BASE_URL}/api/users/profile`, {
     "gender": 0,
     "birthday": null,
     "status": 1,
-    "userType": 0,
+    "registerSource": "web",
     "roles": [
       { "id": 1, "name": "管理员", "code": "admin" }
     ]
@@ -886,7 +886,7 @@ const { data } = await axios.delete(`${BASE_URL}/api/users/addresses/${id}`, {
 | pageSize | number | ❌ | 每页条数（默认20） |
 | keyword | string | ❌ | 搜索关键词（用户名/邮箱/昵称/手机号） |
 | status | number | ❌ | 状态筛选: 0=禁用, 1=正常 |
-| userType | number | ❌ | 用户类型筛选 |
+| registerSource | string | ❌ | 注册来源筛选（web/h5/miniprogram/ios/android/admin） |
 | startDate | string | ❌ | 注册起始日期 |
 | endDate | string | ❌ | 注册结束日期 |
 

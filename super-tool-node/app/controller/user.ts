@@ -5,10 +5,10 @@ export default class UserController extends BaseController {
   /** GET /api/users */
   async index() {
     const pagination = this.getPagination();
-    const { keyword, status, userType, startDate, endDate } = this.ctx.query;
+    const { keyword, status, registerSource, startDate, endDate } = this.ctx.query;
     const result = await this.service.user.findList({
       ...pagination, keyword, status: status !== undefined ? Number(status) : undefined,
-      userType: userType !== undefined ? Number(userType) : undefined, startDate, endDate,
+      registerSource, startDate, endDate,
     });
     this.paginated(result);
   }

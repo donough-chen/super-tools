@@ -666,7 +666,7 @@ export default class AuthService extends BaseService {
     const accessTtl = client.accessTokenTtl || 7200;
     const refreshTtl = client.refreshTokenTtl || 2592000;
 
-    const payload = { id: user.id, uuid: user.uuid, username: user.username, userType: user.userType, nonce: Math.random().toString(36).slice(2) };
+    const payload = { id: user.id, uuid: user.uuid, username: user.username, nonce: Math.random().toString(36).slice(2) };
     const accessToken = this.app.jwt.sign({ ...payload, type: 'access' }, jwtConfig.secret, { expiresIn: accessTtl });
     const refreshToken = this.app.jwt.sign({ ...payload, type: 'refresh' }, jwtConfig.secret, { expiresIn: refreshTtl });
 

@@ -87,7 +87,7 @@ export default class AuthController extends BaseController {
    * 前端用途：菜单渲染、按钮级权限控制、用户信息展示的统一入口
    */
   async me() {
-    const { id: userId, userType } = this.ctx.state.user;
+    const { id: userId } = this.ctx.state.user;
 
     // 并发拉基础资料 / 角色 / 权限码
     const [ user, roles, permissions ] = await Promise.all([
@@ -97,9 +97,8 @@ export default class AuthController extends BaseController {
     ]);
     if (!user) this.ctx.throw(404, '用户不存在');
 
-    // super_admin（userType=3）拥有所有权限：返回一个特殊标记，避免前端需要枚举所有 code
-    // 不直接返回全量权限码（数量多、易过期），由前端结合 isSuperAdmin 判定
-    const isSuperAdmin = userType === 3;
+    // super_admin 判定统一基于 RBAC 角色码，不再依赖已废弃的 user_type 字段
+    const isSuperAdmin = roles.some((r: any) => r.code === 'super_admin');
 
     this.success({
       user,

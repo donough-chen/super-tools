@@ -8,14 +8,12 @@ export interface UserDTO {
   password: string;
   phone?: string;
   nickname?: string;
-  userType?: 1 | 2;
 }
 
 export interface UserUpdateDTO {
   email?: string;
   phone?: string;
   nickname?: string;
-  userType?: 1 | 2;
   // 编辑模式不允许改 username（DB 唯一约束）；密码改通过 resetUserPassword
 }
 
@@ -24,7 +22,7 @@ export interface UserListQuery {
   pageSize?: number;
   keyword?: string;
   status?: 0 | 1;
-  userType?: 1 | 2;
+  registerSource?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -44,7 +42,8 @@ export interface User {
   nickname?: string;
   avatar?: string;
   status: 0 | 1;
-  userType: 1 | 2;
+  /** @deprecated 已废弃，仅保留向后兼容 */
+  userType?: number;
   registerSource?: string;
   registerIp?: string;
   gender?: 0 | 1 | 2;

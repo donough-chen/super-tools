@@ -12,8 +12,8 @@
 - **角色 → 权限码 → API 路由** 三段映射，可在不改代码的前提下扩展授权矩阵
 - **5 个系统角色** 覆盖典型管理人员分工
 - **八大业务模块** 共 **72 条权限码** 划清边界
-- **`super_admin` 中间件短路** 保证最高权限永远可恢复
-- **`user_type` 字段保留逐步废弃** 兼容存量代码
+- **`super_admin` 角色短路** 保证最高权限永远可恢复（通过 RBAC `roles.code='super_admin'` 判定，不再依赖 `user_type` 字段）
+- **`user_type` 字段已废弃**（v2.9，2026-05-12），权限判定统一走 `user_roles` + `roles` 表
 
 ---
 
@@ -48,9 +48,13 @@ users  ─┬─< user_roles >─┬─ roles ─┬─< role_permissions >─�
 
 > 详细权限映射见 `database/006_add_rbac_init.sql` 与 `database/007_add_member_module.sql` 末尾的校验语句。
 
-### 存量用户自动绑定
+### 存量用户自动绑定（历史迁移，user_type 已废弃）
 
-| `users.user_type` | 自动绑定到 |
+> ⚠️ 以下映射仅用于 006 迁移脚本的历史存量数据迁移，`user_type` 字段已于 v2.9（2026-05-12）废弃。
+> 当前权限判定统一通过 `user_roles` + `roles` 表 RBAC 体系管理，不再读取 `user_type`。
+> 用户来源平台由 `users.register_source` 字段标识（对应 `oauth_clients.platform`）。
+
+| `users.user_type`（已废弃） | 历史迁移绑定到 |
 |---|---|
 | `3` | `super_admin` |
 | `2` | `admin` |
@@ -112,7 +116,9 @@ users  ─┬─< user_roles >─┬─ roles ─┬─< role_permissions >─�
   │
   ├─ ctx.state.user 不存在 ────────────────> throw 401
   │
-  ├─ user.userType === 3（super_admin） ──> next() ✅ 直接放行
+  ├─ service.permission.isSuperAdmin(user.id)
+  │     └─ 查 user_roles 表 → roles.code === 'super_admin'
+  │     └─ true ────────────────────────────> next() ✅ 直接放行
   │
   ├─ 调用 PermissionService.getUserPermissionCodes(userId)
   │     ├─ 1. 读 redis 缓存 user:permissions:<userId>
@@ -222,6 +228,8 @@ GET /api/auth/me
 
 - 数据库初始化：[`database/006_add_rbac_init.sql`](../../database/006_add_rbac_init.sql)
 - member 模块扩展：[`database/007_add_member_module.sql`](../../database/007_add_member_module.sql)
+- **user_type 废弃迁移**：[`database/010_deprecate_user_type.sql`](../../database/010_deprecate_user_type.sql)
+- user_type 重构设计：[`docs/superpowers/specs/2026-05-12-user-type-refactor-design.md`](../superpowers/specs/2026-05-12-user-type-refactor-design.md)
 - 数据库迁移说明：[`database/README.md`](../../database/README.md)
 - **加新权限 SOP**：[`guides/添加新权限指南.md`](../guides/添加新权限指南.md)
 - 角色管理 API：[`api/role/README.md`](../api/role/README.md)

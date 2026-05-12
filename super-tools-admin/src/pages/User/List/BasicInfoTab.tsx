@@ -1,7 +1,7 @@
 import React from 'react';
 import { Descriptions, Avatar, Tag, Empty } from 'antd';
 import { User } from '@/services/user';
-import { USER_TYPE_LABELS, USER_STATUS_LABELS, GENDER_LABELS } from '@/utils/userType';
+import { REGISTER_SOURCE_LABELS, USER_STATUS_LABELS, GENDER_LABELS } from '@/utils/userType';
 import { formatDateTime } from '@/utils/format';
 
 const BasicInfoTab: React.FC<{ user: User | null }> = ({ user }) => {
@@ -21,9 +21,9 @@ const BasicInfoTab: React.FC<{ user: User | null }> = ({ user }) => {
       <Descriptions.Item label="昵称">{user.nickname || '-'}</Descriptions.Item>
       <Descriptions.Item label="邮箱">{user.email || '-'}</Descriptions.Item>
       <Descriptions.Item label="手机">{user.phone || '-'}</Descriptions.Item>
-      <Descriptions.Item label="用户类型">
-        <Tag color={user.userType === 2 ? 'blue' : 'default'}>
-          {USER_TYPE_LABELS[user.userType] || user.userType}
+      <Descriptions.Item label="注册来源">
+        <Tag>
+          {REGISTER_SOURCE_LABELS[user.registerSource || ''] || user.registerSource || '-'}
         </Tag>
       </Descriptions.Item>
       <Descriptions.Item label="状态">
@@ -33,7 +33,6 @@ const BasicInfoTab: React.FC<{ user: User | null }> = ({ user }) => {
       </Descriptions.Item>
       <Descriptions.Item label="性别">{GENDER_LABELS[user.gender ?? 0]}</Descriptions.Item>
       <Descriptions.Item label="生日">{user.birthday || '-'}</Descriptions.Item>
-      <Descriptions.Item label="注册来源">{user.registerSource || '-'}</Descriptions.Item>
       <Descriptions.Item label="注册 IP">{user.registerIp || '-'}</Descriptions.Item>
       <Descriptions.Item label="角色" span={2}>
         {user.roles?.length

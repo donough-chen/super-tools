@@ -2,6 +2,8 @@
 
 > 版本: 1.0 | 日期: 2026-04-01 | 状态: approved
 
+> ⚠️ **部分更新（2026-05-12）**：用户列表 `GET /api/users` 的 `userType` 筛选参数已废弃，改为 `registerSource`（注册来源平台）。详见 [user_type 重构设计文档](./2026-05-12-user-type-refactor-design.md)。
+
 ## 范围
 对齐 init.sql v2.0，重写 用户体系+SSO认证+RBAC权限，13张表。
 

@@ -44,6 +44,7 @@ export default (app: Application) => {
     avatar: { type: STRING(500), allowNull: true },
     gender: { type: TINYINT.UNSIGNED, defaultValue: 0 },
     birthday: { type: DATEONLY, allowNull: true },
+    /** @deprecated 已废弃，权限请查 user_roles 表。保留仅为向后兼容 */
     userType: { type: TINYINT.UNSIGNED, defaultValue: 1, field: 'user_type' },
     status: { type: TINYINT.UNSIGNED, defaultValue: 1 },
     isVerified: { type: TINYINT, defaultValue: 0, field: 'is_verified' },

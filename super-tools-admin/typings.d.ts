@@ -38,7 +38,6 @@ interface CurrentUser {
   nickname: string;
   email: string;
   avatar?: string;
-  userType?: string;
 }
 
 /** RBAC 菜单节点（来自后端 GET /api/admin/auth/menus） */

@@ -16,6 +16,7 @@
 | `007_add_member_module.sql` | v2.6 RBAC 扩展（member 模块 +11 权限码，总数升至 72） |
 | `008_add_permission_icon_and_menu_normalize.sql` | v2.7 RBAC 基础设施 v1：permissions 加 icon；单页模块拆为目录+二级菜单；admin/operator/auditor 补齐 *:menu |
 | `009_add_user_admin_actions.sql` | v2.8 Spec-C2a：新增 user:device:list / user:address:list 权限码（管理端查看用户设备/地址） |
+| `010_deprecate_user_type.sql` | v2.9 废弃 user_type 字段：更新 COMMENT 标记废弃，权限统一走 RBAC（user_roles + roles 表） |
 
 ## 执行顺序
 
@@ -31,6 +32,7 @@ mysql -u <user> -p < 006_add_rbac_init.sql
 mysql -u <user> -p < 007_add_member_module.sql
 mysql -u <user> -p < 008_add_permission_icon_and_menu_normalize.sql
 mysql -u <user> -p < 009_add_user_admin_actions.sql
+mysql -u <user> -p < 010_deprecate_user_type.sql
 ```
 
 存量库升级：仅执行需要升级的迁移脚本（按文件名前缀编号顺序）。
@@ -84,7 +86,7 @@ mysql -u <user> -p < 009_add_user_admin_actions.sql
 | `2` 普通管理员 | `admin` |
 | `1` 普通用户 | `user` |
 
-> `user_type` 字段保留**逐步废弃**策略，后续业务代码统一走 `roles` 判断。
+> `user_type` 字段已于 v2.9（010 迁移）正式废弃。代码中不再使用 `user_type` 做权限判断，统一走 `user_roles` + `roles` 表 RBAC 体系。用户来源平台由 `register_source` 字段标识。
 
 ### 幂等性
 
@@ -154,7 +156,7 @@ pm2 restart super-tool-node
 - ⚠️ 脚本会**清空所有系统角色（type=1）的 user_roles 绑定**后按 user_type 重建。若线上存在「人工特别绑定的系统角色（例如手工把某个 user_type=1 的用户绑成 admin）」会被覆盖，迁移前需确认或单独留存。
 - ⚠️ MySQL 5.7 不支持 `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`，重复执行迁移脚本会因为 `module` 列已存在而失败。生产环境建议在执行前用 `SHOW COLUMNS FROM permissions LIKE 'module'` 检查；如已存在，**注释掉脚本第一节的 ALTER TABLE 后再执行**。
 - ⚠️ `role_permissions` 表无外键级联，删除/重建顺序错误会留下孤儿数据 → 脚本严格按"先关联表后主表"清理。
-- 迁移完成后需要让现有登录用户重新登录或主动清缓存，否则 JWT 内存的旧 user_type 与 RBAC 不一致。
+- 迁移完成后需要让现有登录用户重新登录或主动清缓存，否则旧 redis 权限缓存与 RBAC 不一致。
 
 ### 相关文档
 
@@ -327,3 +329,52 @@ mysql -u <user> -p superadmin_db < 009_add_user_admin_actions.sql
 
 - [Spec-C2a 设计文档](../docs/superpowers/specs/2026-05-12-Spec-C2a管理端用户与反馈管理设计文档.md)
 - [Spec-C2a 实施计划](../docs/superpowers/plans/2026-05-12-Spec-C2a管理端用户与反馈管理实施计划.md)
+
+---
+
+## v2.9 废弃 user_type 字段（010_deprecate_user_type.sql）
+
+### 背景
+
+`users.user_type`（TINYINT: 1=普通用户, 2=管理员, 3=超级管理员）与 `roles` 表功能重叠，导致权限判断分散在两处（中间件检查 `userType === 3` 和 RBAC 角色码 `super_admin`）。本次迁移正式废弃 `user_type` 的权限语义，统一走 RBAC。
+
+### 变更摘要
+
+- **`user_type` 字段 COMMENT 更新**为 `@deprecated 已废弃-权限请查user_roles表`（字段保留不删除，向后兼容）
+- **确保 admin 用户在 `user_roles` 表中有 `super_admin` 角色绑定**（幂等）
+- **不涉及字段删除或数据迁移**
+- **用户来源平台** 由已有的 `register_source` 字段承担（值与 `oauth_clients.platform` 一致）
+
+### 代码侧配套变更
+
+| 文件 | 变更 |
+|---|---|
+| `app/middleware/checkPermission.ts` | 移除 `userType === 3` 短路，改为查 `super_admin` 角色 |
+| `app/service/permission.ts` | `isSuperAdmin()` 移除 userType 判定，仅保留角色码 |
+| `app/service/auth.ts` | JWT payload 移除 `userType` |
+| `app/controller/auth.ts` | `me()` 接口 `isSuperAdmin` 基于角色码 |
+| `app/service/user.ts` | 列表筛选 `userType` → `registerSource` |
+| 管理端 UI | "用户类型"列/筛选器 → "注册来源" |
+
+### 执行步骤
+
+```bash
+mysql -u <user> -p superadmin_db < 010_deprecate_user_type.sql
+
+# 清 Redis 权限缓存
+redis-cli --scan --pattern "user:permissions:*" | xargs redis-cli DEL
+
+# 重启服务
+pm2 restart super-tool-node
+```
+
+### 注意事项
+
+- 旧 JWT token 中仍可能包含 `userType` 字段，但代码已不读取，自然过期后消失
+- 前端需重新登录以获取最新 `/api/auth/me` 返回结构
+- `user_type` 字段保留在数据库中，仅更新注释，不影响存量数据
+
+### 相关文档
+
+- [user_type 重构设计文档](../docs/superpowers/specs/2026-05-12-user-type-refactor-design.md)
+- [RBAC 架构文档](../docs/architecture/RBAC.md)

@@ -6,10 +6,10 @@ import { TEST_CLIENT, TEST_ADMIN, assertSuccess } from '../helpers/setup';
 /**
  * RBAC 中间件 (checkPermission) 集成测试
  *
- * 覆盖路由权限化（P2-B）后的三大行为分支：
- *   1. super_admin（userType=3）—— 中间件第 15 行短路，应一律放行
+ * 覆盖路由权限化后的三大行为分支：
+ *   1. super_admin（通过 RBAC 角色码判定）—— 中间件查询角色后短路放行
  *   2. 未登录 —— 401
- *   3. 普通用户（userType=1，无管理端角色）—— 403 权限不足
+ *   3. 普通用户（无管理端角色）—— 403 权限不足
  *
  * 不覆盖：
  *   - admin/operator/auditor 角色精细矩阵（需要造用户 + 角色绑定，留给后续 RBAC 矩阵专项测）
@@ -45,7 +45,7 @@ describe('RBAC checkPermission middleware', () => {
       throw new Error('super_admin 登录失败: ' + JSON.stringify(loginRes.body));
     }
 
-    // 2) 注册一个普通用户（userType=1，仅绑定 user 系统角色，无任何管理端权限）
+    // 2) 注册一个普通用户（仅绑定 user 系统角色，无任何管理端权限）
     const regRes = await app.httpRequest()
       .post('/api/auth/register')
       .send({
@@ -81,7 +81,7 @@ describe('RBAC checkPermission middleware', () => {
 
   // ==================== 分支 1：super_admin 短路放行 ====================
 
-  describe('super_admin (userType=3) bypass', () => {
+  describe('super_admin (RBAC role) bypass', () => {
     it('GET /api/admin/tools — super_admin 应放行 (200)', async () => {
       const res = await app.httpRequest()
         .get('/api/admin/tools')
@@ -160,7 +160,7 @@ describe('RBAC checkPermission middleware', () => {
 
   // ==================== 分支 3：普通用户 403 ====================
 
-  describe('normal user (userType=1) without admin permissions returns 403', () => {
+  describe('normal user without admin permissions returns 403', () => {
     it('GET /api/admin/tools — 普通用户应被拒 (403)', async () => {
       const res = await app.httpRequest()
         .get('/api/admin/tools')

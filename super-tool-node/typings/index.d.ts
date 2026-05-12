@@ -11,7 +11,7 @@ declare module 'egg' {
   interface Context {
     model: any;
     state: {
-      user?: { id: number; uuid: string; username: string; userType: number; type: string };
+      user?: { id: number; uuid: string; username: string; type: string };
       token?: string;
       sessionId?: string;
       [key: string]: any;
