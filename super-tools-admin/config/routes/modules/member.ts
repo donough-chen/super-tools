@@ -1,17 +1,25 @@
 import type { IRoute } from 'umi';
 
 /**
- * 会员管理路由（DB 顶级目录 member，type=1 已存在 — 见 008 迁移）
- * Spec-C2b 填充 3 二级页：
- * - /member/stats   权限码 member:stats:view
- * - /member/config  权限码 member:level:list / member:plan:list（Tab 内分别校验）
- * - /member/users   权限码 member:user:list / member:points:log:view（Tab 内分别校验）
+ * 会员管理路由（DB 顶级目录 member，type=1；DB 子菜单仅 member:menu，path=/member/list）
+ *
+ * 前端实际拆了 Stats / Config / Users 三页，但数据库菜单只有一项入口 /member/list。
+ * 所以：
+ * - /member       → 重定向到 /member/list
+ * - /member/list  → Users 页（业务最常用入口，也是 DB 菜单实际指向）
+ * - /member/stats / /member/config / /member/users 作为同模块的扩展页保留，
+ *   AuthWrapper 找不到精确菜单节点时会按"前缀回退到父目录 member"判定权限。
  */
 const memberRoutes: IRoute[] = [
   {
     path: '/member',
     routes: [
-      { path: '/member', redirect: '/member/stats' },
+      { path: '/member', redirect: '/member/list' },
+      {
+        path: '/member/list',
+        component: '@/pages/Member/Users',
+        wrappers: ['@/components/AuthWrapper'],
+      },
       {
         path: '/member/stats',
         component: '@/pages/Member/Stats',

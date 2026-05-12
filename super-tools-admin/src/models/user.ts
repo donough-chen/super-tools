@@ -50,13 +50,30 @@ const UserModel: UserModelType = {
   effects: {
     /**
      * 登录
+     *
+     * 编排：
+     *   1. 调 loginApi
+     *   2. 写 token / setLoggedIn
+     *   3. **等待** fetchCurrent + initRBAC 都完成（避免跳转后立即并发请求出错被
+     *      401 拦截器误清 token），任一失败也不阻塞跳转（已记录到 store 的状态
+     *      会在新页面里自动刷新）
+     *   4. 跳转到 redirect 或 /
+     *
+     * 偶现 bug 修复：
+     *   - 旧实现 fire-and-forget 派发 fetchCurrent + initRBAC + 立即 history.replace，
+     *     导致跳转后这两个 effect 才并发执行；任一接口若临时 401（网络抖动 / 服务
+     *     端返回慢于跳转），request 拦截器会执行 clearAuth + window.location='/login'，
+     *     视觉上"输入对的密码后又被弹回登录页"。
+     *   - 这里改成 yield 等待，确保跳转前关键副作用执行完，且把它们对错误的处理
+     *     收敛到 effect 内部。
+     *   - redirect 参数做白名单兜底，避免诸如 ?redirect=/login 的循环。
      */
     *login({ payload }, { call, put }) {
       yield put({ type: 'setLoginLoading', payload: true });
       try {
         const response: ApiResponse<LoginResult> = yield call(loginApi, payload);
         if (response?.code === 200 && response.data) {
-          // 保存认证信息
+          // 1. 保存认证信息（同步写 localStorage，后续请求拦截器可立即读到）
           setAuth({
             accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
@@ -65,14 +82,27 @@ const UserModel: UserModelType = {
           yield put({ type: 'setLoggedIn', payload: true });
           message.success('登录成功');
 
-          // 获取用户信息
-          yield put({ type: 'fetchCurrent' });
-          // === Spec-B 新增：登录后初始化 RBAC（菜单 + 权限码） ===
-          yield put({ type: 'global/initRBAC' });
+          // 2. 等待用户信息 + RBAC 初始化（任一失败不阻塞跳转）
+          //    使用 put.resolve 等待 effect 完成；fetchCurrent / initRBAC 内部各自
+          //    catch 掉异常，避免 saga 抛异常打断主流程
+          try {
+            yield (put as any).resolve({ type: 'fetchCurrent' });
+          } catch { /* swallow */ }
+          try {
+            yield (put as any).resolve({ type: 'global/initRBAC' });
+          } catch { /* swallow */ }
 
-          // 跳转至首页或回调地址
-          const redirect = new URLSearchParams(window.location.search).get('redirect');
-          history.replace(redirect || '/');
+          // 3. 计算跳转目标（白名单防御：避免 redirect=/login 之类的循环）
+          const raw = new URLSearchParams(window.location.search).get('redirect');
+          const safeRedirect = (() => {
+            if (!raw) return '/';
+            // 必须是站内绝对路径，且不允许指回登录/注册页
+            if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
+            const pathOnly = raw.split('?')[0];
+            if (pathOnly === '/login' || pathOnly === '/register') return '/';
+            return raw;
+          })();
+          history.replace(safeRedirect);
           return { success: true };
         }
         message.error(response?.message || '登录失败');
@@ -129,6 +159,12 @@ const UserModel: UserModelType = {
 
     /**
      * 获取当前用户信息
+     *
+     * 注意：catch 里**不再清除认证**。原实现任何异常都 clearAuth() 会与登录后
+     * 的并发竞态相互作用，导致"登录成功又被弹回登录页"的偶现 bug。
+     *
+     * 真正的 401 已由 utils/request.ts 的拦截器统一兜底（清 token + 跳登录），
+     * 这里只需吞掉异常即可。
      */
     *fetchCurrent(_, { call, put }) {
       try {
@@ -137,10 +173,10 @@ const UserModel: UserModelType = {
           setCurrentUser(response.data);
           yield put({ type: 'setCurrentUser', payload: response.data });
         }
-      } catch {
-        // Token 失效等异常，清除登录状态
-        clearAuth();
-        yield put({ type: 'reset' });
+      } catch (err) {
+        // 不主动 clearAuth：避免与登录流程竞态；401 由 request 拦截器处理
+        // 其它错误（500 / 网络抖动）允许下次重试
+        console.warn('[fetchCurrent] failed:', err);
       }
     },
   },

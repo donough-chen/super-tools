@@ -50,5 +50,7 @@ interface MenuNode {
   path: string;
   icon: string | null;
   sort: number;
+  /** 节点类型：1=目录（仅做分组容器，无独立页面），2=菜单（叶子或可点击页面） */
+  type?: 1 | 2;
   children: MenuNode[];
 }

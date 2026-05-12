@@ -2,29 +2,30 @@ import type { IRoute } from 'umi';
 
 /**
  * 系统管理路由（DB 顶级目录 system，type=1）
- * Spec-C1 填充 4 个二级页：
- * - /system/roles            权限码 role:menu
- * - /system/permissions      权限码 permission:menu
- * - /system/audit-logs       权限码 system:audit-log:menu
- * - /system/permission-test  权限码 system:permission-test:menu
+ *
+ * 路径与 DB permissions.path 严格对齐（单数）：
+ * - /system/role            → 权限码 system:role
+ * - /system/permission      → 权限码 system:permission
+ * - /system/audit-log       → 权限码 system:audit-log
+ * - /system/permission-test → 权限码 system:permission-test
  */
 const systemRoutes: IRoute[] = [
   {
     path: '/system',
     routes: [
-      { path: '/system', redirect: '/system/roles' },
+      { path: '/system', redirect: '/system/role' },
       {
-        path: '/system/roles',
+        path: '/system/role',
         component: '@/pages/System/Roles',
         wrappers: ['@/components/AuthWrapper'],
       },
       {
-        path: '/system/permissions',
+        path: '/system/permission',
         component: '@/pages/System/Permissions',
         wrappers: ['@/components/AuthWrapper'],
       },
       {
-        path: '/system/audit-logs',
+        path: '/system/audit-log',
         component: '@/pages/System/AuditLogs',
         wrappers: ['@/components/AuthWrapper'],
       },

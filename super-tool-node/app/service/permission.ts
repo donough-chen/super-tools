@@ -85,9 +85,47 @@ export default class PermissionService extends BaseService {
   }
 
   /**
+   * 判断给定 userId 是否 super_admin
+   *
+   * 双重判定（任一为真即视为超管），与 middleware/checkPermission.ts 对齐：
+   *   1) JWT 登录态 userType === 3（最快、无 SQL；适用于已登录的请求上下文）
+   *   2) user_roles 表绑定了 code='super_admin' 的角色（兜底，适用于无登录态的内部调用）
+   */
+  async isSuperAdmin(userId: number): Promise<boolean> {
+    const stateUser = (this.ctx.state && (this.ctx.state as any).user) || null;
+    if (stateUser && Number(stateUser.id) === Number(userId) && Number(stateUser.userType) === 3) {
+      return true;
+    }
+    const roles = await this.service.role.getUserRoles(userId);
+    return roles.some((r: any) => r.code === 'super_admin');
+  }
+
+  /**
    * 获取用户全部权限编码（角色权限 + 直接授权 - 拒绝）
+   *
+   * super_admin 短路：与 middleware/checkPermission.ts 的"userType=3 直接放行"语义保持一致。
+   * 直接返回 admin 平台所有启用权限码，并独立缓存（key 标注 :sa）以便和普通用户结果隔离，
+   * 避免普通用户曾被错误升级为 super_admin 时残留缓存。
    */
   async getUserPermissionCodes(userId: number): Promise<string[]> {
+    // ============ super_admin 短路（独立缓存通道） ============
+    if (await this.isSuperAdmin(userId)) {
+      const saKey = `user:permissions:sa:${userId}`;
+      try {
+        const cached = await this.app.redis.get(saKey);
+        if (cached) return JSON.parse(cached);
+      } catch { /* ignore */ }
+
+      const all = await this.ctx.model.Permission.findAll({
+        where: { platform: 'admin', status: 1 },
+        attributes: ['code'],
+      });
+      const codes = all.map((p: any) => (p as any).code).filter(Boolean);
+      try { await this.app.redis.setex(saKey, 3600, JSON.stringify(codes)); } catch { /* ignore */ }
+      return codes;
+    }
+
+    // ============ 普通用户：原有逻辑 ============
     // 先查缓存
     try {
       const cached = await this.app.redis.get(`user:permissions:${userId}`);
@@ -97,13 +135,13 @@ export default class PermissionService extends BaseService {
     const { Op } = require('sequelize');
 
     // 1. 通过角色获取权限
-    const userRoles = await this.ctx.model.UserRole.findAll({
+    const userRoleRows = await this.ctx.model.UserRole.findAll({
       where: {
         userId,
         [Op.or]: [{ expireAt: null }, { expireAt: { [Op.gt]: new Date() } }],
       },
     });
-    const roleIds = userRoles.map((ur: any) => ur.roleId);
+    const roleIds = userRoleRows.map((ur: any) => ur.roleId);
 
     let permCodes: Set<string> = new Set();
     if (roleIds.length > 0) {
@@ -137,28 +175,53 @@ export default class PermissionService extends BaseService {
   }
 
   /**
-   * 获取用户可见的菜单树（type=2，按用户权限过滤）
-   * - super_admin 短路：返回所有 admin 平台 type=2 菜单
-   * - 普通用户：取 type=2 ∩ 用户权限码
-   * - 剪枝：父节点子菜单全空且本应有子节点 → 父节点也剪掉
+   * 获取用户可见的菜单树（type IN [1=目录, 2=菜单]，按用户权限过滤）
+   *
+   * 历史背景：008 迁移把 user/category/tool/feedback/stats/member 这 6 个顶级
+   * 由 type=2 升级为 type=1（目录），并在其下挂 *:menu 二级菜单。因此前端导航
+   * 需要的"菜单树"实际是「目录(type=1) + 菜单(type=2)」的混合树，单独查 type=2
+   * 会丢掉 6 大顶级目录，导致树只剩 dashboard 一个孤节点。
+   *
+   * 规则：
+   *   - super_admin 短路：返回所有 admin 平台 type∈{1,2} 的节点
+   *   - 普通用户：取 type∈{1,2} ∩ 用户权限码集合；若用户拥有目录下的子菜单，
+   *     即便 user 本人未直接被授予目录 code，也应保留目录作为分组（剪枝阶段
+   *     处理）
+   *   - 剪枝：原始树中本应有子节点（目录），但用户可见子节点为空 → 剪掉父
    */
   async getMenusForUser(userId: number, platform = 'admin'): Promise<any[]> {
+    const { Op } = require('sequelize');
     const all = await this.ctx.model.Permission.findAll({
-      where: { platform, type: 2, status: 1 },
+      where: { platform, type: { [Op.in]: [1, 2] }, status: 1 },
       order: [['sort', 'ASC'], ['id', 'ASC']],
-      attributes: ['id', 'code', 'name', 'module', 'path', 'icon', 'parentId', 'sort'],
+      attributes: ['id', 'code', 'name', 'module', 'path', 'icon', 'parentId', 'sort', 'type'],
     });
     const list: any[] = all.map((p: any) => p.toJSON());
 
-    // super_admin 短路
-    const userRoles = await this.service.role.getUserRoles(userId);
-    const isSuperAdmin = userRoles.some((r: any) => r.code === 'super_admin');
-    if (isSuperAdmin) return this.buildMenuTree(list, list, 0);
+    // super_admin 短路（与 getUserPermissionCodes / checkPermission 中间件统一判定）
+    if (await this.isSuperAdmin(userId)) return this.buildMenuTree(list, list, 0);
 
     const codes = await this.getUserPermissionCodes(userId);
     if (codes.length === 0) return [];
     const codeSet = new Set(codes);
-    const owned = list.filter(m => codeSet.has(m.code));
+
+    // 用户拥有的"叶子菜单"集合
+    const ownedSelf = list.filter(m => codeSet.has(m.code));
+
+    // 上溯补齐祖先目录：只要某节点 owned，就把它的所有 type=1 祖先一并视为可见
+    const byId = new Map<number, any>(list.map((n: any) => [n.id, n]));
+    const ownedIds = new Set<number>(ownedSelf.map((n: any) => n.id));
+    for (const node of ownedSelf) {
+      let cursor = node;
+      while (cursor && cursor.parentId) {
+        const parent = byId.get(cursor.parentId);
+        if (!parent) break;
+        if (parent.type === 1) ownedIds.add(parent.id);
+        cursor = parent;
+      }
+    }
+    const owned = list.filter((n: any) => ownedIds.has(n.id));
+
     return this.buildMenuTree(owned, list, 0);
   }
 
@@ -175,7 +238,9 @@ export default class PermissionService extends BaseService {
       if (hasChildrenInRaw && children.length === 0) continue;
       result.push({
         id: node.id, code: node.code, name: node.name, module: node.module,
-        path: node.path, icon: node.icon, sort: node.sort, children,
+        path: node.path, icon: node.icon, sort: node.sort,
+        type: node.type, // 1=目录 2=菜单，前端据此决定是否渲染为可点击项
+        children,
       });
     }
     return result;

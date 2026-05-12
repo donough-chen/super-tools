@@ -58,8 +58,16 @@ DELETE FROM `roles` WHERE code = 'auditor';
 
 -- 已有 super_admin / admin / operator / user / guest 由 init.sql 创建
 -- 这里仅补一个 auditor（审计员）
-INSERT INTO `roles` (`name`, `code`, `type`, `platform`, `description`, `sort`) VALUES
-  ('审计员', 'auditor', 1, 'admin', '只读 + 审计日志查看，不能修改任何业务数据', 5);
+-- INSERT INTO `roles` (`name`, `code`, `type`, `platform`, `description`, `sort`) VALUES
+--   ('审计员', 'auditor', 1, 'admin', '只读 + 审计日志查看，不能修改任何业务数据', 3);
+-- 直接初始化roles
+INSERT IGNORE INTO `roles` (`name`, `code`, `type`, `platform`, `description`, `sort`) VALUES
+('超级管理员', 'super_admin',  1, 'all',   '拥有所有权限,不受RBAC限制', 0),
+('管理员',     'admin',        1, 'admin', '后台管理权限',               1),
+('运营',       'operator',     1, 'admin', '内容运营权限',               2),
+('审计员',   'auditor',         1, 'admin',   '只读 + 审计日志查看',               3),
+('普通用户',   'user',         1, 'all',   'Web/H5 端默认角色',               4),
+('访客',       'guest',        1, 'all',   '未登录访客权限',             5);
 
 
 -- ============================================================

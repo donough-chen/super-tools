@@ -20,9 +20,30 @@ const errorHandler = (error: ResponseError) => {
   const { response, data } = error;
 
   if (response?.status === HttpCode.UNAUTHORIZED) {
+    // 兜底：登录态失效统一清认证 + 跳登录页
+    // 防御：
+    //   1. 登录/注册接口本身的 401（密码错等业务态）由 model 层 message 提示，
+    //      这里不再叠加一次"登录已过期"通知，也不强制跳转。
+    //   2. 当前已经在登录/注册页时不重复跳转，避免登录流程被中途打断。
+    const reqUrl = (response?.url || '') as string;
+    const isAuthApi =
+      reqUrl.includes('/api/auth/login') ||
+      reqUrl.includes('/api/auth/register') ||
+      reqUrl.includes('/api/auth/phone-login') ||
+      reqUrl.includes('/api/auth/wechat-login');
+
+    if (isAuthApi) {
+      // 业务侧的 401（如密码错）—— 让 model 内部 catch 自己处理 message
+      throw error;
+    }
+
+    const onAuthPage =
+      window.location.pathname === '/login' ||
+      window.location.pathname === '/register';
+
     notification.error({ message: '登录已过期，请重新登录' });
     clearAuth();
-    if (window.location.pathname !== '/login') {
+    if (!onAuthPage) {
       window.location.href = '/login';
     }
     return;
