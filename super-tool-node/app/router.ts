@@ -50,6 +50,22 @@ export default (app: Application) => {
   router.put('/api/users/:id', auth, perm('user:update'), controller.user.update);
   router.delete('/api/users/:id', auth, perm('user:delete'), controller.user.destroy);
 
+  // ==================== 用户管理增强（Spec-C2a） ====================
+  router.post('/api/admin/users/:id/reset-password',
+    auth, perm('user:reset-password'),
+    controller.user.resetPassword);
+  router.put('/api/admin/users/:id/status',
+    auth, perm('user:disable'),
+    controller.user.changeStatus);
+  router.get('/api/admin/users/:id/devices',
+    auth, perm('user:device:list'),
+    controller.user.adminListDevices);
+  router.get('/api/admin/users/:id/addresses',
+    auth, perm('user:address:list'),
+    controller.user.adminListAddresses);
+
+
+
   // ==================== 角色管理 ====================
   router.get('/api/admin/roles', auth, perm('system:role:list'), controller.admin.role.index);
   router.get('/api/admin/roles/:id', auth, perm('system:role:detail'), controller.admin.role.show);
