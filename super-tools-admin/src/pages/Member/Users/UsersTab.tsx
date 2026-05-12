@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Table, Button, Input, Space, Form, Select, Tag, Drawer,
+  Table, Button, Input, Space, Form, Select, Tag,
 } from 'antd';
 import { ReloadOutlined } from '@ant-design/icons';
 import AuthButton from '@/components/AuthButton';
@@ -10,29 +10,13 @@ import {
 } from '@/services/member';
 import { formatCurrency } from '@/utils/memberFormat';
 import { formatDateTime } from '@/utils/format';
+import DetailDrawer from './DetailDrawer';
 
 interface Props {
   onJumpToLogs?: (userId: number) => void;
 }
 
-/**
- * 占位 DetailDrawer，T9 替换为完整版（4 段折叠 + 3 Form）
- */
-const DetailDrawerPlaceholder: React.FC<{
-  visible: boolean;
-  target: MemberUser | null;
-  onClose: () => void;
-}> = ({ visible, target, onClose }) => (
-  <Drawer
-    title={`会员详情 #${target?.userId ?? ''}（T9 完整化）`}
-    width={720}
-    open={visible}
-    onClose={onClose}
-    destroyOnClose
-  />
-);
-
-const UsersTab: React.FC<Props> = ({ onJumpToLogs: _onJumpToLogs }) => {
+const UsersTab: React.FC<Props> = ({ onJumpToLogs }) => {
   const [data, setData] = useState<{ list: MemberUser[]; total: number }>({ list: [], total: 0 });
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -170,10 +154,12 @@ const UsersTab: React.FC<Props> = ({ onJumpToLogs: _onJumpToLogs }) => {
         scroll={{ x: 1300 }}
       />
 
-      <DetailDrawerPlaceholder
+      <DetailDrawer
         visible={drawerVisible}
         target={target}
         onClose={() => setDrawerVisible(false)}
+        onSuccess={fetch}
+        onJumpToLogs={onJumpToLogs}
       />
     </>
   );
