@@ -15,6 +15,7 @@
 | `006_add_rbac_init.sql` | v2.5 RBAC 初始化（5 角色 + 61 权限码） |
 | `007_add_member_module.sql` | v2.6 RBAC 扩展（member 模块 +11 权限码，总数升至 72） |
 | `008_add_permission_icon_and_menu_normalize.sql` | v2.7 RBAC 基础设施 v1：permissions 加 icon；单页模块拆为目录+二级菜单；admin/operator/auditor 补齐 *:menu |
+| `009_add_user_admin_actions.sql` | v2.8 Spec-C2a：新增 user:device:list / user:address:list 权限码（管理端查看用户设备/地址） |
 
 ## 执行顺序
 
@@ -29,6 +30,7 @@ mysql -u <user> -p < 005_add_user_favorites.sql
 mysql -u <user> -p < 006_add_rbac_init.sql
 mysql -u <user> -p < 007_add_member_module.sql
 mysql -u <user> -p < 008_add_permission_icon_and_menu_normalize.sql
+mysql -u <user> -p < 009_add_user_admin_actions.sql
 ```
 
 存量库升级：仅执行需要升级的迁移脚本（按文件名前缀编号顺序）。
@@ -288,3 +290,40 @@ pm2 restart super-tool-node
 - [管理端 RBAC 基础设施设计文档](../docs/superpowers/specs/2026-05-11-管理端RBAC基础设施设计文档.md) — Spec-B § 4.4 schema 调整
 - [管理端 RBAC 基础设施实施计划](../docs/superpowers/plans/2026-05-11-管理端RBAC基础设施实施计划.md) — 14 任务实施计划
 
+
+## v2.8 Spec-C2a 用户管理增强（009_add_user_admin_actions.sql）
+
+### 背景
+
+Spec-C2a 在管理端补齐"重置密码 / 改用户状态 / 查看用户设备 / 查看用户地址"4 个动作。前两个权限码（`user:reset-password` / `user:disable`）已在 006 中定义；后两个（`user:device:list` / `user:address:list`）由本次迁移补入。
+
+### 变更摘要
+
+- **新增 2 条权限码**（`module='user'`，`type=4` API 级）：
+  - `user:device:list` → `GET /api/admin/users/:id/devices`
+  - `user:address:list` → `GET /api/admin/users/:id/addresses`
+- **关联 super_admin**（其余角色不自动具备，按需手工赋）
+- **不涉及 schema 变更**，仅数据写入
+- **幂等**：`WHERE NOT EXISTS` 防重复，可重复执行
+
+### 执行步骤
+
+```bash
+mysql -u <user> -p superadmin_db < 009_add_user_admin_actions.sql
+
+# 校验（脚本末尾已带 SELECT，输出 cnt=2 即正常）
+```
+
+### 回滚
+
+见脚本末尾注释段。
+
+### 注意事项
+
+- 仅 super_admin 默认具备本次 2 条权限。如希望 admin/operator 也能查看用户设备/地址，需手工通过"角色管理 → 赋权"把这 2 条加入对应角色。
+- 与 Spec-C2a 配套使用，不可单独跑（前端不调用相关接口时，迁移本身无副作用，但权限码"孤立")。
+
+### 相关文档
+
+- [Spec-C2a 设计文档](../docs/superpowers/specs/2026-05-12-Spec-C2a管理端用户与反馈管理设计文档.md)
+- [Spec-C2a 实施计划](../docs/superpowers/plans/2026-05-12-Spec-C2a管理端用户与反馈管理实施计划.md)

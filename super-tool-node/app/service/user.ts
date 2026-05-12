@@ -296,6 +296,46 @@ export default class UserService extends BaseService {
     await (addr as any).destroy();
   }
 
+  // ===== Spec-C2a：管理端用户行为 =====
+
+  /**
+   * admin 重置任意用户密码
+   * - 不允许 admin 改自己（应走 changePassword）
+   * - 不记审计明文（仅记 bizId；newPassword 由 audit._sanitizeParams 自动脱敏）
+   */
+  async adminResetPassword(adminId: number, targetUserId: number, newPassword: string) {
+    if (adminId === targetUserId) {
+      this.ctx.throw(400, '请通过"修改密码"修改自己的密码');
+    }
+    const user = await this.ctx.model.User.findByPk(targetUserId);
+    if (!user) this.ctx.throw(404, '用户不存在');
+
+    await (user as any).update({
+      passwordHash: await bcrypt.hash(newPassword, 12),
+    });
+    await this.clearCache(`${this.CACHE_PREFIX}${targetUserId}`);
+  }
+
+  /**
+   * admin 切换任意用户启用/禁用
+   * - 不允许 admin 禁用自己
+   * - 返回剔除敏感字段的用户对象
+   */
+  async adminChangeStatus(adminId: number, targetUserId: number, status: 0 | 1) {
+    if (![0, 1].includes(status)) this.ctx.throw(422, 'status must be 0 or 1');
+    if (adminId === targetUserId && status === 0) {
+      this.ctx.throw(400, '不能禁用自己的账户');
+    }
+    const user = await this.ctx.model.User.findByPk(targetUserId);
+    if (!user) this.ctx.throw(404, '用户不存在');
+
+    await (user as any).update({ status });
+    await this.clearCache(`${this.CACHE_PREFIX}${targetUserId}`);
+    const result = (user as any).toJSON();
+    delete result.passwordHash;
+    return result;
+  }
+
   // ===== 工具方法 =====
 
   private generateReferralCode(): string {
