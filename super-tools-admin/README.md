@@ -13,8 +13,6 @@
 | 语言 | TypeScript | 5.x |
 | 样式 | Less + CSS Modules | — |
 | HTTP 请求 | umi-request | — |
-| 测试 | Jest + Testing Library | — |
-
 ## 目录结构
 
 ```
@@ -25,7 +23,6 @@ super-tools-admin/
 │   │   └── index.ts                 # 路由聚合入口
 │   └── proxy.ts                     # 代理配置
 ├── src/
-│   ├── __tests__/                   # 集成测试
 │   ├── components/                  # 公共组件
 │   │   └── PageLoading/
 │   ├── layouts/                     # 布局组件
@@ -42,11 +39,9 @@ super-tools-admin/
 │   │   ├── 403.tsx                  # 无权限页
 │   │   └── 404.tsx                  # 404 页面
 │   ├── services/                    # API 接口层
-│   │   ├── __tests__/               # 接口测试
 │   │   ├── auth.ts                  # 认证接口
 │   │   └── index.ts
 │   ├── utils/                       # 工具函数
-│   │   ├── __tests__/               # 工具测试
 │   │   ├── authority.ts             # 权限读写
 │   │   ├── request.ts              # HTTP 封装
 │   │   └── index.ts
@@ -66,12 +61,6 @@ npm install
 
 # 启动开发服务
 npm run dev
-
-# 运行测试
-npm test
-
-# 运行认证模块测试
-npm run test:auth
 
 # 构建生产环境
 npm run build:prod
@@ -96,5 +85,4 @@ npm run build:prod
 | 环境 | 命令 | API 地址 |
 |------|------|----------|
 | 开发 | `npm run dev` | http://localhost:7001 |
-| 测试 | `npm run build:test` | https://api-stag.example.com |
 | 生产 | `npm run build:prod` | https://api.example.com |

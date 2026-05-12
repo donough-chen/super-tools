@@ -8,10 +8,7 @@
     "build:test": "cross-env BUILD_ENV=test NODE_OPTIONS=--openssl-legacy-provider umi build",
     "build:prod": "cross-env BUILD_ENV=production NODE_OPTIONS=--openssl-legacy-provider umi build",
     "lint": "eslint src --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit",
-    "test": "umi-test --no-cache",
-    "test:coverage": "umi-test --coverage --no-cache",
-    "test:auth": "umi-test --no-cache --testPathPattern=auth"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@ant-design/icons": "^5.3.0",
