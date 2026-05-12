@@ -1,14 +1,8 @@
 import React, { useState } from 'react';
-import { Card, Tabs, Empty } from 'antd';
+import { Card, Tabs } from 'antd';
 import UsersTab from './UsersTab';
+import PointsLogsTab from './PointsLogsTab';
 import './index.less';
-
-/**
- * 占位 PointsLogsTab，T10 替换为完整版
- */
-const PointsLogsTabPlaceholder: React.FC<{ initialUserId?: number }> = ({ initialUserId }) => (
-  <Empty description={`积分流水（T10 实现）${initialUserId ? ` - 预填 userId=${initialUserId}` : ''}`} />
-);
 
 const UsersPage: React.FC = () => {
   const [tab, setTab] = useState<'users' | 'logs'>(() => {
@@ -60,7 +54,7 @@ const UsersPage: React.FC = () => {
           },
           {
             key: 'logs', label: '积分流水',
-            children: <PointsLogsTabPlaceholder initialUserId={userIdFilter} />,
+            children: <PointsLogsTab initialUserId={userIdFilter} />,
           },
         ]}
       />
