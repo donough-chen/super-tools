@@ -102,6 +102,23 @@ const UsersPage: React.FC = () => {
         <Tag>{REGISTER_SOURCE_LABELS[v] || v || '-'}</Tag>,
     },
     {
+      title: '角色', dataIndex: 'roles', width: 180,
+      render: (roles: User['roles']) => {
+        if (!roles || roles.length === 0) return <Tag>无角色</Tag>;
+        const colorMap: Record<string, string> = {
+          super_admin: 'red', admin: 'orange', operator: 'blue',
+          auditor: 'green', user: 'default', guest: 'default',
+        };
+        return (
+          <Space size={[0, 4]} wrap>
+            {roles.map(r => (
+              <Tag key={r.code} color={colorMap[r.code] || 'default'}>{r.name}</Tag>
+            ))}
+          </Space>
+        );
+      },
+    },
+    {
       title: '状态', dataIndex: 'status', width: 90,
       render: (v: number, row: User) => (
         <Tooltip title={isSelf(row.id, currentUserId) ? '不能切换自己的状态' : ''}>
@@ -227,7 +244,7 @@ const UsersPage: React.FC = () => {
           showTotal: (t) => `共 ${t} 条`,
           onChange: (p, ps) => { setPage(p); setPageSize(ps); },
         }}
-        scroll={{ x: 1380 }}
+        scroll={{ x: 1560 }}
       />
 
       <UserModal

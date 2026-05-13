@@ -57,7 +57,11 @@ export default class UserService extends BaseService {
     if (registerSource !== undefined) where.registerSource = registerSource;
     if (startDate && endDate) where.createdAt = { [Op.between]: [new Date(startDate), new Date(endDate)] };
 
-    return this.paginate(this.ctx.model.User, { where, attributes: { exclude: ['password_hash'] } }, pagination);
+    return this.paginate(this.ctx.model.User, {
+      where,
+      attributes: { exclude: ['password_hash'] },
+      include: [{ model: this.ctx.model.Role, as: 'roles', attributes: ['id', 'name', 'code'], through: { attributes: [] } }],
+    }, pagination);
   }
 
   async update(id: number, dto: any) {
