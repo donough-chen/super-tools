@@ -78,3 +78,15 @@ npm run build       # 编译 TypeScript
 npm start           # 生产模式启动
 npm stop            # 停止服务
 ```
+## 测试
+现已删掉掉测试脚本命令，防止旧数据污染数据库。如果需要测试时，请手动添加以下命令到 package.json 中：
+
+```json
+"scripts": {
+    "test": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts",
+    "test:api": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/api/**/*.test.ts",
+    "test:e2e": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/e2e/**/*.test.ts",
+    "test:auth": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/api/auth.test.ts",
+    "api": "node scripts/api-test-interactive.js"
+}
+```

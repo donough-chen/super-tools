@@ -12,17 +12,12 @@
     "stop": "egg-scripts stop --title=super-tool-node",
     "dev": "egg-bin dev --ts",
     "debug": "egg-bin debug --ts",
-    "test": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts",
-    "test:api": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/api/**/*.test.ts",
-    "test:e2e": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/e2e/**/*.test.ts",
-    "test:auth": "cross-env EGG_SERVER_ENV=unittest egg-bin test --ts test/api/auth.test.ts",
     "cov": "cross-env EGG_SERVER_ENV=unittest egg-bin cov --ts",
     "lint": "eslint app config test --ext .ts",
     "clean": "rimraf dist typings",
     "build": "tsc -p tsconfig.json",
     "ci": "npm run lint && npm run cov",
-    "db:cli": "node scripts/db-cli.js",
-    "api": "node scripts/api-test-interactive.js"
+    "db:cli": "node scripts/db-cli.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
