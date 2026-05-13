@@ -7,6 +7,7 @@ import AuthButton from '@/components/AuthButton';
 import { listRoles, deleteRole, updateRole, RoleListQuery, Role } from '@/services/role';
 import RoleModal from './RoleModal';
 import AssignPermDrawer from './AssignPermDrawer';
+import AssignUsersDrawer from './AssignUsersDrawer';
 import './index.less';
 
 const isSuperAdmin = (row: Role) => row.code === 'super_admin';
@@ -20,6 +21,8 @@ const RolesPage: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [usersDrawerVisible, setUsersDrawerVisible] = useState(false);
+  const [usersDrawerRole, setUsersDrawerRole] = useState<Role | null>(null);
 
   const fetch = async () => {
     setLoading(true);
@@ -106,6 +109,16 @@ const RolesPage: React.FC = () => {
             </AuthButton>
           )}
 
+          {isSuperAdmin(row) ? (
+            <Tooltip title="超级管理员成员不可管理">
+              <a className="super-admin-disabled">成员</a>
+            </Tooltip>
+          ) : (
+            <AuthButton permCode="system:role:assign-users">
+              <a onClick={() => { setUsersDrawerRole(row); setUsersDrawerVisible(true); }}>成员</a>
+            </AuthButton>
+          )}
+
           {!isSuperAdmin(row) && (
             <AuthButton permCode="role:delete">
               <Popconfirm title="确定删除？" onConfirm={() => handleDelete(row.id)}>
@@ -181,6 +194,13 @@ const RolesPage: React.FC = () => {
         visible={drawerVisible}
         role={selectedRole}
         onClose={() => setDrawerVisible(false)}
+        onSuccess={fetch}
+      />
+
+      <AssignUsersDrawer
+        visible={usersDrawerVisible}
+        role={usersDrawerRole}
+        onClose={() => setUsersDrawerVisible(false)}
         onSuccess={fetch}
       />
     </Card>

@@ -66,6 +66,61 @@ export default class RoleService extends BaseService {
   }
 
   /**
+   * 获取角色已绑定的用户列表（分页）
+   */
+  async getRoleUsers(roleId: number, query: any): Promise<PaginationResult<any>> {
+    const role = await this.ctx.model.Role.findByPk(roleId);
+    if (!role) this.ctx.throw(404, '角色不存在');
+
+    const { keyword, ...pagination } = query;
+    const { Op } = require('sequelize');
+
+    const userRoleRows = await this.ctx.model.UserRole.findAll({
+      where: { roleId },
+      attributes: ['userId'],
+    });
+    const userIds = userRoleRows.map((ur: any) => ur.userId);
+    if (userIds.length === 0) {
+      return { list: [], total: 0, page: 1, pageSize: 20, totalPages: 0 };
+    }
+
+    const where: any = { id: userIds };
+    if (keyword) {
+      where[Op.and] = [{
+        [Op.or]: [
+          { username: { [Op.like]: `%${keyword}%` } },
+          { nickname: { [Op.like]: `%${keyword}%` } },
+          { email: { [Op.like]: `%${keyword}%` } },
+          { phone: { [Op.like]: `%${keyword}%` } },
+        ],
+      }];
+    }
+
+    return this.paginate(this.ctx.model.User, {
+      where,
+      attributes: ['id', 'username', 'nickname', 'email', 'phone', 'avatar', 'status'],
+    }, pagination);
+  }
+
+  /**
+   * 从角色移除单个用户
+   */
+  async removeUser(roleId: number, userId: number) {
+    const role = await this.ctx.model.Role.findByPk(roleId);
+    if (!role) this.ctx.throw(404, '角色不存在');
+    if ((role as any).code === 'super_admin') {
+      this.ctx.throw(400, '不能通过此接口操作超级管理员角色');
+    }
+
+    const deleted = await this.ctx.model.UserRole.destroy({
+      where: { roleId, userId },
+    });
+    if (!deleted) this.ctx.throw(404, '该用户未绑定此角色');
+
+    await this.clearCache('user:permissions:*');
+  }
+
+  /**
    * 获取用户当前有效的角色列表（含未过期绑定）
    * 返回：[{ id, code, name, type }]
    */

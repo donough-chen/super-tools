@@ -73,3 +73,24 @@ export async function assignRolePermissions(id: number, permissionIds: number[])
     data: { permissionIds },
   });
 }
+
+/** GET /api/admin/roles/:id/users — 获取角色绑定的用户列表 */
+export async function getRoleUsers(id: number, params?: { page?: number; pageSize?: number; keyword?: string }) {
+  return request(`/api/admin/roles/${id}/users`, { params });
+}
+
+/** PUT /api/admin/roles/:id/users — 为角色批量添加用户 */
+export async function assignRoleUsers(id: number, userIds: number[]) {
+  return request(`/api/admin/roles/${id}/users`, {
+    method: 'PUT',
+    data: { userIds },
+  });
+}
+
+/** DELETE /api/admin/roles/:id/users/:userId — 从角色移除用户 */
+export async function removeRoleUser(roleId: number, userId: number) {
+  return request(`/api/admin/roles/${roleId}/users/${userId}`, {
+    method: 'DELETE',
+  });
+}
+

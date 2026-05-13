@@ -135,3 +135,12 @@ export async function listUserDevices(id: number) {
 export async function listUserAddresses(id: number) {
   return request(`/api/admin/users/${id}/addresses`);
 }
+
+/** PUT /api/admin/users/:id/roles — 为用户分配角色（全量替换） */
+export async function assignUserRoles(id: number, roleIds: number[]) {
+  return request(`/api/admin/users/${id}/roles`, {
+    method: 'PUT',
+    data: { roleIds },
+  });
+}
+

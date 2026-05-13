@@ -15,6 +15,7 @@ import { getCurrentUser } from '@/utils/authority';
 import UserModal from './UserModal';
 import ResetPwdModal from './ResetPwdModal';
 import DetailDrawer from './DetailDrawer';
+import AssignRolesModal from './AssignRolesModal';
 import './index.less';
 
 const { RangePicker } = DatePicker;
@@ -34,6 +35,9 @@ const UsersPage: React.FC = () => {
 
   const [detailTarget, setDetailTarget] = useState<User | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+
+  const [rolesTarget, setRolesTarget] = useState<User | null>(null);
+  const [rolesVisible, setRolesVisible] = useState(false);
 
   // 当前登录 user id（用于自身保护）
   const currentUserId: number | undefined = getCurrentUser()?.id;
@@ -122,6 +126,15 @@ const UsersPage: React.FC = () => {
           </AuthButton>
           <AuthButton permCode="user:update">
             <a onClick={() => { setEditing(row); setEditVisible(true); }}>编辑</a>
+          </AuthButton>
+          <AuthButton permCode="user:assign-roles">
+            {isSelf(row.id, currentUserId) ? (
+              <Tooltip title="不能修改自己的角色">
+                <a className="action-disabled">角色</a>
+              </Tooltip>
+            ) : (
+              <a onClick={() => { setRolesTarget(row); setRolesVisible(true); }}>角色</a>
+            )}
           </AuthButton>
           <AuthButton permCode="user:reset-password">
             {isSelf(row.id, currentUserId) ? (
@@ -232,6 +245,12 @@ const UsersPage: React.FC = () => {
         visible={detailVisible}
         target={detailTarget}
         onClose={() => setDetailVisible(false)}
+      />
+      <AssignRolesModal
+        visible={rolesVisible}
+        target={rolesTarget}
+        onClose={() => setRolesVisible(false)}
+        onSuccess={fetch}
       />
     </Card>
   );

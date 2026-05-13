@@ -123,4 +123,67 @@ export default class RoleController extends BaseController {
       throw e;
     }
   }
+
+  /** GET /api/admin/roles/:id/users — 获取角色绑定的用户列表 */
+  async users() {
+    const roleId = Number(this.ctx.params.id);
+    const pagination = this.getPagination();
+    const { keyword } = this.ctx.query;
+    const result = await this.service.role.getRoleUsers(roleId, { ...pagination, keyword });
+    this.paginated(result);
+  }
+
+  /** PUT /api/admin/roles/:id/users — 为角色批量添加用户 */
+  async assignUsers() {
+    this.validate({ userIds: { type: 'array', itemType: 'number' } });
+    const roleId = Number(this.ctx.params.id);
+    const { userIds } = this.ctx.request.body;
+    const grantedBy = this.ctx.state.user.id;
+
+    try {
+      await this.service.role.assignUsers(roleId, userIds, grantedBy);
+      await this.service.audit.log({
+        module: 'role', action: 'assign_users',
+        bizType: 'role', bizId: roleId,
+        afterData: { userIds },
+        description: `为角色 #${roleId} 添加 ${userIds.length} 个用户`,
+        status: 1,
+      });
+      this.success(null, '用户添加成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'role', action: 'assign_users',
+        bizType: 'role', bizId: roleId,
+        description: `尝试为角色 #${roleId} 添加用户`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
+
+  /** DELETE /api/admin/roles/:id/users/:userId — 从角色移除用户 */
+  async removeUser() {
+    const roleId = Number(this.ctx.params.id);
+    const userId = Number(this.ctx.params.userId);
+
+    try {
+      await this.service.role.removeUser(roleId, userId);
+      await this.service.audit.log({
+        module: 'role', action: 'remove_user',
+        bizType: 'role', bizId: roleId,
+        afterData: { removedUserId: userId },
+        description: `从角色 #${roleId} 移除用户 #${userId}`,
+        status: 1,
+      });
+      this.success(null, '用户已移除');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'role', action: 'remove_user',
+        bizType: 'role', bizId: roleId,
+        description: `尝试从角色 #${roleId} 移除用户 #${userId}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
 }

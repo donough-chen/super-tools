@@ -336,6 +336,58 @@ export default class UserService extends BaseService {
     return result;
   }
 
+  /**
+   * 为用户分配角色（全量替换，排除 super_admin）
+   */
+  async assignRoles(adminId: number, targetUserId: number, roleIds: number[]) {
+    if (adminId === targetUserId) {
+      this.ctx.throw(400, '不能修改自己的角色');
+    }
+
+    const user = await this.ctx.model.User.findByPk(targetUserId);
+    if (!user) this.ctx.throw(404, '用户不存在');
+
+    // 查找 super_admin 角色 ID，排除保护
+    const superAdminRole = await this.ctx.model.Role.findOne({ where: { code: 'super_admin' } });
+    const superAdminRoleId = superAdminRole ? (superAdminRole as any).id : null;
+
+    // 过滤掉 super_admin
+    const safeRoleIds = roleIds.filter(id => id !== superAdminRoleId);
+
+    // 验证所有 roleIds 存在且启用
+    if (safeRoleIds.length > 0) {
+      const validRoles = await this.ctx.model.Role.findAll({
+        where: { id: safeRoleIds, status: 1 },
+      });
+      if (validRoles.length !== safeRoleIds.length) {
+        this.ctx.throw(400, '部分角色不存在或已停用');
+      }
+    }
+
+    const { Op } = require('sequelize');
+
+    // 事务内全量替换（保留 super_admin 绑定不动）
+    await this.ctx.model.transaction(async (t: any) => {
+      const deleteWhere: any = { userId: targetUserId };
+      if (superAdminRoleId) {
+        deleteWhere.roleId = { [Op.ne]: superAdminRoleId };
+      }
+      await this.ctx.model.UserRole.destroy({ where: deleteWhere, transaction: t });
+
+      if (safeRoleIds.length > 0) {
+        await this.ctx.model.UserRole.bulkCreate(
+          safeRoleIds.map(roleId => ({ userId: targetUserId, roleId, grantedBy: adminId })),
+          { transaction: t },
+        );
+      }
+    });
+
+    await this.clearCache('user:permissions:*');
+
+    const newRoles = await this.service.role.getUserRoles(targetUserId);
+    return { userId: targetUserId, roles: newRoles };
+  }
+
   // ===== 工具方法 =====
 
   private generateReferralCode(): string {

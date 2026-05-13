@@ -57,6 +57,9 @@ export default (app: Application) => {
   router.put('/api/admin/users/:id/status',
     auth, perm('user:disable'),
     controller.user.changeStatus);
+  router.put('/api/admin/users/:id/roles',
+    auth, perm('user:assign-roles'),
+    controller.user.assignRoles);
   router.get('/api/admin/users/:id/devices',
     auth, perm('user:device:list'),
     controller.user.adminListDevices);
@@ -73,6 +76,11 @@ export default (app: Application) => {
   router.put('/api/admin/roles/:id', auth, perm('system:role:update'), controller.admin.role.update);
   router.delete('/api/admin/roles/:id', auth, perm('system:role:delete'), controller.admin.role.destroy);
   router.put('/api/admin/roles/:id/permissions', auth, perm('system:role:assign-permissions'), controller.admin.role.assignPermissions);
+
+  // ==================== 角色-用户关联 ====================
+  router.get('/api/admin/roles/:id/users', auth, perm('system:role:assign-users'), controller.admin.role.users);
+  router.put('/api/admin/roles/:id/users', auth, perm('system:role:assign-users'), controller.admin.role.assignUsers);
+  router.delete('/api/admin/roles/:id/users/:userId', auth, perm('system:role:assign-users'), controller.admin.role.removeUser);
 
   // ==================== 权限管理 ====================
   router.get('/api/admin/permissions/tree', auth, perm('system:permission:tree'), controller.admin.permission.tree);

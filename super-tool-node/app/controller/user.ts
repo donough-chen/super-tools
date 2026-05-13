@@ -200,6 +200,39 @@ export default class UserController extends BaseController {
     }
   }
 
+  /** PUT /api/admin/users/:id/roles — 为用户分配角色 */
+  async assignRoles() {
+    this.validate({ roleIds: { type: 'array', itemType: 'number' } });
+    const targetUserId = Number(this.ctx.params.id);
+    const adminId = (this.ctx.state as any).user.id;
+    const { roleIds } = this.ctx.request.body;
+
+    let beforeRoles: any[] = [];
+    try { beforeRoles = await this.service.role.getUserRoles(targetUserId); } catch { /* ignore */ }
+
+    try {
+      const result = await this.service.user.assignRoles(adminId, targetUserId, roleIds);
+      await this.service.audit.log({
+        module: 'user', action: 'assign_roles',
+        bizType: 'user', bizId: targetUserId,
+        beforeData: { roles: beforeRoles },
+        afterData: { roles: result.roles },
+        description: `为用户 #${targetUserId} 分配 ${roleIds.length} 个角色`,
+        status: 1,
+      });
+      this.success(result, '角色分配成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'user', action: 'assign_roles',
+        bizType: 'user', bizId: targetUserId,
+        beforeData: { roles: beforeRoles },
+        description: `尝试为用户 #${targetUserId} 分配角色`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
+
   /** GET /api/admin/users/:id/devices */
   async adminListDevices() {
     const id = Number(this.ctx.params.id);
