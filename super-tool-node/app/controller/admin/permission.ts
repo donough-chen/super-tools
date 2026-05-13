@@ -103,6 +103,48 @@ export default class PermissionController extends BaseController {
   }
 
   // ============================================================
+  // 权限-角色联动（权限管理增强 v2.10）
+  // ============================================================
+
+  /** GET /api/admin/permissions/:id/holders — 查询拥有该权限的所有角色 */
+  async holders() {
+    const id = Number(this.ctx.params.id);
+    const result = await this.service.permission.getPermissionHolders(id);
+    this.success(result);
+  }
+
+  /** PUT /api/admin/permissions/:id/batch-assign — 批量将权限分配给多个角色 */
+  async batchAssign() {
+    const id = Number(this.ctx.params.id);
+    const { roleIds = [], removeFromRoleIds = [] } = this.ctx.request.body;
+
+    let beforeData: any = null;
+    try { beforeData = await this.service.permission.getPermissionHolders(id); } catch { /* ignore */ }
+
+    try {
+      const result = await this.service.permission.batchAssignToRoles(id, roleIds, removeFromRoleIds);
+      await this.service.audit.log({
+        module: 'permission', action: 'batch_assign',
+        bizType: 'permission', bizId: id,
+        beforeData,
+        afterData: { roleIds, removeFromRoleIds },
+        description: `批量赋权 #${id}: 添加 ${roleIds.length} 个角色, 移除 ${removeFromRoleIds.length} 个角色`,
+        status: 1,
+      });
+      this.success(result, '批量赋权成功');
+    } catch (e: any) {
+      await this.service.audit.log({
+        module: 'permission', action: 'batch_assign',
+        bizType: 'permission', bizId: id,
+        beforeData,
+        description: `尝试批量赋权 #${id}`,
+        status: 0, failReason: e.message,
+      });
+      throw e;
+    }
+  }
+
+  // ============================================================
   // Spec-A1: 权限测试综合工具（GET /api/admin/permissions/test）
   // ============================================================
 

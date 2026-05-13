@@ -254,6 +254,73 @@ export default class PermissionService extends BaseService {
   }
 
   // ============================================================
+  // 权限-角色联动（权限管理增强 v2.10）
+  // ============================================================
+
+  /**
+   * 查询拥有指定权限的所有角色
+   * 返回：{ permission, roles, totalRoles }
+   */
+  async getPermissionHolders(permissionId: number) {
+    const perm = await this.ctx.model.Permission.findByPk(permissionId);
+    if (!perm) this.ctx.throw(404, '权限不存在');
+
+    const sql = `
+      SELECT r.id, r.code, r.name, r.type, r.status
+      FROM roles r
+      INNER JOIN role_permissions rp ON r.id = rp.role_id
+      WHERE rp.permission_id = :permissionId
+        AND r.deleted_at IS NULL
+      ORDER BY r.sort ASC, r.id ASC
+    `;
+    const roles: any[] = (await (this.app as any).model.query(sql, {
+      replacements: { permissionId },
+      type: (this.app as any).Sequelize.QueryTypes.SELECT,
+    })) as any[];
+
+    return {
+      permission: (perm as any).toJSON(),
+      roles,
+      totalRoles: roles.length,
+    };
+  }
+
+  /**
+   * 批量将某个权限分配给多个角色（增量式，不影响角色已有的其他权限）
+   * @param permissionId 权限 ID
+   * @param roleIds 要添加的角色 ID 数组
+   * @param removeFromRoleIds 要移除的角色 ID 数组
+   */
+  async batchAssignToRoles(
+    permissionId: number,
+    roleIds: number[],
+    removeFromRoleIds: number[] = [],
+  ) {
+    const perm = await this.ctx.model.Permission.findByPk(permissionId);
+    if (!perm) this.ctx.throw(404, '权限不存在');
+
+    // 移除
+    if (removeFromRoleIds.length > 0) {
+      await this.ctx.model.RolePermission.destroy({
+        where: { permissionId, roleId: removeFromRoleIds },
+      });
+    }
+
+    // 添加（使用 findOrCreate 避免重复）
+    for (const roleId of roleIds) {
+      await this.ctx.model.RolePermission.findOrCreate({
+        where: { roleId, permissionId },
+        defaults: { roleId, permissionId } as any,
+      });
+    }
+
+    // 清除所有用户权限缓存
+    await this.clearCache('user:permissions:*');
+
+    return { added: roleIds.length, removed: removeFromRoleIds.length };
+  }
+
+  // ============================================================
   // Spec-A1: 权限测试三 mode（user-overview / user-check / role-check）
   // ============================================================
 

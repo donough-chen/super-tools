@@ -1,11 +1,15 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Card, Tree, Input, Spin, Empty } from 'antd';
-import { getPermissionTree, PermissionTreeNode } from '@/services/permission';
-import { toAntdTreeData } from '@/pages/System/_shared/treeUtils';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { Card, Tree, Input, Spin, Empty, Button, Space, Popconfirm, message, Tag, Tooltip } from 'antd';
+import { PlusOutlined, ReloadOutlined, EditOutlined, DeleteOutlined, ApartmentOutlined } from '@ant-design/icons';
+import type { DataNode } from 'antd/lib/tree';
+import AuthButton from '@/components/AuthButton';
+import { getPermissionTree, deletePermission, PermissionTreeNode } from '@/services/permission';
 import PermissionDetailDrawer from './PermissionDetailDrawer';
+import PermissionFormModal from './PermissionFormModal';
+import BatchAssignRolesModal from './BatchAssignRolesModal';
 import './index.less';
 
-/** 递归过滤树节点：保留 code/name 命中关键字 + 其祖先 */
+/** 递归过滤树节点 */
 function filterTreeByKeyword(
   tree: PermissionTreeNode[],
   keyword: string,
@@ -55,24 +59,34 @@ const PermissionsPage: React.FC = () => {
   const [expandedKeys, setExpandedKeys] = useState<number[]>([]);
   const [selectedNode, setSelectedNode] = useState<PermissionTreeNode | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  // CRUD
+  const [formVisible, setFormVisible] = useState(false);
+  const [editingNode, setEditingNode] = useState<PermissionTreeNode | null>(null);
+  const [parentNodeForCreate, setParentNodeForCreate] = useState<PermissionTreeNode | null>(null);
+  // 批量赋权
+  const [batchAssignVisible, setBatchAssignVisible] = useState(false);
+  const [batchAssignPerm, setBatchAssignPerm] = useState<PermissionTreeNode | null>(null);
 
-  useEffect(() => {
+  const fetchTree = useCallback(() => {
     setLoading(true);
     getPermissionTree()
       .then((res: any) => {
         const tree: PermissionTreeNode[] = res?.data || [];
         setPermTree(tree);
-        setExpandedKeys(tree.map((n) => n.id));  // 默认展开 type=1 顶级
+        setExpandedKeys(tree.map((n) => n.id));
       })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetchTree();
+  }, [fetchTree]);
 
   const { filtered, matchedAncestors } = useMemo(
     () => filterTreeByKeyword(permTree, keyword),
     [permTree, keyword],
   );
 
-  // 搜索时自动展开匹配祖先
   useEffect(() => {
     if (keyword) {
       setExpandedKeys(matchedAncestors);
@@ -80,18 +94,128 @@ const PermissionsPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword]);
 
+  const handleDelete = async (node: PermissionTreeNode) => {
+    const res: any = await deletePermission(node.id);
+    if (res?.code === 200) {
+      message.success('删除成功');
+      fetchTree();
+    } else {
+      message.error(res?.message || '删除失败');
+    }
+  };
+
+  const handleOpenBatchAssign = useCallback((perm: PermissionTreeNode) => {
+    setBatchAssignPerm(perm);
+    setBatchAssignVisible(true);
+  }, []);
+
+  /** 转换权限树为 Ant Design TreeData（含操作按钮） */
+  const toTreeData = useCallback((nodes: PermissionTreeNode[]): DataNode[] => {
+    return nodes.map((n) => ({
+      key: n.id,
+      title: (
+        <span className="perm-tree-node">
+          <span className="perm-tree-node-title">
+            <Space>
+              <Tag>{n.code}</Tag>
+              <span>{n.name}</span>
+              {n.type === 3 && <Tag color="purple">按钮</Tag>}
+              {n.type === 4 && <Tag color="cyan">{n.method}</Tag>}
+            </Space>
+          </span>
+          <span className="perm-tree-node-actions" onClick={(e) => e.stopPropagation()}>
+            <AuthButton permCode="system:permission:create">
+              <Tooltip title="新建子权限">
+                <PlusOutlined
+                  className="perm-action-icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingNode(null);
+                    setParentNodeForCreate(n);
+                    setFormVisible(true);
+                  }}
+                />
+              </Tooltip>
+            </AuthButton>
+            <AuthButton permCode="system:permission:update">
+              <Tooltip title="编辑">
+                <EditOutlined
+                  className="perm-action-icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingNode(n);
+                    setParentNodeForCreate(null);
+                    setFormVisible(true);
+                  }}
+                />
+              </Tooltip>
+            </AuthButton>
+            <AuthButton permCode="system:permission:batch-assign">
+              <Tooltip title="批量赋权">
+                <ApartmentOutlined
+                  className="perm-action-icon"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenBatchAssign(n);
+                  }}
+                />
+              </Tooltip>
+            </AuthButton>
+            <AuthButton permCode="system:permission:delete">
+              <Popconfirm
+                title="确定删除？存在子权限时无法删除。"
+                onConfirm={(e) => {
+                  e?.stopPropagation();
+                  handleDelete(n);
+                }}
+                onCancel={(e) => e?.stopPropagation()}
+              >
+                <Tooltip title="删除">
+                  <DeleteOutlined
+                    className="perm-action-icon perm-action-danger"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Tooltip>
+              </Popconfirm>
+            </AuthButton>
+          </span>
+        </span>
+      ),
+      children: n.children?.length ? toTreeData(n.children) : undefined,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleOpenBatchAssign]);
+
+  const treeData = useMemo(() => toTreeData(filtered), [filtered, toTreeData]);
+
   return (
     <Card
-      title="权限管理（只读）"
+      title="权限管理"
       className="page-system-permissions"
       extra={
-        <Input.Search
-          placeholder="搜索 code / name"
-          style={{ width: 280 }}
-          allowClear
-          onSearch={setKeyword}
-          onChange={(e) => !e.target.value && setKeyword('')}
-        />
+        <Space>
+          <Input.Search
+            placeholder="搜索 code / name"
+            style={{ width: 280 }}
+            allowClear
+            onSearch={setKeyword}
+            onChange={(e) => !e.target.value && setKeyword('')}
+          />
+          <Button icon={<ReloadOutlined />} onClick={fetchTree}>刷新</Button>
+          <AuthButton permCode="system:permission:create">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingNode(null);
+                setParentNodeForCreate(null);
+                setFormVisible(true);
+              }}
+            >
+              新建权限
+            </Button>
+          </AuthButton>
+        </Space>
       }
     >
       <Spin spinning={loading}>
@@ -100,7 +224,7 @@ const PermissionsPage: React.FC = () => {
         ) : (
           <Tree
             showLine
-            treeData={toAntdTreeData(filtered)}
+            treeData={treeData}
             expandedKeys={expandedKeys}
             onExpand={(keys) => setExpandedKeys(keys as number[])}
             onSelect={(_, info) => {
@@ -119,6 +243,22 @@ const PermissionsPage: React.FC = () => {
         visible={detailVisible}
         permission={selectedNode}
         onClose={() => setDetailVisible(false)}
+        onBatchAssign={handleOpenBatchAssign}
+      />
+
+      <PermissionFormModal
+        visible={formVisible}
+        editing={editingNode}
+        parentNode={parentNodeForCreate}
+        onClose={() => setFormVisible(false)}
+        onSuccess={fetchTree}
+      />
+
+      <BatchAssignRolesModal
+        visible={batchAssignVisible}
+        permission={batchAssignPerm}
+        onClose={() => setBatchAssignVisible(false)}
+        onSuccess={fetchTree}
       />
     </Card>
   );

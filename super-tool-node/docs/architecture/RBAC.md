@@ -159,6 +159,18 @@ P2-B（七大模块）+ B1（member 模块）完成后，已挂权限的管理�
 | `/api/users[/:id]`（管理端） | `user:*` |
 | `/api/admin/member/*` | `member:*`（11 条 API 全部权限化） |
 
+### 权限管理新增路由（v2.10）
+
+| 方法 | 路径 | 权限码 | 功能 |
+|---|---|---|---|
+| POST | `/api/admin/permissions` | `system:permission:create` | 新建权限 |
+| PUT | `/api/admin/permissions/:id` | `system:permission:update` | 编辑权限 |
+| DELETE | `/api/admin/permissions/:id` | `system:permission:delete` | 删除权限 |
+| GET | `/api/admin/permissions/:id/holders` | `system:permission:holders` | 查看权限持有角色 |
+| PUT | `/api/admin/permissions/:id/batch-assign` | `system:permission:batch-assign` | 批量赋权到角色 |
+
+> 写操作（create/update/delete/batch-assign）设计为仅 super_admin 使用。admin/auditor 可通过 holders 查看权限分配情况。
+
 **故意未挂权限的路由**：
 - `/api/auth/*` 认证端点
 - `/api/users/profile` `/addresses` `/devices` C 端用户操作自己的资源

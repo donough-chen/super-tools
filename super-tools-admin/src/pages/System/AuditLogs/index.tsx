@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import moment from 'moment';
 import {
   Card, Table, Form, Input, InputNumber, Select, Button, Space, Tag, DatePicker, message,
 } from 'antd';
@@ -126,7 +127,9 @@ const AuditLogsPage: React.FC = () => {
   };
 
   const columns = useMemo(() => [
-    { title: '时间', dataIndex: 'createdAt', width: 180 },
+    { title: '时间', dataIndex: 'created_at', width: 180,
+      render: (v: string) => v ? moment(v).format('YYYY-MM-DD HH:mm:ss') : '-',
+    },
     {
       title: '用户', dataIndex: 'username', width: 140,
       render: (v: string, row: AuditLogRow) => `${v} (${row.userId})`,

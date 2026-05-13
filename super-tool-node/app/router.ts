@@ -78,11 +78,9 @@ export default (app: Application) => {
   router.get('/api/admin/permissions/tree', auth, perm('system:permission:tree'), controller.admin.permission.tree);
   router.get('/api/admin/permissions/modules', auth, perm('system:permission:tree'), controller.admin.permission.modules);
   router.get('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.show);
-  // 以下 3 条为系统级写操作：当前 init.sql 未定义对应 code，暂复用 system:permission:list 占位
-  // 生产上建议仅 super_admin 操作；super_admin 中间件短路，所以不会被挡
-  router.post('/api/admin/permissions', auth, perm('system:permission:list'), controller.admin.permission.create);
-  router.put('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.update);
-  router.delete('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.destroy);
+  router.post('/api/admin/permissions', auth, perm('system:permission:create'), controller.admin.permission.create);
+  router.put('/api/admin/permissions/:id', auth, perm('system:permission:update'), controller.admin.permission.update);
+  router.delete('/api/admin/permissions/:id', auth, perm('system:permission:delete'), controller.admin.permission.destroy);
 
   // ==================== 管理端用户自查（菜单/权限码） ====================
   // 注意：仅挂 auth，不挂 perm —— 用户登录即可访问
@@ -90,6 +88,14 @@ export default (app: Application) => {
   const adminCtrl = controller.admin as any;
   router.get('/api/admin/auth/menus',       auth, adminCtrl.auth.menus);
   router.get('/api/admin/auth/permissions', auth, adminCtrl.auth.permissions);
+
+  // ==================== 权限-角色联动 ====================
+  router.get('/api/admin/permissions/:id/holders',
+    auth, perm('system:permission:holders'),
+    adminCtrl.permission.holders);
+  router.put('/api/admin/permissions/:id/batch-assign',
+    auth, perm('system:permission:batch-assign'),
+    adminCtrl.permission.batchAssign);
 
   // ==================== 审计日志 ====================
   // 注意：export 路由必须放在 :id 之前，否则 /export 被 :id 吞掉

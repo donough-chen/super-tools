@@ -37,4 +37,59 @@ export async function getPermission(id: number) {
   return request(`/api/admin/permissions/${id}`);
 }
 
-// 注：本 spec Q3 决策为只读，不暴露 create/update/delete
+// ==================== 权限 CRUD ====================
+
+export interface PermissionDTO {
+  name: string;
+  code: string;
+  type: PermissionType;
+  module?: string;
+  platform?: string;
+  path?: string;
+  method?: string;
+  parentId?: number;
+  icon?: string;
+  sort?: number;
+  status?: 0 | 1;
+}
+
+/** 新建权限 */
+export async function createPermission(data: PermissionDTO) {
+  return request('/api/admin/permissions', { method: 'POST', data });
+}
+
+/** 更新权限 */
+export async function updatePermission(id: number, data: Partial<PermissionDTO>) {
+  return request(`/api/admin/permissions/${id}`, { method: 'PUT', data });
+}
+
+/** 删除权限 */
+export async function deletePermission(id: number) {
+  return request(`/api/admin/permissions/${id}`, { method: 'DELETE' });
+}
+
+// ==================== 权限-角色联动 ====================
+
+export interface PermissionHoldersResult {
+  permission: Permission;
+  roles: Array<{ id: number; code: string; name: string; type: number; status: number }>;
+  totalRoles: number;
+}
+
+/** 查询拥有指定权限的所有角色 */
+export async function getPermissionHolders(id: number) {
+  return request(`/api/admin/permissions/${id}/holders`);
+}
+
+/** 批量将权限分配给多个角色 */
+export async function batchAssignPermToRoles(
+  permissionId: number,
+  roleIds: number[],
+  removeFromRoleIds: number[] = [],
+) {
+  return request(`/api/admin/permissions/${permissionId}/batch-assign`, {
+    method: 'PUT',
+    data: { roleIds, removeFromRoleIds },
+  });
+}
+

@@ -2,4 +2,46 @@
   .ant-tree-title {
     font-size: 13px;
   }
+
+  .perm-tree-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    .perm-tree-node-title {
+      flex: 1;
+    }
+
+    .perm-tree-node-actions {
+      display: none;
+      gap: 6px;
+      margin-left: 8px;
+
+      .perm-action-icon {
+        cursor: pointer;
+        color: #1890ff;
+        font-size: 13px;
+        padding: 2px 4px;
+
+        &:hover {
+          color: #40a9ff;
+        }
+
+        &.perm-action-danger {
+          color: #ff4d4f;
+
+          &:hover {
+            color: #ff7875;
+          }
+        }
+      }
+    }
+  }
+
+  .ant-tree-treenode:hover {
+    .perm-tree-node-actions {
+      display: inline-flex;
+    }
+  }
 }
