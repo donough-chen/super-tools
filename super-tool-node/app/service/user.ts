@@ -387,6 +387,7 @@ export default class UserService extends BaseService {
     });
 
     await this.clearCache('user:permissions:*');
+    await this.clearCache(`${this.CACHE_PREFIX}${targetUserId}`);
 
     const newRoles = await this.service.role.getUserRoles(targetUserId);
     return { userId: targetUserId, roles: newRoles };
