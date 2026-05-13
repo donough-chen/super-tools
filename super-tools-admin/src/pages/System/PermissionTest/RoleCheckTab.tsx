@@ -82,15 +82,32 @@ const RoleCheckTab: React.FC = () => {
         <Empty description="填写参数后查询" style={{ marginTop: 32 }} />
       )}
 
-      {result && (
+      {result && !result.role && (
+        <Alert type="warning" showIcon message="角色不存在" style={{ marginTop: 16 }} />
+      )}
+
+      {result && result.role && (
         <>
           <Card title={`角色：${result.role.name} (${result.role.code})`}
                 size="small" style={{ marginTop: 16 }}>
             <Space>
               <Tag>角色 ID：{result.role.id}</Tag>
               <Tag color="blue">权限码总数：{result.permissionCount}</Tag>
+              {(result as any).isSuperAdmin && (
+                <Tag color="gold">超级管理员 — 中间件短路，自动拥有全部权限</Tag>
+              )}
             </Space>
           </Card>
+
+          {(result as any).isSuperAdmin && (
+            <Alert
+              type="info"
+              showIcon
+              message="超级管理员权限说明"
+              description="super_admin 角色通过中间件短路获得所有权限，不依赖 role_permissions 表配置。下方展示的是系统中全部已注册的权限码。"
+              style={{ marginTop: 12 }}
+            />
+          )}
 
           <Card title="权限矩阵（树形）" size="small" style={{ marginTop: 12 }}>
             {result.permissionTree.length === 0 ? (

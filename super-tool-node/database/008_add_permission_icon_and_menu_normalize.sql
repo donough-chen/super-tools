@@ -8,10 +8,10 @@ SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- 一、幂等清理（仅清理 *:menu）
-DELETE rp FROM `role_permissions` rp
-  INNER JOIN `permissions` p ON rp.permission_id = p.id
-  WHERE p.code LIKE '%:menu';
-DELETE FROM `permissions` WHERE code LIKE '%:menu';
+-- DELETE rp FROM `role_permissions` rp
+--   INNER JOIN `permissions` p ON rp.permission_id = p.id
+--   WHERE p.code LIKE '%:menu';
+-- DELETE FROM `permissions` WHERE code LIKE '%:menu';
 
 -- 二、新增 icon 字段（如已存在请删除该 ALTER）
 ALTER TABLE `permissions`

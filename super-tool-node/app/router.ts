@@ -83,8 +83,12 @@ export default (app: Application) => {
   router.delete('/api/admin/roles/:id/users/:userId', auth, perm('system:role:assign-users'), controller.admin.role.removeUser);
 
   // ==================== 权限管理 ====================
+  // 注意：精确路径（tree/modules/test）必须放在 :id 之前，否则被 :id 参数吞掉
   router.get('/api/admin/permissions/tree', auth, perm('system:permission:tree'), controller.admin.permission.tree);
   router.get('/api/admin/permissions/modules', auth, perm('system:permission:tree'), controller.admin.permission.modules);
+  router.get('/api/admin/permissions/test',
+    auth, perm('system:permission-test:run'),
+    (controller.admin as any).permission.test);
   router.get('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.show);
   router.post('/api/admin/permissions', auth, perm('system:permission:create'), controller.admin.permission.create);
   router.put('/api/admin/permissions/:id', auth, perm('system:permission:update'), controller.admin.permission.update);
@@ -94,7 +98,7 @@ export default (app: Application) => {
   // 注意：仅挂 auth，不挂 perm —— 用户登录即可访问
   // 类型断言绕过 egg-ts-helper typings 滞后；运行时由 Egg 按文件系统加载，无问题
   const adminCtrl = controller.admin as any;
-  router.get('/api/admin/auth/menus',       auth, adminCtrl.auth.menus);
+  router.get('/api/admin/auth/menus', auth, adminCtrl.auth.menus);
   router.get('/api/admin/auth/permissions', auth, adminCtrl.auth.permissions);
 
   // ==================== 权限-角色联动 ====================
@@ -116,11 +120,6 @@ export default (app: Application) => {
   router.get('/api/admin/audit-logs/:id',
     auth, perm('system:audit-log:detail'),
     adminCtrl.auditLog.detail);
-
-  // ==================== 权限测试 ====================
-  router.get('/api/admin/permissions/test',
-    auth, perm('system:permission-test:run'),
-    adminCtrl.permission.test);
 
   // ==================== 反馈（C 端） ====================
   // 可登录可不登录（controller 内手动解析 token）；限流 10 req/h/IP

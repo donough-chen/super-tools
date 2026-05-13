@@ -66,6 +66,7 @@ export default class PermissionService extends BaseService {
       { module: 'tool',      name: '工具管理' },
       { module: 'feedback',  name: '反馈管理' },
       { module: 'stats',     name: '数据统计' },
+      { module: 'member',    name: '会员管理' },
     ];
 
     return moduleMeta.map(meta => {
@@ -561,22 +562,42 @@ export default class PermissionService extends BaseService {
     if (!role) {
       return {
         role: null, ownedCodes: [], permissionTree: [],
+        permissionCount: 0,
         stats: { total: 0, byModule: {}, byType: {} },
         boundUserCount: 0,
+        affectedUsers: [],
+        totalAffectedCount: 0,
       };
     }
 
-    const sql = `
-      SELECT p.id, p.code, p.name, p.type, p.module, p.path, p.icon, p.parent_id, p.sort
-      FROM permissions p
-      INNER JOIN role_permissions rp ON p.id = rp.permission_id
-      WHERE rp.role_id = :roleId AND p.platform = 'admin' AND p.status = 1
-      ORDER BY p.sort ASC, p.id ASC
-    `;
-    const owned: any[] = (await (this.app as any).model.query(sql, {
-      replacements: { roleId: (role as any).id },
-      type: (this.app as any).Sequelize.QueryTypes.SELECT,
-    })) as any[];
+    const isSuperAdmin = (role as any).code === 'super_admin';
+
+    // super_admin 走中间件短路，不依赖 role_permissions 表；
+    // 这里直接查全部 admin 平台权限，避免展示误导信息
+    let owned: any[];
+    if (isSuperAdmin) {
+      const allSql = `
+        SELECT p.id, p.code, p.name, p.type, p.module, p.path, p.icon, p.parent_id, p.sort
+        FROM permissions p
+        WHERE p.platform = 'admin' AND p.status = 1
+        ORDER BY p.sort ASC, p.id ASC
+      `;
+      owned = (await (this.app as any).model.query(allSql, {
+        type: (this.app as any).Sequelize.QueryTypes.SELECT,
+      })) as any[];
+    } else {
+      const sql = `
+        SELECT p.id, p.code, p.name, p.type, p.module, p.path, p.icon, p.parent_id, p.sort
+        FROM permissions p
+        INNER JOIN role_permissions rp ON p.id = rp.permission_id
+        WHERE rp.role_id = :roleId AND p.platform = 'admin' AND p.status = 1
+        ORDER BY p.sort ASC, p.id ASC
+      `;
+      owned = (await (this.app as any).model.query(sql, {
+        replacements: { roleId: (role as any).id },
+        type: (this.app as any).Sequelize.QueryTypes.SELECT,
+      })) as any[];
+    }
 
     const ownedCodes = owned.map((p: any) => p.code);
     const byModule: Record<string, number> = {};
@@ -598,6 +619,20 @@ export default class PermissionService extends BaseService {
       where: { roleId: (role as any).id },
     });
 
+    // 查询绑定该角色的用户列表（前端展示用，最多 20 条）
+    const userSql = `
+      SELECT u.id, u.username, u.nickname
+      FROM users u
+      INNER JOIN user_roles ur ON u.id = ur.user_id
+      WHERE ur.role_id = :roleId AND u.deleted_at IS NULL
+      ORDER BY u.id ASC
+      LIMIT 20
+    `;
+    const affectedUsers: any[] = (await (this.app as any).model.query(userSql, {
+      replacements: { roleId: (role as any).id },
+      type: (this.app as any).Sequelize.QueryTypes.SELECT,
+    })) as any[];
+
     return {
       role: {
         id: (role as any).id,
@@ -605,14 +640,18 @@ export default class PermissionService extends BaseService {
         name: (role as any).name,
         status: (role as any).status,
       },
+      isSuperAdmin,
       ownedCodes,
       permissionTree,
+      permissionCount: owned.length,
       stats: {
         total: owned.length,
         byModule,
         byType,
       },
       boundUserCount,
+      affectedUsers,
+      totalAffectedCount: boundUserCount,
     };
   }
 }
