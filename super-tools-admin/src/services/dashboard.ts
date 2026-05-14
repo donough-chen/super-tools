@@ -48,3 +48,18 @@ export async function getUserGrowth(params?: {
 export async function getUserActive(params?: { startTime?: string; endTime?: string }) {
   return request('/api/admin/stats/user-active', { params });
 }
+
+// ====== 部门视图 (Phase 2) ======
+export async function getDepartmentOverview(params?: { role_ids?: string }) {
+  return request('/api/admin/stats/department/overview', { params });
+}
+
+export async function getDepartmentCompare(params: {
+  role_ids: string; metric?: string; startDate?: string; endDate?: string;
+}) {
+  return request('/api/admin/stats/department/compare', { params });
+}
+
+export async function getDepartmentCollaboration(params?: { role_ids?: string }) {
+  return request('/api/admin/stats/department/collaboration', { params });
+}

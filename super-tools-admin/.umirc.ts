@@ -30,14 +30,9 @@ const envConfig: Record<string, any> = {
 export default defineConfig({
   ...envConfig[BUILD_ENV],
   routes,
-  nodeModulesTransform: {
-    type: 'none',
-  },
-  dynamicImport: {
-    loading: '@/components/PageLoading',
-  },
+  plugins: ['@umijs/plugins/dist/dva'],
   dva: {
-    immer: true,
+    immer: {},
     hmr: true,
   },
   title: 'Super Tools 管理端',
@@ -47,5 +42,5 @@ export default defineConfig({
       changeOrigin: true,
     },
   },
-  fastRefresh: {},
+  fastRefresh: true,
 });

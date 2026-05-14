@@ -84,4 +84,33 @@ export default class AdminStatsController extends BaseController {
     const data = await this.service.stats.getUserGrowth(startDate, endDate, granularity || 'day');
     this.success(data);
   }
+
+  // ==================== Phase 2: 部门级数据视图 ====================
+
+  /** GET /api/admin/stats/department/overview?role_ids=1,2,3 */
+  async departmentOverview() {
+    const { role_ids } = this.ctx.query as any;
+    const roleIds = role_ids ? role_ids.split(',').map(Number).filter(Boolean) : undefined;
+    const data = await this.service.stats.getDepartmentOverview(roleIds);
+    this.success(data);
+  }
+
+  /** GET /api/admin/stats/department/compare?role_ids=1,2&metric=active&startDate&endDate */
+  async departmentCompare() {
+    const { role_ids, metric, startDate, endDate } = this.ctx.query as any;
+    if (!role_ids) {
+      this.ctx.throw(422, '缺少 role_ids 参数');
+    }
+    const roleIds = role_ids.split(',').map(Number).filter(Boolean);
+    const data = await this.service.stats.getDepartmentCompare(roleIds, metric || 'active', startDate, endDate);
+    this.success(data);
+  }
+
+  /** GET /api/admin/stats/department/collaboration?role_ids=1,2 */
+  async departmentCollaboration() {
+    const { role_ids } = this.ctx.query as any;
+    const roleIds = role_ids ? role_ids.split(',').map(Number).filter(Boolean) : undefined;
+    const data = await this.service.stats.getDepartmentCollaboration(roleIds);
+    this.success(data);
+  }
 }

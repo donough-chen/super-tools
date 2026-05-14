@@ -4,10 +4,10 @@ import { Line, Bar, Pie } from '@ant-design/charts';
 import { getToolUsage, getToolCategory, getStatsTrend } from '@/services/dashboard';
 
 const ToolUsageTab: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [trendData, setTrendData] = useState<any[]>([]);
-  const [topTools, setTopTools] = useState<any[]>([]);
+  const [usageData, setUsageData] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [trendData, setTrendData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -16,64 +16,57 @@ const ToolUsageTab: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [trendRes, topRes, catRes] = await Promise.all([
-        getStatsTrend({ metric: 'tool-access', granularity: 'day' }),
+      const [usageRes, catRes, trendRes] = await Promise.all([
         getToolUsage({ limit: 10 }),
-        getToolCategory({}),
+        getToolCategory(),
+        getStatsTrend({ metric: 'tool-access', granularity: 'day' }),
       ]);
-      setTrendData(trendRes?.data?.points || []);
-      setTopTools(topRes?.data || []);
-      setCategoryData(catRes?.data?.categories || []);
+      if (usageRes?.data) setUsageData(usageRes.data);
+      if (catRes?.data) setCategoryData(catRes.data);
+      if (trendRes?.data) setTrendData(trendRes.data);
     } finally {
       setLoading(false);
     }
+  };
+
+  const lineConfig: any = {
+    data: trendData,
+    xField: 'date',
+    yField: 'value',
+    smooth: true,
+  };
+
+  const barConfig: any = {
+    data: usageData,
+    xField: 'count',
+    yField: 'name',
+    seriesField: 'name',
+  };
+
+  const pieConfig: any = {
+    data: categoryData,
+    angleField: 'value',
+    colorField: 'name',
+    radius: 0.8,
+    label: { type: 'outer' },
   };
 
   return (
     <Spin spinning={loading}>
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card title="工具使用趋势 (近30天)" bordered={false}>
-            <Line
-              data={trendData.map((p: any) => ({ date: p.date, count: p.count }))}
-              xField="date"
-              yField="count"
-              height={250}
-              point={{ size: 3 }}
-              style={{ stroke: '#fa8c16', lineWidth: 2 }}
-            />
+          <Card title="工具访问趋势">
+            <Line {...lineConfig} />
           </Card>
         </Col>
-        <Col xs={24} lg={14}>
-          <Card title="工具使用 TOP 10" bordered={false}>
-            <Bar
-              data={topTools.slice(0, 10).map((t: any) => ({
-                name: t.toolName || t.toolCode,
-                count: t.count,
-              }))}
-              xField="name"
-              yField="count"
-              height={300}
-              colorField="name"
-            />
+        <Col span={12}>
+          <Card title="Top 10 工具使用量">
+            <Bar {...barConfig} />
           </Card>
         </Col>
-        <Col xs={24} lg={10}>
-          <Card title="分类使用占比" bordered={false}>
-            {categoryData.length > 0 ? (
-              <Pie
-                data={categoryData}
-                angleField="usageCount"
-                colorField="name"
-                innerRadius={0.6}
-                height={300}
-                label={{ text: 'name', position: 'outside' }}
-              />
-            ) : (
-              <div style={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
-                暂无分类数据
-              </div>
-            )}
+        <Col span={12}>
+          <Card title="工具分类分布">
+            <Pie {...pieConfig} />
           </Card>
         </Col>
       </Row>

@@ -538,4 +538,182 @@ export default class StatsService extends Service {
       })),
     };
   }
+
+  // ============================================================
+  // Dashboard Phase 2 — 部门级数据视图
+  // ============================================================
+
+  /**
+   * 各部门(角色)概览数据
+   * @param roleIds 可选，限定部门角色ID
+   */
+  async getDepartmentOverview(roleIds?: number[]) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+
+    // 获取所有部门角色
+    let roleFilter = "r.role_category = 'department'";
+    const replacements: any = { sevenDaysAgo };
+    if (roleIds && roleIds.length > 0) {
+      roleFilter += ' AND r.id IN (:roleIds)';
+      replacements.roleIds = roleIds;
+    }
+
+    const sql = `
+      SELECT
+        r.id as role_id,
+        r.name as role_name,
+        r.code as role_code,
+        COUNT(DISTINCT ur.user_id) as member_count,
+        COUNT(DISTINCT CASE WHEN ll.created_at >= :sevenDaysAgo THEN ll.user_id END) as active_count,
+        COUNT(DISTINCT al.id) as tool_usage_count,
+        COUNT(DISTINCT CASE WHEN um.is_paid = 1 THEN um.user_id END) as paid_member_count
+      FROM roles r
+      LEFT JOIN user_roles ur ON r.id = ur.role_id
+      LEFT JOIN login_logs ll ON ur.user_id = ll.user_id AND ll.status = 1 AND ll.created_at >= :sevenDaysAgo
+      LEFT JOIN api_logs al ON ur.user_id = al.user_id AND al.path LIKE '/api/tools/%/access' AND al.created_at >= :sevenDaysAgo
+      LEFT JOIN user_members um ON ur.user_id = um.user_id
+      WHERE ${roleFilter}
+      GROUP BY r.id, r.name, r.code
+      ORDER BY member_count DESC
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements,
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    return {
+      departments: results.map(row => {
+        const memberCount = Number(row.member_count) || 0;
+        const activeCount = Number(row.active_count) || 0;
+        const toolUsage = Number(row.tool_usage_count) || 0;
+        const paidCount = Number(row.paid_member_count) || 0;
+        return {
+          roleId: row.role_id,
+          roleName: row.role_name,
+          roleCode: row.role_code,
+          memberCount,
+          activeRate: memberCount > 0 ? Math.round((activeCount / memberCount) * 10000) / 100 : 0,
+          toolUsagePerCapita: memberCount > 0 ? Math.round((toolUsage / memberCount) * 100) / 100 : 0,
+          paidMemberRate: memberCount > 0 ? Math.round((paidCount / memberCount) * 10000) / 100 : 0,
+        };
+      }),
+    };
+  }
+
+  /**
+   * 部门数据对比趋势
+   */
+  async getDepartmentCompare(roleIds: number[], metric: string = 'active', startDate?: string, endDate?: string) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const { startTime, endTime } = this._parseTimeRange({ startTime: startDate, endTime: endDate });
+
+    if (!roleIds || roleIds.length === 0) {
+      return { series: [] };
+    }
+
+    let metricSql: string;
+    switch (metric) {
+      case 'tool_usage':
+        metricSql = `COUNT(DISTINCT al.id)`;
+        break;
+      case 'active':
+      default:
+        metricSql = `COUNT(DISTINCT ll.user_id)`;
+        break;
+    }
+
+    const sql = `
+      SELECT
+        r.id as role_id,
+        r.name as role_name,
+        DATE_FORMAT(ll.created_at, '%Y-%m-%d') as date,
+        ${metricSql} as value
+      FROM roles r
+      JOIN user_roles ur ON r.id = ur.role_id
+      LEFT JOIN login_logs ll ON ur.user_id = ll.user_id AND ll.status = 1
+        AND ll.created_at BETWEEN :startTime AND :endTime
+      LEFT JOIN api_logs al ON ur.user_id = al.user_id
+        AND al.path LIKE '/api/tools/%/access'
+        AND al.created_at BETWEEN :startTime AND :endTime
+      WHERE r.id IN (:roleIds) AND r.role_category = 'department'
+      GROUP BY r.id, r.name, DATE_FORMAT(ll.created_at, '%Y-%m-%d')
+      HAVING date IS NOT NULL
+      ORDER BY date
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements: { roleIds, startTime, endTime },
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    // 按角色分组
+    const seriesMap = new Map<number, { roleId: number; roleName: string; data: any[] }>();
+    for (const row of results) {
+      if (!seriesMap.has(row.role_id)) {
+        seriesMap.set(row.role_id, { roleId: row.role_id, roleName: row.role_name, data: [] });
+      }
+      seriesMap.get(row.role_id)!.data.push({
+        date: row.date,
+        value: Number(row.value),
+      });
+    }
+
+    return { series: Array.from(seriesMap.values()) };
+  }
+
+  /**
+   * 跨部门协作数据（共同使用工具的重合度）
+   */
+  async getDepartmentCollaboration(roleIds?: number[]) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+
+    let roleFilter = "r1.role_category = 'department' AND r2.role_category = 'department'";
+    const replacements: any = { thirtyDaysAgo };
+    if (roleIds && roleIds.length > 0) {
+      roleFilter += ' AND r1.id IN (:roleIds) AND r2.id IN (:roleIds)';
+      replacements.roleIds = roleIds;
+    }
+
+    const sql = `
+      SELECT
+        r1.id as source_id,
+        r1.name as source_name,
+        r2.id as target_id,
+        r2.name as target_name,
+        COUNT(DISTINCT SUBSTRING_INDEX(SUBSTRING_INDEX(al1.path, '/', 4), '/', -1)) as shared_tools
+      FROM roles r1
+      JOIN user_roles ur1 ON r1.id = ur1.role_id
+      JOIN api_logs al1 ON ur1.user_id = al1.user_id
+        AND al1.path LIKE '/api/tools/%/access'
+        AND al1.created_at >= :thirtyDaysAgo
+      JOIN roles r2 ON r2.id > r1.id
+      JOIN user_roles ur2 ON r2.id = ur2.role_id
+      JOIN api_logs al2 ON ur2.user_id = al2.user_id
+        AND al2.path LIKE '/api/tools/%/access'
+        AND al2.created_at >= :thirtyDaysAgo
+        AND SUBSTRING_INDEX(SUBSTRING_INDEX(al1.path, '/', 4), '/', -1) = SUBSTRING_INDEX(SUBSTRING_INDEX(al2.path, '/', 4), '/', -1)
+      WHERE ${roleFilter}
+      GROUP BY r1.id, r1.name, r2.id, r2.name
+      HAVING shared_tools > 0
+      ORDER BY shared_tools DESC
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements,
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    return {
+      links: results.map(row => ({
+        source: row.source_name,
+        target: row.target_name,
+        sourceId: row.source_id,
+        targetId: row.target_id,
+        sharedTools: Number(row.shared_tools),
+      })),
+    };
+  }
 }

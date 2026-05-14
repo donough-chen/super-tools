@@ -8,7 +8,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import { useSelector, useDispatch, history, useLocation } from 'umi';
+import { useSelector, useDispatch, history, useLocation, Outlet } from 'umi';
 import type { MenuProps } from 'antd';
 import type { UserModelState } from '@/models/user';
 import type { GlobalModelState } from '@/models/global';
@@ -71,7 +71,7 @@ function collectLeafPaths(nodes: MenuNode[]): string[] {
  * - 菜单：首页（静态前置）+ 后端 RBAC 菜单树
  * - 用户下拉：刷新菜单 + 退出登录
  */
-const BasicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const BasicLayout: React.FC = () => {
   const dispatch = useDispatch();
   const { currentUser } = useSelector(
     (state: { user: UserModelState }) => state.user,
@@ -156,7 +156,7 @@ const BasicLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </Dropdown>
           </div>
         </Header>
-        <Content className={styles.content}>{children}</Content>
+        <Content className={styles.content}><Outlet /></Content>
       </Layout>
     </Layout>
   );

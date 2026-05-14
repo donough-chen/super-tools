@@ -169,6 +169,11 @@ export default (app: Application) => {
   router.get('/api/admin/stats/operation-efficiency', auth, perm('stats:overview'), adminCtrl.stats.operationEfficiency);
   router.get('/api/admin/stats/user-growth', auth, perm('stats:overview'), adminCtrl.stats.userGrowth);
 
+  // ==================== Stats 扩展 (Dashboard Phase 2 - 部门视图) ====================
+  router.get('/api/admin/stats/department/overview', auth, perm('stats:overview'), adminCtrl.stats.departmentOverview);
+  router.get('/api/admin/stats/department/compare', auth, perm('stats:overview'), adminCtrl.stats.departmentCompare);
+  router.get('/api/admin/stats/department/collaboration', auth, perm('stats:overview'), adminCtrl.stats.departmentCollaboration);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
   router.get('/api/admin/dashboard/system-status', auth, perm('dashboard:view'), controller.admin.dashboard.systemStatus);
