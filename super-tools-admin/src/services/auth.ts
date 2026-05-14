@@ -1,6 +1,7 @@
 import request from '@/utils/request';
 
 /** OAuth 客户端凭证（前端 admin 端默认值） */
+const PLATFORM = 'admin';
 const CLIENT_ID = 'admin_client';
 const CLIENT_SECRET = 'ADMIN_SECRET';
 
@@ -36,6 +37,7 @@ export async function loginApi(params: LoginParams): Promise<ApiResponse<LoginRe
   return request.post('/api/auth/login', {
     data: {
       ...params,
+      platform: params.platform || PLATFORM,
       clientId: params.clientId || CLIENT_ID,
       clientSecret: params.clientSecret || CLIENT_SECRET,
     },
@@ -50,6 +52,7 @@ export async function registerApi(params: RegisterParams): Promise<ApiResponse<R
   return request.post('/api/auth/register', {
     data: {
       ...params,
+      platform: params.platform || PLATFORM,
       clientId: params.clientId || CLIENT_ID,
     },
   });
