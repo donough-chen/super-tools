@@ -1,5 +1,3 @@
-import type { IRoute } from 'umi';
-
 /**
  * 系统管理路由（DB 顶级目录 system，type=1）
  *
@@ -9,7 +7,7 @@ import type { IRoute } from 'umi';
  * - /system/audit-log       → 权限码 system:audit-log
  * - /system/permission-test → 权限码 system:permission-test
  */
-const systemRoutes: IRoute[] = [
+const systemRoutes = [
   {
     path: '/system',
     routes: [

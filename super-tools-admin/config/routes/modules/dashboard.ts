@@ -1,10 +1,8 @@
-import type { IRoute } from 'umi';
-
 /**
  * 数据看板路由
  * 路径与 DB permissions.path 对齐：/dashboard/*
  */
-const dashboardRoutes: IRoute[] = [
+const dashboardRoutes = [
   {
     path: '/dashboard',
     redirect: '/dashboard/overview',

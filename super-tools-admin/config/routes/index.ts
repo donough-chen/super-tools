@@ -1,4 +1,3 @@
-import type { IRoute } from 'umi';
 import dashboardRoutes from './modules/dashboard';
 import systemRoutes from './modules/system';
 import userRoutes from './modules/user';
@@ -8,7 +7,7 @@ import feedbackRoutes from './modules/feedback';
 import statsRoutes from './modules/stats';
 import memberRoutes from './modules/member';
 
-const routes: IRoute[] = [
+const routes = [
   {
     path: '/login',
     component: '@/pages/Login',

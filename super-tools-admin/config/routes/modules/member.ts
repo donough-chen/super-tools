@@ -1,5 +1,3 @@
-import type { IRoute } from 'umi';
-
 /**
  * 会员管理路由（DB 顶级目录 member，type=1；DB 子菜单仅 member:menu，path=/member/list）
  *
@@ -10,7 +8,7 @@ import type { IRoute } from 'umi';
  * - /member/stats / /member/config / /member/users 作为同模块的扩展页保留，
  *   AuthWrapper 找不到精确菜单节点时会按"前缀回退到父目录 member"判定权限。
  */
-const memberRoutes: IRoute[] = [
+const memberRoutes = [
   {
     path: '/member',
     routes: [
