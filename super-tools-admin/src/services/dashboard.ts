@@ -63,3 +63,40 @@ export async function getDepartmentCompare(params: {
 export async function getDepartmentCollaboration(params?: { role_ids?: string }) {
   return request('/api/admin/stats/department/collaboration', { params });
 }
+
+// ====== 智能预警 (Phase 3) ======
+export async function getAlertRules(params?: any) {
+  return request('/api/admin/alerts/rules', { params });
+}
+
+export async function createAlertRule(data: any) {
+  return request('/api/admin/alerts/rules', { method: 'POST', data });
+}
+
+export async function updateAlertRule(id: number, data: any) {
+  return request(`/api/admin/alerts/rules/${id}`, { method: 'PUT', data });
+}
+
+export async function deleteAlertRule(id: number) {
+  return request(`/api/admin/alerts/rules/${id}`, { method: 'DELETE' });
+}
+
+export async function toggleAlertRule(id: number) {
+  return request(`/api/admin/alerts/rules/${id}/toggle`, { method: 'PUT' });
+}
+
+export async function getAlertLogs(params?: any) {
+  return request('/api/admin/alerts/logs', { params });
+}
+
+export async function acknowledgeAlertLog(id: number) {
+  return request(`/api/admin/alerts/logs/${id}/acknowledge`, { method: 'PUT' });
+}
+
+export async function resolveAlertLog(id: number, resolve_note?: string) {
+  return request(`/api/admin/alerts/logs/${id}/resolve`, { method: 'PUT', data: { resolve_note } });
+}
+
+export async function getAlertSummary() {
+  return request('/api/admin/alerts/summary');
+}

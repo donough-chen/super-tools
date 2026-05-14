@@ -178,6 +178,17 @@ export default (app: Application) => {
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
   router.get('/api/admin/dashboard/system-status', auth, perm('dashboard:view'), controller.admin.dashboard.systemStatus);
 
+  // ==================== 智能预警 (Dashboard Phase 3) ====================
+  router.get('/api/admin/alerts/rules', auth, perm('dashboard:view'), controller.admin.alert.listRules);
+  router.post('/api/admin/alerts/rules', auth, perm('dashboard:view'), controller.admin.alert.createRule);
+  router.put('/api/admin/alerts/rules/:id', auth, perm('dashboard:view'), controller.admin.alert.updateRule);
+  router.delete('/api/admin/alerts/rules/:id', auth, perm('dashboard:view'), controller.admin.alert.deleteRule);
+  router.put('/api/admin/alerts/rules/:id/toggle', auth, perm('dashboard:view'), controller.admin.alert.toggleRule);
+  router.get('/api/admin/alerts/logs', auth, perm('dashboard:view'), controller.admin.alert.listLogs);
+  router.put('/api/admin/alerts/logs/:id/acknowledge', auth, perm('dashboard:view'), controller.admin.alert.acknowledgLog);
+  router.put('/api/admin/alerts/logs/:id/resolve', auth, perm('dashboard:view'), controller.admin.alert.resolveLog);
+  router.get('/api/admin/alerts/summary', auth, perm('dashboard:view'), controller.admin.alert.summary);
+
   // ==================== 会员体系（C 端，用户自用） ====================
   router.get('/api/member/levels', controller.member.levels);
   router.get('/api/member/plans', controller.member.plans);
