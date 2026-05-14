@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Spin } from 'antd';
+import { Card, Row, Col, Spin, Empty } from 'antd';
 import { Line, Bar, Pie } from '@ant-design/charts';
 import { getToolUsage, getToolCategory, getStatsTrend } from '@/services/dashboard';
 
@@ -9,9 +9,7 @@ const ToolUsageTab: React.FC = () => {
   const [trendData, setTrendData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -21,52 +19,52 @@ const ToolUsageTab: React.FC = () => {
         getToolCategory(),
         getStatsTrend({ metric: 'tool-access', granularity: 'day' }),
       ]);
-      if (usageRes?.data) setUsageData(usageRes.data);
-      if (catRes?.data) setCategoryData(catRes.data);
-      if (trendRes?.data) setTrendData(trendRes.data);
+
+      // getToolUsage → { data: [{ toolCode, toolName, count }] }
+      const usage = Array.isArray(usageRes?.data) ? usageRes.data : [];
+      setUsageData(usage.map((t: any) => ({ name: t.toolName || t.toolCode, count: t.count })));
+
+      // getToolCategory → { data: { categories: [{ name, usageCount, percentage }] } }
+      const cats = catRes?.data?.categories || [];
+      setCategoryData(cats.map((c: any) => ({ name: c.name, value: c.usageCount })));
+
+      // getStatsTrend → { data: { metric, granularity, points: [{ date, count }] } }
+      const points = trendRes?.data?.points || [];
+      setTrendData(points.map((p: any) => ({ date: p.date, value: p.count })));
     } finally {
       setLoading(false);
     }
-  };
-
-  const lineConfig: any = {
-    data: trendData,
-    xField: 'date',
-    yField: 'value',
-    smooth: true,
-  };
-
-  const barConfig: any = {
-    data: usageData,
-    xField: 'count',
-    yField: 'name',
-    seriesField: 'name',
-  };
-
-  const pieConfig: any = {
-    data: categoryData,
-    angleField: 'value',
-    colorField: 'name',
-    radius: 0.8,
-    label: { type: 'outer' },
   };
 
   return (
     <Spin spinning={loading}>
       <Row gutter={[16, 16]}>
         <Col span={24}>
-          <Card title="工具访问趋势">
-            <Line {...lineConfig} />
+          <Card title="工具访问趋势" bordered={false}>
+            {trendData.length > 0 ? (
+              <Line data={trendData} xField="date" yField="value" smooth={true} height={250} />
+            ) : (
+              <Empty description="暂无趋势数据" />
+            )}
           </Card>
         </Col>
-        <Col span={12}>
-          <Card title="Top 10 工具使用量">
-            <Bar {...barConfig} />
+        <Col xs={24} lg={14}>
+          <Card title="Top 10 工具使用量" bordered={false}>
+            {usageData.length > 0 ? (
+              <Bar data={usageData} xField="name" yField="count" colorField="name" height={300} />
+            ) : (
+              <Empty description="暂无使用数据" />
+            )}
           </Card>
         </Col>
-        <Col span={12}>
-          <Card title="工具分类分布">
-            <Pie {...pieConfig} />
+        <Col xs={24} lg={10}>
+          <Card title="工具分类分布" bordered={false}>
+            {categoryData.length > 0 ? (
+              <Pie data={categoryData} angleField="value" colorField="name" innerRadius={0.6} height={300}
+                   label={{ text: 'name', position: 'outside' }} />
+            ) : (
+              <Empty description="暂无分类数据" />
+            )}
           </Card>
         </Col>
       </Row>
