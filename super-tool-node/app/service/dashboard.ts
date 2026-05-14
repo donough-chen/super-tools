@@ -28,14 +28,14 @@ export default class DashboardService extends Service {
 
     const [totalRequests, errorRequests] = await Promise.all([
       this.ctx.model.ApiLog.count({ where: { created_at: { [Op.gte]: oneHourAgo } } }),
-      this.ctx.model.ApiLog.count({ where: { created_at: { [Op.gte]: oneHourAgo }, status: { [Op.gte]: 400 } } }),
+      this.ctx.model.ApiLog.count({ where: { created_at: { [Op.gte]: oneHourAgo }, response_code: { [Op.gte]: 400 } } }),
     ]);
 
     const errorRate = totalRequests > 0 ? (errorRequests / totalRequests) * 100 : 0;
 
     const responseTimeResult = await this.ctx.model.ApiLog.findAll({
       attributes: [[this.ctx.model.ApiLog.sequelize!.fn('AVG',
-        this.ctx.model.ApiLog.sequelize!.col('response_time')), 'avg']],
+        this.ctx.model.ApiLog.sequelize!.col('cost_time')), 'avg']],
       where: { created_at: { [Op.gte]: oneHourAgo } },
       raw: true,
     }) as any[];

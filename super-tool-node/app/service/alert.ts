@@ -163,7 +163,7 @@ export default class AlertService extends Service {
           where: { created_at: { [Op.gte]: since } },
         });
         const errors = await this.ctx.model.ApiLog.count({
-          where: { status: { [Op.gte]: 400 }, created_at: { [Op.gte]: since } },
+          where: { response_code: { [Op.gte]: 400 }, created_at: { [Op.gte]: since } },
         });
         return total > 0 ? (errors / total) * 100 : 0;
       }
@@ -186,7 +186,7 @@ export default class AlertService extends Service {
       case 'response_time': {
         const result = await this.ctx.model.ApiLog.findAll({
           attributes: [[this.ctx.model.ApiLog.sequelize!.fn('AVG',
-            this.ctx.model.ApiLog.sequelize!.col('response_time')), 'avg']],
+            this.ctx.model.ApiLog.sequelize!.col('cost_time')), 'avg']],
           where: { created_at: { [Op.gte]: since } },
           raw: true,
         }) as any[];
