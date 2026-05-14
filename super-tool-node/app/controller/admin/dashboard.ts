@@ -21,4 +21,26 @@ export default class DashboardController extends BaseController {
     const data = await this.service.dashboard.getSystemStatus();
     this.success(data);
   }
+
+  // ==================== Phase 5: 移动端适配 ====================
+
+  /** GET /api/admin/dashboard/mobile-summary */
+  async mobileSummary() {
+    const data = await this.service.dashboard.getMobileSummary();
+    this.success(data);
+  }
+
+  /** GET /api/admin/dashboard/push-settings */
+  async getPushSettings() {
+    const userId = (this.ctx.state.user as any)?.id;
+    const data = await this.service.dashboard.getPushSettings(userId);
+    this.success(data);
+  }
+
+  /** POST /api/admin/dashboard/push-settings */
+  async savePushSettings() {
+    const userId = (this.ctx.state.user as any)?.id;
+    const data = await this.service.dashboard.savePushSettings(userId, this.ctx.request.body);
+    this.success(data);
+  }
 }

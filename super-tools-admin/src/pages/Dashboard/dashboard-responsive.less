@@ -1,0 +1,64 @@
+/* Dashboard 响应式适配 */
+
+/* 平板 (768px - 1200px) */
+@media (max-width: 1200px) {
+  .ant-pro-page-container {
+    .ant-page-header-heading-title { font-size: 18px; }
+    .ant-page-header-heading-sub-title { display: none; }
+  }
+}
+
+/* 手机 (< 768px) */
+@media (max-width: 768px) {
+  /* KPI 卡片：2列 */
+  .ant-col-lg-4 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  /* 图表区域全宽 */
+  .ant-col-lg-14,
+  .ant-col-lg-10,
+  .ant-col-lg-16,
+  .ant-col-lg-8 {
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* 卡片紧凑 */
+  .ant-card {
+    border-radius: 8px;
+    .ant-card-body { padding: 12px; }
+  }
+
+  /* 表格滚动 */
+  .ant-table-wrapper {
+    overflow-x: auto;
+  }
+
+  /* 隐藏次要信息 */
+  .ant-page-header-heading-sub-title,
+  .ant-pro-page-container-children-content > .ant-space > .ant-space-item:last-child {
+    /* SystemStatus on mobile: stack */
+  }
+
+  /* Statistic 紧凑 */
+  .ant-statistic-content-value {
+    font-size: 20px !important;
+  }
+  .ant-statistic-title {
+    font-size: 12px !important;
+  }
+}
+
+/* 小手机 (< 480px) */
+@media (max-width: 480px) {
+  .ant-col-xs-12 {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+  }
+
+  .ant-statistic-content-value {
+    font-size: 16px !important;
+  }
+}

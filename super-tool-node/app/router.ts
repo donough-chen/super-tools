@@ -177,6 +177,9 @@ export default (app: Application) => {
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
   router.get('/api/admin/dashboard/system-status', auth, perm('dashboard:view'), controller.admin.dashboard.systemStatus);
+  router.get('/api/admin/dashboard/mobile-summary', auth, controller.admin.dashboard.mobileSummary);
+  router.get('/api/admin/dashboard/push-settings', auth, controller.admin.dashboard.getPushSettings);
+  router.post('/api/admin/dashboard/push-settings', auth, controller.admin.dashboard.savePushSettings);
 
   // ==================== 可视化配置 (Dashboard Phase 4) ====================
   router.get('/api/admin/dashboard/layouts', auth, perm('dashboard:view'), controller.admin.layout.list);

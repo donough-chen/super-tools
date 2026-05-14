@@ -37,6 +37,11 @@ const dashboardRoutes = [
     component: '@/pages/Dashboard/Config',
     wrappers: ['@/components/AuthWrapper'],
   },
+  {
+    path: '/dashboard/mobile',
+    component: '@/pages/Dashboard/Mobile',
+    wrappers: ['@/components/AuthWrapper'],
+  },
 ];
 
 export default dashboardRoutes;

@@ -133,3 +133,16 @@ export async function shareLayout(id: number) {
 export async function getSharedLayout(token: string) {
   return request(`/api/admin/dashboard/shared/${token}`);
 }
+
+// ====== 移动端适配 (Phase 5) ======
+export async function getMobileSummary() {
+  return request('/api/admin/dashboard/mobile-summary');
+}
+
+export async function getPushSettings() {
+  return request('/api/admin/dashboard/push-settings');
+}
+
+export async function savePushSettings(data: any) {
+  return request('/api/admin/dashboard/push-settings', { method: 'POST', data });
+}
