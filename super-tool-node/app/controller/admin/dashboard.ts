@@ -15,4 +15,10 @@ export default class DashboardController extends BaseController {
 
     this.success({ userCount, todayLoginCount, activeSessionCount, roleCount }, '获取成功');
   }
+
+  /** GET /api/admin/dashboard/system-status */
+  async systemStatus() {
+    const data = await this.service.dashboard.getSystemStatus();
+    this.success(data);
+  }
 }

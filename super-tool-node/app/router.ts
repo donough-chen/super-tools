@@ -162,8 +162,16 @@ export default (app: Application) => {
     auth, perm('stats:export'),
     adminCtrl.stats.exportCsv);
 
+  // ==================== Stats 扩展 (Dashboard Phase 1) ====================
+  router.get('/api/admin/stats/user-retention', auth, perm('stats:overview'), adminCtrl.stats.userRetention);
+  router.get('/api/admin/stats/active-hours', auth, perm('stats:overview'), adminCtrl.stats.activeHours);
+  router.get('/api/admin/stats/tool-category', auth, perm('stats:overview'), adminCtrl.stats.toolCategory);
+  router.get('/api/admin/stats/operation-efficiency', auth, perm('stats:overview'), adminCtrl.stats.operationEfficiency);
+  router.get('/api/admin/stats/user-growth', auth, perm('stats:overview'), adminCtrl.stats.userGrowth);
+
   // ==================== Dashboard ====================
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
+  router.get('/api/admin/dashboard/system-status', auth, perm('dashboard:view'), controller.admin.dashboard.systemStatus);
 
   // ==================== 会员体系（C 端，用户自用） ====================
   router.get('/api/member/levels', controller.member.levels);

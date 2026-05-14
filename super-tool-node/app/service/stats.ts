@@ -313,4 +313,229 @@ export default class StatsService extends Service {
     if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
     return s;
   }
+
+  // ============================================================
+  // Dashboard Phase 1 — 业务分析扩展方法
+  // ============================================================
+
+  /**
+   * 用户留存率
+   */
+  async getUserRetention(startDate: string, endDate: string) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const retentionDays = [1, 3, 7, 14, 30];
+
+    const sql = `
+      SELECT
+        DATE(u.created_at) as cohort_date,
+        COUNT(DISTINCT u.id) as total_users,
+        ${retentionDays.map(d => `
+          COUNT(DISTINCT CASE WHEN EXISTS (
+            SELECT 1 FROM login_logs ll
+            WHERE ll.user_id = u.id
+              AND DATE(ll.created_at) = DATE_ADD(DATE(u.created_at), INTERVAL ${d} DAY)
+              AND ll.status = 1
+          ) THEN u.id END) as day_${d}_retained
+        `).join(',')}
+      FROM users u
+      WHERE DATE(u.created_at) BETWEEN :startDate AND :endDate
+        AND u.status = 1
+      GROUP BY DATE(u.created_at)
+      ORDER BY cohort_date DESC
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements: { startDate, endDate },
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    return {
+      cohorts: results.map(row => ({
+        date: row.cohort_date,
+        totalUsers: Number(row.total_users),
+        retention: {
+          day1: row.total_users > 0 ? Math.round((row.day_1_retained / row.total_users) * 10000) / 100 : 0,
+          day3: row.total_users > 0 ? Math.round((row.day_3_retained / row.total_users) * 10000) / 100 : 0,
+          day7: row.total_users > 0 ? Math.round((row.day_7_retained / row.total_users) * 10000) / 100 : 0,
+          day14: row.total_users > 0 ? Math.round((row.day_14_retained / row.total_users) * 10000) / 100 : 0,
+          day30: row.total_users > 0 ? Math.round((row.day_30_retained / row.total_users) * 10000) / 100 : 0,
+        },
+      })),
+    };
+  }
+
+  /**
+   * 活跃时段分布 (24h × 7d 热力图数据)
+   */
+  async getActiveHours(days: number = 7) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const since = new Date(Date.now() - days * 86400000);
+
+    const sql = `
+      SELECT
+        DAYOFWEEK(created_at) as day_of_week,
+        HOUR(created_at) as hour,
+        COUNT(DISTINCT user_id) as active_users
+      FROM login_logs
+      WHERE created_at >= :since AND status = 1
+      GROUP BY DAYOFWEEK(created_at), HOUR(created_at)
+      ORDER BY day_of_week, hour
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements: { since },
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    return {
+      data: results.map(row => ({
+        dayOfWeek: Number(row.day_of_week),
+        hour: Number(row.hour),
+        activeUsers: Number(row.active_users),
+      })),
+    };
+  }
+
+  /**
+   * 工具分类使用统计
+   */
+  async getToolCategory(startDate?: string, endDate?: string) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const { startTime, endTime } = this._parseTimeRange({
+      startTime: startDate, endTime: endDate,
+    });
+
+    const sql = `
+      SELECT
+        tc.name as category_name,
+        tc.code as category_code,
+        COUNT(*) as usage_count
+      FROM api_logs al
+      JOIN tools t ON SUBSTRING_INDEX(SUBSTRING_INDEX(al.path, '/', 4), '/', -1) = t.code
+      JOIN tool_categories tc ON t.category_id = tc.id
+      WHERE al.path LIKE '/api/tools/%/access'
+        AND al.created_at BETWEEN :startTime AND :endTime
+      GROUP BY tc.id, tc.name, tc.code
+      ORDER BY usage_count DESC
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements: { startTime, endTime },
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    const total = results.reduce((sum: number, r: any) => sum + Number(r.usage_count), 0);
+
+    return {
+      categories: results.map(row => ({
+        name: row.category_name,
+        code: row.category_code,
+        usageCount: Number(row.usage_count),
+        percentage: total > 0 ? Math.round((Number(row.usage_count) / total) * 10000) / 100 : 0,
+      })),
+    };
+  }
+
+  /**
+   * 运营效率指标
+   */
+  async getOperationEfficiency(startDate?: string, endDate?: string) {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const { startTime, endTime } = this._parseTimeRange({
+      startTime: startDate, endTime: endDate,
+    });
+
+    // 1. 反馈平均响应时间 (按周)
+    const feedbackResponseSql = `
+      SELECT
+        YEARWEEK(created_at, 1) as week_num,
+        MIN(DATE(created_at)) as week_start,
+        AVG(TIMESTAMPDIFF(HOUR, created_at, updated_at)) as avg_hours
+      FROM feedbacks
+      WHERE status >= 1
+        AND created_at BETWEEN :startTime AND :endTime
+      GROUP BY YEARWEEK(created_at, 1)
+      ORDER BY week_num
+    `;
+    const feedbackResponse: any[] = await sequelize.query(feedbackResponseSql, {
+      replacements: { startTime, endTime },
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    // 2. 反馈完成率
+    const [totalFeedback, completedFeedback] = await Promise.all([
+      this.ctx.model.Feedback.count({
+        where: { created_at: { [Op.between]: [startTime, endTime] } },
+      }),
+      this.ctx.model.Feedback.count({
+        where: { status: 3, created_at: { [Op.between]: [startTime, endTime] } },
+      }),
+    ]);
+
+    // 3. 会员转化漏斗
+    const funnelSql = `
+      SELECT
+        (SELECT COUNT(*) FROM users WHERE status = 1) as registered,
+        (SELECT COUNT(DISTINCT user_id) FROM login_logs WHERE status = 1) as logged_in,
+        (SELECT COUNT(DISTINCT user_id) FROM api_logs WHERE path LIKE '/api/tools/%/access') as used_tool,
+        (SELECT COUNT(*) FROM user_members WHERE is_paid = 1) as paid_member
+    `;
+    const funnelResult: any[] = await sequelize.query(funnelSql, {
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    return {
+      feedbackResponse: feedbackResponse.map(r => ({
+        week: r.week_start,
+        avgHours: Math.round(Number(r.avg_hours) * 10) / 10,
+      })),
+      feedbackCompletion: {
+        total: totalFeedback,
+        completed: completedFeedback,
+        rate: totalFeedback > 0 ? Math.round((completedFeedback / totalFeedback) * 10000) / 100 : 0,
+      },
+      memberConversion: {
+        registered: Number(funnelResult[0]?.registered || 0),
+        loggedIn: Number(funnelResult[0]?.logged_in || 0),
+        usedTool: Number(funnelResult[0]?.used_tool || 0),
+        paidMember: Number(funnelResult[0]?.paid_member || 0),
+      },
+    };
+  }
+
+  /**
+   * 用户增长 (按注册渠道分组)
+   */
+  async getUserGrowth(startDate?: string, endDate?: string, granularity: Granularity = 'day') {
+    const sequelize = this.ctx.model.User.sequelize!;
+    const { startTime, endTime } = this._parseTimeRange({
+      startTime: startDate, endTime: endDate,
+    });
+    const bucketFormat = this._bucketFormat(granularity);
+
+    const sql = `
+      SELECT
+        DATE_FORMAT(created_at, '${bucketFormat}') as date,
+        COALESCE(register_source, 'unknown') as source,
+        COUNT(*) as count
+      FROM users
+      WHERE created_at BETWEEN :startTime AND :endTime
+        AND status = 1
+      GROUP BY DATE_FORMAT(created_at, '${bucketFormat}'), register_source
+      ORDER BY date, source
+    `;
+
+    const results: any[] = await sequelize.query(sql, {
+      replacements: { startTime, endTime },
+      type: (sequelize as any).QueryTypes.SELECT,
+    }) as any[];
+
+    return {
+      data: results.map(row => ({
+        date: row.date,
+        source: row.source,
+        count: Number(row.count),
+      })),
+    };
+  }
 }
