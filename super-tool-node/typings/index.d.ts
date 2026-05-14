@@ -33,6 +33,8 @@ declare module 'egg' {
     auth: any;
     user: any;
     admin: {
+      layout: any;
+      alert: any;
       dashboard: any;
       role: any;
       permission: any;

@@ -8,8 +8,8 @@ export default (app: Application) => {
     userId:       { type: INTEGER.UNSIGNED, allowNull: true, field: 'user_id' },
     name:         { type: STRING(100), allowNull: false },
     description:  { type: STRING(500), allowNull: true },
-    isDefault:    { type: TINYINT(1), defaultValue: 0, field: 'is_default' },
-    isShared:     { type: TINYINT(1), defaultValue: 0, field: 'is_shared' },
+    isDefault:    { type: TINYINT, defaultValue: 0, field: 'is_default' },
+    isShared:     { type: TINYINT, defaultValue: 0, field: 'is_shared' },
     shareToken:   { type: STRING(64), allowNull: true, field: 'share_token' },
     layoutConfig: { type: JSON_TYPE, allowNull: false, field: 'layout_config' },
   }, {

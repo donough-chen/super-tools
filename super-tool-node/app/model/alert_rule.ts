@@ -15,7 +15,7 @@ export default (app: Application) => {
     severity:        { type: STRING(20), defaultValue: 'warning' },
     notifyChannels:  { type: JSON_TYPE, allowNull: true, field: 'notify_channels' },
     notifyRoleIds:   { type: JSON_TYPE, allowNull: true, field: 'notify_role_ids' },
-    isEnabled:       { type: TINYINT(1), defaultValue: 1, field: 'is_enabled' },
+    isEnabled:       { type: TINYINT, defaultValue: 1, field: 'is_enabled' },
     cooldownMinutes: { type: INTEGER.UNSIGNED, defaultValue: 30, field: 'cooldown_minutes' },
     lastTriggeredAt: { type: DATE, allowNull: true, field: 'last_triggered_at' },
     createdBy:       { type: INTEGER.UNSIGNED, allowNull: true, field: 'created_by' },
