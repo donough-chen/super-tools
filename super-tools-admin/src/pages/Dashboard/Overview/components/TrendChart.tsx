@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Radio, Spin } from 'antd';
-import { DualAxes } from '@ant-design/charts';
+import { Card, Radio, Spin, Empty } from 'antd';
+import { Line } from '@ant-design/charts';
 import { getStatsTrend } from '@/services/dashboard';
 
 type MetricType = 'user-register' | 'user-login' | 'feedback-submit' | 'tool-access';
@@ -10,33 +10,24 @@ const TrendChart: React.FC = () => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchTrend();
-  }, [metric]);
+  useEffect(() => { fetchTrend(); }, [metric]);
 
   const fetchTrend = async () => {
     setLoading(true);
     try {
       const res = await getStatsTrend({ metric, granularity: 'day' });
-      if (res?.data) setData(res.data);
+      // API 返回 { data: { metric, granularity, points: [{ date, count }] } }
+      const points = res?.data?.points || [];
+      setData(points.map((p: any) => ({ date: p.date, count: p.count })));
     } finally {
       setLoading(false);
     }
   };
 
-  const config: any = {
-    data: [data, data],
-    xField: 'date',
-    yField: ['value', 'count'],
-    geometryOptions: [
-      { geometry: 'line', smooth: true },
-      { geometry: 'line', smooth: true, lineStyle: { lineDash: [5, 5] } },
-    ],
-  };
-
   return (
     <Card
-      title="趋势图表"
+      title="数据趋势"
+      bordered={false}
       extra={
         <Radio.Group value={metric} onChange={(e) => setMetric(e.target.value)} size="small">
           <Radio.Button value="user-register">注册</Radio.Button>
@@ -47,7 +38,11 @@ const TrendChart: React.FC = () => {
       }
     >
       <Spin spinning={loading}>
-        <DualAxes {...config} />
+        {data.length > 0 ? (
+          <Line data={data} xField="date" yField="count" smooth={true} height={350} point={{ size: 3 }} />
+        ) : (
+          <Empty description="暂无趋势数据" style={{ height: 350, display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
+        )}
       </Spin>
     </Card>
   );
