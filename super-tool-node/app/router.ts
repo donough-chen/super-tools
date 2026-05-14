@@ -178,6 +178,16 @@ export default (app: Application) => {
   router.get('/api/admin/dashboard', auth, perm('dashboard:view'), controller.admin.dashboard.index);
   router.get('/api/admin/dashboard/system-status', auth, perm('dashboard:view'), controller.admin.dashboard.systemStatus);
 
+  // ==================== 可视化配置 (Dashboard Phase 4) ====================
+  router.get('/api/admin/dashboard/layouts', auth, perm('dashboard:view'), controller.admin.layout.list);
+  router.get('/api/admin/dashboard/layouts/:id', auth, perm('dashboard:view'), controller.admin.layout.show);
+  router.post('/api/admin/dashboard/layouts', auth, perm('dashboard:view'), controller.admin.layout.create);
+  router.put('/api/admin/dashboard/layouts/:id', auth, perm('dashboard:view'), controller.admin.layout.update);
+  router.delete('/api/admin/dashboard/layouts/:id', auth, perm('dashboard:view'), controller.admin.layout.destroy);
+  router.put('/api/admin/dashboard/layouts/:id/default', auth, perm('dashboard:view'), controller.admin.layout.setDefault);
+  router.post('/api/admin/dashboard/layouts/:id/share', auth, perm('dashboard:view'), controller.admin.layout.share);
+  router.get('/api/admin/dashboard/shared/:token', controller.admin.layout.getShared);
+
   // ==================== 智能预警 (Dashboard Phase 3) ====================
   router.get('/api/admin/alerts/rules', auth, perm('dashboard:view'), controller.admin.alert.listRules);
   router.post('/api/admin/alerts/rules', auth, perm('dashboard:view'), controller.admin.alert.createRule);

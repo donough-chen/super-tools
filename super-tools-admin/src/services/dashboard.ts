@@ -100,3 +100,36 @@ export async function resolveAlertLog(id: number, resolve_note?: string) {
 export async function getAlertSummary() {
   return request('/api/admin/alerts/summary');
 }
+
+// ====== 可视化配置 (Phase 4) ======
+export async function getLayouts() {
+  return request('/api/admin/dashboard/layouts');
+}
+
+export async function getLayout(id: number) {
+  return request(`/api/admin/dashboard/layouts/${id}`);
+}
+
+export async function createLayout(data: any) {
+  return request('/api/admin/dashboard/layouts', { method: 'POST', data });
+}
+
+export async function updateLayout(id: number, data: any) {
+  return request(`/api/admin/dashboard/layouts/${id}`, { method: 'PUT', data });
+}
+
+export async function deleteLayout(id: number) {
+  return request(`/api/admin/dashboard/layouts/${id}`, { method: 'DELETE' });
+}
+
+export async function setLayoutDefault(id: number) {
+  return request(`/api/admin/dashboard/layouts/${id}/default`, { method: 'PUT' });
+}
+
+export async function shareLayout(id: number) {
+  return request(`/api/admin/dashboard/layouts/${id}/share`, { method: 'POST' });
+}
+
+export async function getSharedLayout(token: string) {
+  return request(`/api/admin/dashboard/shared/${token}`);
+}

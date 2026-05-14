@@ -32,6 +32,11 @@ const dashboardRoutes = [
     component: '@/pages/Dashboard/Alerts/Rules',
     wrappers: ['@/components/AuthWrapper'],
   },
+  {
+    path: '/dashboard/config',
+    component: '@/pages/Dashboard/Config',
+    wrappers: ['@/components/AuthWrapper'],
+  },
 ];
 
 export default dashboardRoutes;
