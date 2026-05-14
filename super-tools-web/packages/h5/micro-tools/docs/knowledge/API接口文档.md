@@ -397,7 +397,7 @@ const sites = await getSiteList({ categoryId: 'sc-1', sortType: 'most_used' });
 
 ```typescript
 const H5_CLIENT_ID = 'h5_client';
-const H5_CLIENT_SECRET = 'CHANGE_ME_H5_SECRET';
+const H5_CLIENT_SECRET = 'H5_SECRET';
 ```
 
 ---

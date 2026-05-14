@@ -72,8 +72,8 @@ export const testCtx: {
 
 /** 测试用的 clientId / clientSecret（对应数据库中已有的应用记录） */
 export const TEST_CLIENT = {
-  clientId: 'web_client',
-  clientSecret: 'CHANGE_ME_WEB_SECRET',
+  clientId: 'admin_client',
+  clientSecret: 'ADMIN_SECRET',
 };
 
 /** 测试管理员账号 */

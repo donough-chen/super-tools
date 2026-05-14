@@ -11,8 +11,8 @@ describe('工具模块 (Admin Tool) 管理端 API', () => {
     const res = await app.httpRequest().post('/api/auth/login').send({
       username: 'admin',
       password: 'Admin@123456',
-      clientId: 'web_client',
-      clientSecret: 'CHANGE_ME_WEB_SECRET',
+      clientId: 'admin_client',
+      clientSecret: 'ADMIN_SECRET',
     });
     adminToken = res.body.data?.accessToken;
     assert.ok(adminToken, '获取 admin token 失败');

@@ -1,6 +1,6 @@
 /** H5 端 OAuth 客户端凭证（应通过环境变量覆盖，部署前需替换） */
 export const H5_CLIENT_ID = 'h5_client';
-export const H5_CLIENT_SECRET = 'CHANGE_ME_H5_SECRET';
+export const H5_CLIENT_SECRET = 'H5_SECRET';
 export const H5_PLATFORM = 'h5';
 export const H5_DEVICE_TYPE = 'h5' as const;
 

@@ -1,8 +1,8 @@
 import request from '@/utils/request';
 
-/** OAuth 客户端凭证（前端 Web 端默认值） */
-const CLIENT_ID = 'web_client';
-const CLIENT_SECRET = 'CHANGE_ME_WEB_SECRET';
+/** OAuth 客户端凭证（前端 admin 端默认值） */
+const CLIENT_ID = 'admin_client';
+const CLIENT_SECRET = 'ADMIN_SECRET';
 
 /** 登录参数 */
 export interface LoginParams {
