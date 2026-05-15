@@ -29,7 +29,6 @@ const severityColors: Record<string, string> = { critical: 'red', warning: 'oran
 const AlertRules: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rules, setRules] = useState<any[]>([]);
-  const [total, setTotal] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState<any>(null);
   const [form] = Form.useForm();
@@ -41,36 +40,40 @@ const AlertRules: React.FC = () => {
     try {
       const res = await getAlertRules({ pageSize: 100 });
       setRules(res?.data?.list || []);
-      setTotal(res?.data?.total || 0);
     } finally { setLoading(false); }
   };
 
   const handleSubmit = async () => {
-    const values = await form.validateFields();
-    if (editingRule) {
-      await updateAlertRule(editingRule.id, values);
-      message.success('更新成功');
-    } else {
-      await createAlertRule(values);
-      message.success('创建成功');
+    try {
+      const values = await form.validateFields();
+      if (editingRule) {
+        await updateAlertRule(editingRule.id, values);
+        message.success('更新成功');
+      } else {
+        await createAlertRule(values);
+        message.success('创建成功');
+      }
+      setModalVisible(false);
+      form.resetFields();
+      setEditingRule(null);
+      await fetchRules();
+    } catch (err) {
+      // form validation error, ignore
     }
-    setModalVisible(false);
-    form.resetFields();
-    setEditingRule(null);
-    fetchRules();
   };
 
   const handleEdit = (record: any) => {
     setEditingRule(record);
+    // Sequelize 返回的是 camelCase 属性名
     form.setFieldsValue({
       name: record.name,
       description: record.description,
-      metricType: record.metric_type,
-      conditionType: record.condition_type,
-      threshold: record.threshold,
-      timeWindow: record.time_window,
+      metricType: record.metricType,
+      conditionType: record.conditionType,
+      threshold: Number(record.threshold),
+      timeWindow: record.timeWindow,
       severity: record.severity,
-      cooldownMinutes: record.cooldown_minutes,
+      cooldownMinutes: record.cooldownMinutes,
     });
     setModalVisible(true);
   };
@@ -78,35 +81,41 @@ const AlertRules: React.FC = () => {
   const handleDelete = async (id: number) => {
     await deleteAlertRule(id);
     message.success('删除成功');
-    fetchRules();
+    await fetchRules();
   };
 
   const handleToggle = async (id: number) => {
     await toggleAlertRule(id);
-    fetchRules();
+    await fetchRules();
   };
 
+  // Sequelize Model 用 camelCase (metricType, conditionType, timeWindow, isEnabled)
   const columns = [
     { title: '名称', dataIndex: 'name', key: 'name' },
     {
-      title: '指标', dataIndex: 'metric_type', key: 'metric',
+      title: '指标', dataIndex: 'metricType', key: 'metric',
       render: (v: string) => metricOptions.find(o => o.value === v)?.label || v,
     },
     {
       title: '条件', key: 'condition',
-      render: (_: any, r: any) => `${conditionOptions.find(o => o.value === r.condition_type)?.label || r.condition_type} ${r.threshold}`,
+      render: (_: any, r: any) => {
+        const label = conditionOptions.find(o => o.value === r.conditionType)?.label || r.conditionType;
+        return `${label} ${r.threshold}`;
+      },
     },
     {
       title: '严重度', dataIndex: 'severity', key: 'severity',
       render: (v: string) => <Tag color={severityColors[v]}>{v?.toUpperCase()}</Tag>,
     },
     {
-      title: '时间窗口', dataIndex: 'time_window', key: 'tw',
-      render: (v: number) => `${v}分钟`,
+      title: '时间窗口', dataIndex: 'timeWindow', key: 'tw',
+      render: (v: number) => v ? `${v}分钟` : '-',
     },
     {
-      title: '状态', dataIndex: 'is_enabled', key: 'enabled',
-      render: (v: number, r: any) => <Switch checked={!!v} onChange={() => handleToggle(r.id)} size="small" />,
+      title: '状态', dataIndex: 'isEnabled', key: 'enabled',
+      render: (v: number, r: any) => (
+        <Switch checked={!!v} onChange={() => handleToggle(r.id)} size="small" />
+      ),
     },
     {
       title: '操作', key: 'actions',
@@ -140,22 +149,23 @@ const AlertRules: React.FC = () => {
         onOk={handleSubmit}
         onCancel={() => { setModalVisible(false); setEditingRule(null); }}
         width={600}
+        destroyOnClose
       >
-        <Form form={form} layout="vertical">
-          <Form.Item name="name" label="规则名称" rules={[{ required: true }]}>
+        <Form form={form} layout="vertical" preserve={false}>
+          <Form.Item name="name" label="规则名称" rules={[{ required: true, message: '请输入规则名称' }]}>
             <Input placeholder="如: API错误率飙升" />
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} />
           </Form.Item>
           <Space style={{ width: '100%' }} size={16}>
-            <Form.Item name="metricType" label="监控指标" rules={[{ required: true }]} style={{ width: 200 }}>
+            <Form.Item name="metricType" label="监控指标" rules={[{ required: true, message: '请选择指标' }]} style={{ width: 200 }}>
               <Select options={metricOptions} placeholder="选择指标" />
             </Form.Item>
-            <Form.Item name="conditionType" label="条件" rules={[{ required: true }]} style={{ width: 200 }}>
+            <Form.Item name="conditionType" label="条件" rules={[{ required: true, message: '请选择条件' }]} style={{ width: 200 }}>
               <Select options={conditionOptions} placeholder="选择条件" />
             </Form.Item>
-            <Form.Item name="threshold" label="阈值" rules={[{ required: true }]} style={{ width: 120 }}>
+            <Form.Item name="threshold" label="阈值" rules={[{ required: true, message: '请输入阈值' }]} style={{ width: 120 }}>
               <InputNumber style={{ width: '100%' }} />
             </Form.Item>
           </Space>
