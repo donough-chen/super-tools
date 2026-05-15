@@ -209,6 +209,7 @@ export default (app: Application) => {
   router.get('/api/member/benefits', auth, controller.member.benefits);
   router.get('/api/member/points-logs', auth, controller.member.pointsLogs);
   router.post('/api/member/daily-sign', auth, controller.member.dailySign);
+  router.post('/api/member/become-member', auth, controller.member.becomeMember);
 
   // ==================== 会员管理（管理端） ====================
   // 权限码定义见 database/007_add_member_module.sql；矩阵见 docs/architecture/RBAC.md § member

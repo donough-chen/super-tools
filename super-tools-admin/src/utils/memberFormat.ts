@@ -26,11 +26,15 @@ export function levelColor(color?: string, fallback = '#999'): string {
 
 /** 积分流水类型映射 */
 export const POINTS_TYPE_LABELS: Record<number, string> = {
-  0: '支出',
-  1: '收入',
+  1: '获得',
+  2: '消耗',
+  3: '过期',
+  4: '管理员调整',
 };
 
 export const POINTS_TYPE_COLORS: Record<number, string> = {
-  0: 'red',
   1: 'green',
+  2: 'red',
+  3: 'gray',
+  4: 'blue',
 };

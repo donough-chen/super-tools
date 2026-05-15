@@ -52,7 +52,7 @@ const PointsLogsTab: React.FC<Props> = ({ initialUserId }) => {
   const columns = useMemo(() => [
     { title: 'ID', dataIndex: 'id', width: 80 },
     {
-      title: '时间', dataIndex: 'createdAt', width: 160,
+      title: '时间', dataIndex: 'created_at', width: 160,
       render: (v: string) => formatDateTime(v),
     },
     {
@@ -114,8 +114,10 @@ const PointsLogsTab: React.FC<Props> = ({ initialUserId }) => {
           <Select
             placeholder="类型" allowClear style={{ width: 100 }}
             options={[
-              { value: 1, label: '收入' },
-              { value: 0, label: '支出' },
+              { value: 1, label: '获得' },
+              { value: 2, label: '消耗' },
+              { value: 3, label: '过期' },
+              { value: 4, label: '管理员调整' },
             ]}
           />
         </Form.Item>

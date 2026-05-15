@@ -52,4 +52,11 @@ export default class MemberController extends BaseController {
     const data = await this.service.member.dailySign(userId);
     this.success(data, '签到成功');
   }
+
+  /** POST /api/member/become-member — 成为会员 */
+  async becomeMember() {
+    const userId = (this.ctx.state.user as any).id;
+    const data = await this.service.member.initMember(userId);
+    this.success(data, '成为会员成功');
+  }
 }
