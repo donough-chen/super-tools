@@ -60,17 +60,17 @@ const DashboardAlerts: React.FC = () => {
 
   const columns = [
     {
-      title: '时间', dataIndex: 'created_at', key: 'time', width: 170,
+      title: '时间', dataIndex: 'createdAt', key: 'time', width: 170,
       render: (v: string) => v ? new Date(v).toLocaleString('zh-CN') : '-',
     },
-    { title: '规则', dataIndex: 'rule_name', key: 'rule', ellipsis: true },
+    { title: '规则', dataIndex: 'ruleName', key: 'rule', ellipsis: true },
     {
       title: '严重度', dataIndex: 'severity', key: 'severity', width: 90,
       render: (v: string) => <Tag color={severityColors[v]}>{v?.toUpperCase()}</Tag>,
     },
-    { title: '指标值', dataIndex: 'metric_value', key: 'value', width: 90 },
-    { title: '阈值', dataIndex: 'threshold_value', key: 'threshold', width: 80 },
-    { title: '描述', dataIndex: 'condition_desc', key: 'desc', ellipsis: true },
+    { title: '指标值', dataIndex: 'metricValue', key: 'value', width: 90 },
+    { title: '阈值', dataIndex: 'thresholdValue', key: 'threshold', width: 80 },
+    { title: '描述', dataIndex: 'conditionDesc', key: 'desc', ellipsis: true },
     {
       title: '状态', dataIndex: 'status', key: 'status', width: 90,
       render: (v: string) => {
