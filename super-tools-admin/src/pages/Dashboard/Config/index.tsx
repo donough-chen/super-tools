@@ -167,13 +167,17 @@ const DashboardConfig: React.FC = () => {
       })),
     };
 
-    if (currentLayoutId) {
+    // 判断是否可以更新（只有自己创建的布局才能更新，系统默认/预设模板需另存为新布局）
+    const currentLayout = layouts.find((l: any) => l.id === currentLayoutId);
+    const canUpdate = currentLayoutId && currentLayout && (currentLayout.userId || currentLayout.user_id);
+
+    if (canUpdate) {
       await updateLayout(currentLayoutId, payload);
       message.success('保存成功');
     } else {
       const res = await createLayout(payload);
       setCurrentLayoutId(res?.data?.id);
-      message.success('看板已保存');
+      message.success('看板已创建');
     }
     setSaveModalVisible(false);
     setEditing(false);

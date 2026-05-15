@@ -7,7 +7,7 @@ export default class LayoutService extends Service {
   async listLayouts(userId: number) {
     const { Op } = require('sequelize');
     const layouts = await this.ctx.model.DashboardLayout.findAll({
-      where: { [Op.or]: [{ userId }, { userId: null }] },
+      where: { [Op.or]: [{ user_id: userId }, { user_id: null }] },
       order: [['is_default', 'DESC'], ['updated_at', 'DESC']],
     });
     return layouts;
@@ -64,7 +64,12 @@ export default class LayoutService extends Service {
     const layout = await this.ctx.model.DashboardLayout.findByPk(id);
     if (!layout) this.ctx.throw(404, '布局不存在');
     const l = layout as any;
-    if (l.userId !== null && l.userId !== userId) {
+    // 系统默认布局不能被修改
+    if (l.userId === null) {
+      this.ctx.throw(400, '系统默认布局不可修改，请另存为新看板');
+    }
+    // 只能修改自己的布局
+    if (l.userId !== userId) {
       this.ctx.throw(403, '无权修改此布局');
     }
 
