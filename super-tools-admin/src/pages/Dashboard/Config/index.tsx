@@ -9,6 +9,7 @@ import 'react-grid-layout/css/styles.css';
 const GridLayout = RGL as any;
 import WIDGET_REGISTRY from './widgets/registry';
 import type { WidgetDefinition } from './widgets/registry';
+import WidgetRenderer from './widgets/WidgetRenderer';
 import { getLayouts, getLayout, createLayout, updateLayout, deleteLayout, setLayoutDefault, shareLayout } from '@/services/dashboard';
 
 interface WidgetItem {
@@ -230,7 +231,7 @@ const DashboardConfig: React.FC = () => {
             {widgets.map(w => {
               const def = widgetTypeMap[w.widgetType];
               return (
-                <div key={w.i} style={{ border: editing ? '2px dashed #1890ff' : '1px solid #f0f0f0', borderRadius: 8, background: '#fff', padding: 12 }}>
+                <div key={w.i} style={{ border: editing ? '2px dashed #1890ff' : '1px solid #f0f0f0', borderRadius: 8, background: '#fff', padding: 12, display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span className="widget-drag-handle" style={{ cursor: editing ? 'grab' : 'default', fontWeight: 600, fontSize: 14 }}>
                       {w.title || def?.name || w.widgetType}
@@ -244,8 +245,14 @@ const DashboardConfig: React.FC = () => {
                       </Space>
                     )}
                   </div>
-                  <div style={{ color: '#999', fontSize: 12 }}>
-                    {def?.description || w.widgetType} ({w.w}×{w.h})
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    {editing ? (
+                      <div style={{ color: '#999', fontSize: 12, textAlign: 'center', paddingTop: 16 }}>
+                        {def?.description || w.widgetType} ({w.w}×{w.h})
+                      </div>
+                    ) : (
+                      <WidgetRenderer widgetType={w.widgetType} dataConfig={w.dataConfig} />
+                    )}
                   </div>
                 </div>
               );
