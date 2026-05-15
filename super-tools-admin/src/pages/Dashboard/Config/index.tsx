@@ -2,8 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import { Card, Button, Space, Drawer, List, Modal, Form, Input, Select, message, Popconfirm, Tag, Empty, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, SaveOutlined, DeleteOutlined, EyeOutlined, SettingOutlined, ShareAltOutlined, UndoOutlined } from '@ant-design/icons';
-import GridLayout from 'react-grid-layout';
+import RGL from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
+
+// react-grid-layout 的 @types 类型定义不完整，用 any 包装
+const GridLayout = RGL as any;
 import WIDGET_REGISTRY from './widgets/registry';
 import type { WidgetDefinition } from './widgets/registry';
 import { getLayouts, getLayout, createLayout, updateLayout, deleteLayout, setLayoutDefault, shareLayout } from '@/services/dashboard';
@@ -62,7 +65,8 @@ const DashboardConfig: React.FC = () => {
     );
   };
 
-  const handleLayoutChange = useCallback((newLayout: any[]) => {
+  const handleLayoutChange = useCallback((newLayout: any) => {
+    if (!Array.isArray(newLayout)) return;
     setWidgets(prev => prev.map(w => {
       const gridItem = newLayout.find(g => g.i === w.i);
       if (!gridItem) return w;
@@ -210,17 +214,17 @@ const DashboardConfig: React.FC = () => {
       )}
 
       {/* 网格画布 */}
-      <Card bordered={false}>
+      <Card>
         {widgets.length > 0 ? (
           <GridLayout
             className="layout"
-            layout={widgets.map(w => ({ i: w.i, x: w.x, y: w.y, w: w.w, h: w.h, minW: w.minW, minH: w.minH }))}
+            layout={widgets.map(w => ({ i: w.i, x: w.x, y: w.y, w: w.w, h: w.h, minW: w.minW || 2, minH: w.minH || 2 })) as any}
             cols={12}
             rowHeight={80}
             width={1200}
             isDraggable={editing}
             isResizable={editing}
-            onLayoutChange={handleLayoutChange}
+            onLayoutChange={handleLayoutChange as any}
             draggableHandle=".widget-drag-handle"
           >
             {widgets.map(w => {
