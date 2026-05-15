@@ -4,7 +4,7 @@ import {
   ArrowUpOutlined, ArrowDownOutlined, UserOutlined, ToolOutlined,
   MessageOutlined, BarChartOutlined, AlertOutlined, BellOutlined,
 } from '@ant-design/icons';
-import { DualAxes } from '@ant-design/charts';
+import { Line } from '@ant-design/charts';
 import { getMobileSummary } from '@/services/dashboard';
 import { history } from 'umi';
 import './index.less';
@@ -71,18 +71,27 @@ const DashboardMobile: React.FC = () => {
         ))}
       </Row>
 
-      {/* 今日概要 */}
+      {/* 今日 vs 昨日 登录对比 */}
       {hourlyData.length > 0 && (
-        <Card size="small" bordered={false} title="今日 vs 昨日" className="mobile-chart-card">
-          <DualAxes
+        <Card size="small" bordered={false} title="登录次数对比（今日 vs 昨日）" className="mobile-chart-card">
+          <div style={{ fontSize: 11, color: '#999', marginBottom: 8 }}>
+            按小时统计的用户登录次数，对比今日与昨日同时段数据
+          </div>
+          <Line
             data={[
-              hourlyData.map((d: any) => ({ hour: d.hour, value: d.today, type: '今日' })),
-              hourlyData.map((d: any) => ({ hour: d.hour, value: d.yesterday, type: '昨日' })),
-            ] as any}
+              ...hourlyData.map((d: any) => ({ hour: d.hour, count: d.today, day: '今日' })),
+              ...hourlyData.map((d: any) => ({ hour: d.hour, count: d.yesterday, day: '昨日' })),
+            ]}
             xField="hour"
-            yField="value"
-            height={180}
+            yField="count"
+            colorField="day"
+            height={160}
+            smooth
+            axis={{ y: { title: '登录次数' }, x: { title: '时段' } }}
           />
+          <div style={{ fontSize: 11, color: '#bbb', marginTop: 4, textAlign: 'right' }}>
+            数据来源: 登录日志按小时聚合
+          </div>
         </Card>
       )}
 
@@ -100,7 +109,7 @@ const DashboardMobile: React.FC = () => {
             renderItem={(item: any) => (
               <List.Item>
                 <Tag color={severityColors[item.severity]} style={{ marginRight: 8 }}>{item.severity}</Tag>
-                <span className="mobile-alert-text">{item.condition_desc || item.rule_name}</span>
+                <span className="mobile-alert-text">{item.conditionDesc || item.ruleDame}</span>
               </List.Item>
             )}
           />
