@@ -60,7 +60,7 @@ const DashboardAlerts: React.FC = () => {
 
   const columns = [
     {
-      title: '时间', dataIndex: 'createdAt', key: 'time', width: 170,
+      title: '时间', dataIndex: 'created_at', key: 'time', width: 170,
       render: (v: string) => v ? new Date(v).toLocaleString('zh-CN') : '-',
     },
     { title: '规则', dataIndex: 'ruleName', key: 'rule', ellipsis: true },
