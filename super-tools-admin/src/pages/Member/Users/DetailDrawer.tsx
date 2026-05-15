@@ -159,6 +159,7 @@ const DetailDrawer: React.FC<Props> = ({
                 children: (
                   <ActivatePlanForm
                     userId={target.userId}
+                    currentPlanCode={target.paidPlanCode}
                     onSuccess={handleSuccess}
                   />
                 ),

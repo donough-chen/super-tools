@@ -8,10 +8,11 @@ import { formatCurrency, formatDuration } from '@/utils/memberFormat';
 
 interface Props {
   userId: number;
+  currentPlanCode: string | undefined;
   onSuccess: () => void;
 }
 
-const ActivatePlanForm: React.FC<Props> = ({ userId, onSuccess }) => {
+const ActivatePlanForm: React.FC<Props> = ({ userId, currentPlanCode, onSuccess }) => {
   const [form] = Form.useForm();
   const [plans, setPlans] = useState<PaidPlan[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +50,7 @@ const ActivatePlanForm: React.FC<Props> = ({ userId, onSuccess }) => {
         showIcon
         style={{ marginBottom: 12 }}
       />
-      <Form form={form} layout="vertical">
+      <Form form={form} layout="vertical" initialValues={{ planCode: currentPlanCode }}>
         <Form.Item
           label="选择套餐"
           name="planCode"
