@@ -205,6 +205,18 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
       h5BaseUrl: process.env.H5_BASE_URL || 'https://m.super-tools.local',
       pcBaseUrl: process.env.PC_BASE_URL || 'https://www.super-tools.local',
     },
+    stats: {
+      cacheMs: 5 * 60 * 1000,
+      queryTimeoutMs: 10 * 1000,
+      maxRangeDays: 90,
+    },
+    export: {
+      queueName: 'notif.export',
+      concurrency: 2,
+      maxRows: 100_000,
+      fileTtlDays: 7,
+      storageDir: process.env.EXPORT_STORAGE_DIR || './run/exports',
+    },
   };
 
   // ==================== Socket.IO ====================

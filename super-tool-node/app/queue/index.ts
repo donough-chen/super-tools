@@ -1,9 +1,11 @@
 import { Application } from 'egg';
 import { startSendWorker } from './workers/send.worker';
+import { startExportWorker } from './workers/export.worker';
 import { closeQueues } from './queues';
 
 export class QueueLifecycle {
-  private worker: any = null;
+  private sendWorker: any = null;
+  private exportWorker: any = null;
 
   constructor(private app: Application) {}
 
@@ -14,15 +16,17 @@ export class QueueLifecycle {
       return;
     }
     try {
-      this.worker = startSendWorker(this.app);
-      this.app.logger.info('[notif] queue lifecycle started');
+      this.sendWorker = startSendWorker(this.app);
+      this.exportWorker = startExportWorker(this.app);
+      this.app.logger.info('[notif] queue lifecycle started (send + export workers)');
     } catch (e: any) {
       this.app.logger.error(`[notif] worker start failed: ${e.message}`);
     }
   }
 
   async stop() {
-    await this.worker?.close();
+    await this.sendWorker?.close();
+    await this.exportWorker?.close();
     await closeQueues();
     this.app.logger.info('[notif] queue lifecycle stopped');
   }

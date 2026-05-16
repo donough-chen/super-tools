@@ -304,6 +304,18 @@ export default (app: Application) => {
   router.put('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.update);
   router.delete('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.destroy);
 
+  // 统计（P3.1）
+  router.get('/api/admin/notification/stats/overview', auth, perm('notification:stats:view'), adminCtrl.notificationStats.overview);
+  router.get('/api/admin/notification/stats/trend', auth, perm('notification:stats:view'), adminCtrl.notificationStats.trend);
+  router.get('/api/admin/notification/stats/by-channel', auth, perm('notification:stats:view'), adminCtrl.notificationStats.byChannel);
+  router.get('/api/admin/notification/stats/by-type', auth, perm('notification:stats:view'), adminCtrl.notificationStats.byType);
+  router.get('/api/admin/notification/stats/funnel', auth, perm('notification:stats:view'), adminCtrl.notificationStats.funnel);
+
+  // 导出（P3.1）
+  router.post('/api/admin/notification/exports', auth, perm('notification:export:create'), adminCtrl.notificationExport.create);
+  router.get('/api/admin/notification/exports', auth, perm('notification:export:create'), adminCtrl.notificationExport.list);
+  router.get('/api/admin/notification/exports/:id/download', auth, perm('notification:export:create'), adminCtrl.notificationExport.download);
+
   // ==================== 通知（C 端用户） ====================
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
   router.post('/api/notifications/mark-read', auth, controller.notification.markRead);

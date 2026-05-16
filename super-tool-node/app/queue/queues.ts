@@ -37,9 +37,29 @@ export function getSendQueueEvents(app: Application): QueueEvents {
   return sendQueueEvents;
 }
 
+let exportQueue: Queue | null = null;
+
+export function getExportQueue(app: Application): Queue {
+  if (!exportQueue) {
+    const expCfg = (app.config as any).notification?.export;
+    exportQueue = new Queue(expCfg?.queueName || 'notif.export', {
+      connection: getRedisConnection(app),
+      defaultJobOptions: {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 5000 },
+        removeOnComplete: 500,
+        removeOnFail: 2000,
+      },
+    });
+  }
+  return exportQueue;
+}
+
 export async function closeQueues() {
   await sendQueue?.close();
   await sendQueueEvents?.close();
+  await exportQueue?.close();
   sendQueue = null;
   sendQueueEvents = null;
+  exportQueue = null;
 }
