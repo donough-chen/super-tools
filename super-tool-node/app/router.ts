@@ -254,4 +254,25 @@ export default (app: Application) => {
   router.get('/api/favorites', auth, controller.favorite.index);
   router.post('/api/favorites', auth, controller.favorite.create);
   router.delete('/api/favorites/:toolCode', auth, controller.favorite.destroy);
+
+  // ==================== 通知管理（管理端） ====================
+  router.get('/api/admin/notification/types', auth, perm('notification:type:view'), adminCtrl.notificationType.list);
+  router.post('/api/admin/notification/types', auth, perm('notification:type:manage'), adminCtrl.notificationType.create);
+  router.put('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), adminCtrl.notificationType.update);
+  router.delete('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), adminCtrl.notificationType.destroy);
+
+  router.get('/api/admin/notification/templates', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.list);
+  router.get('/api/admin/notification/templates/:id', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.detail);
+  router.post('/api/admin/notification/templates', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.create);
+  router.put('/api/admin/notification/templates/:id', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.update);
+  router.post('/api/admin/notification/templates/:id/publish', auth, perm('notification:template:publish'), adminCtrl.notificationTemplate.publish);
+  router.post('/api/admin/notification/templates/:id/preview', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.preview);
+  router.post('/api/admin/notification/templates/:id/test-send', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.testSend);
+
+  // ==================== Socket.IO 路由（通知命名空间） ====================
+  const io = (app as any).io;
+  if (io) {
+    io.of('/notification').route('disconnect', io.controller.notification.disconnect);
+    io.of('/notification').route('heartbeat', io.controller.notification.heartbeat);
+  }
 };
