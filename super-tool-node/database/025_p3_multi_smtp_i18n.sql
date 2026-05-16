@@ -3,7 +3,7 @@
 -- =====================================================
 
 -- 1. channel_config 加 priority
-ALTER TABLE `notification_channel_config`
+ALTER TABLE `notification_channel_configs`
   ADD COLUMN `priority` INT NOT NULL DEFAULT 100 COMMENT '主备优先级，越小越优先' AFTER `is_default`,
   ADD INDEX `idx_channel_priority` (`channel`, `enabled`, `priority`);
 
@@ -12,7 +12,7 @@ ALTER TABLE `users`
   ADD COLUMN `lang` VARCHAR(10) NOT NULL DEFAULT 'zh-CN' COMMENT '用户语言偏好' AFTER `status`;
 
 -- 3. 现有 SMTP 设为 priority=10（主）
-UPDATE `notification_channel_config`
+UPDATE `notification_channel_configs`
   SET `priority` = 10
   WHERE `channel` = 'email' AND `is_default` = 1;
 

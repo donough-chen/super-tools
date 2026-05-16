@@ -7,9 +7,9 @@
 -- 本次补齐 rrule / undo / pause / cancel / fire 字段
 
 ALTER TABLE notification_tasks
-  ADD COLUMN IF NOT EXISTS rrule VARCHAR(500) NULL COMMENT 'RRULE 表达式' AFTER cron_expression,
-  ADD COLUMN IF NOT EXISTS undo_window_sec INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '撤销窗口秒数(0=不可撤销)' AFTER rrule,
-  ADD COLUMN IF NOT EXISTS paused_at DATETIME NULL COMMENT '暂停时间' AFTER undo_window_sec,
-  ADD COLUMN IF NOT EXISTS canceled_at DATETIME NULL COMMENT '取消时间' AFTER paused_at,
-  ADD COLUMN IF NOT EXISTS next_fire_at DATETIME NULL COMMENT '下次触发时间(cron/rrule)' AFTER canceled_at,
-  ADD COLUMN IF NOT EXISTS last_fire_at DATETIME NULL COMMENT '上次触发时间' AFTER next_fire_at;
+  ADD COLUMN rrule VARCHAR(500) NULL COMMENT 'RRULE 表达式' AFTER cron_expression,
+  ADD COLUMN undo_window_sec INT UNSIGNED NOT NULL DEFAULT 0 COMMENT '撤销窗口秒数(0=不可撤销)' AFTER rrule,
+  ADD COLUMN paused_at DATETIME NULL COMMENT '暂停时间' AFTER undo_window_sec,
+  ADD COLUMN canceled_at DATETIME NULL COMMENT '取消时间' AFTER paused_at,
+  ADD COLUMN next_fire_at DATETIME NULL COMMENT '下次触发时间(cron/rrule)' AFTER canceled_at,
+  ADD COLUMN last_fire_at DATETIME NULL COMMENT '上次触发时间' AFTER next_fire_at;

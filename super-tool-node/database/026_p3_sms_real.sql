@@ -2,7 +2,7 @@
 -- 026: P3.4 SMS real integration
 -- =====================================================
 
-INSERT IGNORE INTO `notification_channel_config`
+INSERT IGNORE INTO `notification_channel_configs`
   (`channel`,`provider`,`enabled`,`config`,`is_default`,`priority`,`description`,`created_at`,`updated_at`)
 VALUES
   ('sms','tencent',1,JSON_OBJECT(

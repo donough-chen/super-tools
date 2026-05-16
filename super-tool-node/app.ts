@@ -31,7 +31,7 @@ export default class AppBootHook {
 
       // P3.2: Schedule 系统注册（4 个内置 schedule）
       try {
-        require('./app/schedule/notification'); // 触发 handler 注册
+        require('./app/lib/notification-handlers'); // 触发 handler 注册
         const ctx2 = this.app.createAnonymousContext();
         const registered = await ctx2.service.notificationSchedule.registerAll();
         this.app.logger.info(`[schedule] registered ${registered} schedule tasks`);

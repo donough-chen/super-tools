@@ -1,2 +1,0 @@
--- Rollback 021
--- No destructive changes needed (only added index)

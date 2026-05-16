@@ -64,7 +64,7 @@ export default class NotificationExportService extends Service {
       // 邮件通知
       if ((job as any).recipientEmail) {
         try {
-          await ctx.service.mail.sendOnce({
+          await ctx.service.mail.send({
             to: (job as any).recipientEmail,
             subject: `[super-tools] 您的通知导出已完成：${(job as any).name}`,
             html: `<p>导出共 ${rows.length} 行；文件已生成。</p>

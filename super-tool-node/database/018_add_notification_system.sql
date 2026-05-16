@@ -257,7 +257,7 @@ CREATE TABLE IF NOT EXISTS notification_send_logs (
 -- 给 user_profiles 追加全局通知开关字段
 -- ============================================================
 ALTER TABLE user_profiles 
-  ADD COLUMN IF NOT EXISTS notification_global_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '全局通知开关';
+  ADD COLUMN notification_global_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '全局通知开关';
 
 -- ============================================================
 -- 预置通知类型（21 条，全部 is_system=1）
@@ -311,84 +311,409 @@ VALUES
   ('sms',    'mock',   1, JSON_OBJECT(), 1, '短信：mock 模式（P2 接入腾讯云）');
 
 -- ============================================================
--- 新增 14 个权限码
+-- 幂等清理 — 删除本脚本管理的 notification 模块权限
 -- ============================================================
-INSERT INTO permissions (code, name, type, sort_order, status) VALUES
-  ('notification:type:view',         '查看通知类型',     'menu',   8001, 1),
-  ('notification:type:manage',       '管理通知类型',     'action', 8002, 1),
-  ('notification:template:view',     '查看通知模板',     'menu',   8003, 1),
-  ('notification:template:manage',   '管理通知模板',     'action', 8004, 1),
-  ('notification:template:publish',  '发布通知模板',     'action', 8005, 1),
-  ('notification:task:view',         '查看通知任务',     'menu',   8006, 1),
-  ('notification:task:create',       '创建通知任务',     'action', 8007, 1),
-  ('notification:task:control',      '暂停/取消通知任务','action', 8008, 1),
-  ('notification:audience:view',     '查看受众分组',     'menu',   8009, 1),
-  ('notification:audience:manage',   '管理受众分组',     'action', 8010, 1),
-  ('notification:message:view',      '查看消息记录',     'menu',   8011, 1),
-  ('notification:stats:view',        '查看通知统计',     'menu',   8012, 1),
-  ('notification:stats:export',      '导出通知统计报表', 'action', 8013, 1),
-  ('notification:config:manage',     '管理通知系统配置', 'action', 8014, 1);
+
+-- 删除 notification 模块权限的角色映射
+DELETE rp FROM `role_permissions` rp
+  INNER JOIN `permissions` p ON rp.permission_id = p.id
+  WHERE p.module = 'notification';
+
+-- 删除 notification 模块所有权限
+DELETE FROM `permissions` WHERE module = 'notification';
 
 -- ============================================================
--- 角色绑定（按需求文档 §8.6 矩阵）
+-- 新增顶级目录（type=1）
 -- ============================================================
--- 超级管理员：全部 14 个
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id 
-FROM roles r CROSS JOIN permissions p 
-WHERE r.code = 'super_admin' 
-  AND p.code IN (
-    'notification:type:view','notification:type:manage',
-    'notification:template:view','notification:template:manage','notification:template:publish',
-    'notification:task:view','notification:task:create','notification:task:control',
-    'notification:audience:view','notification:audience:manage',
-    'notification:message:view',
-    'notification:stats:view','notification:stats:export',
-    'notification:config:manage'
-  )
-  AND NOT EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id);
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `icon`, `platform`, `path`, `parent_id`, `sort`)
+VALUES
+  ('notification', '通知管理', 1, 'notification', 'BellOutlined', 'admin', '/notification', 0, 80);
 
--- 管理员：除 config:manage 外
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id 
-FROM roles r CROSS JOIN permissions p 
-WHERE r.code = 'admin' 
-  AND p.code IN (
-    'notification:type:view','notification:type:manage',
-    'notification:template:view','notification:template:manage','notification:template:publish',
-    'notification:task:view','notification:task:create','notification:task:control',
-    'notification:audience:view','notification:audience:manage',
-    'notification:message:view',
-    'notification:stats:view','notification:stats:export'
-  )
-  AND NOT EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id);
+-- ============================================================
+-- 新增二级菜单（type=2）— 6 个页面入口
+-- ============================================================
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `icon`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:type', '通知类型', 2, 'notification', NULL, 'admin', '/notification/type', NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 10
+UNION ALL
+SELECT 'notification:template', '通知模板', 2, 'notification', NULL, 'admin', '/notification/template', NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 20
+UNION ALL
+SELECT 'notification:task', '通知任务', 2, 'notification', NULL, 'admin', '/notification/task', NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 30
+UNION ALL
+SELECT 'notification:audience', '受众分组', 2, 'notification', NULL, 'admin', '/notification/audience', NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 40
+UNION ALL
+SELECT 'notification:message', '消息记录', 2, 'notification', NULL, 'admin', '/notification/message', NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 50
+UNION ALL
+SELECT 'notification:stats', '通知统计', 2, 'notification', NULL, 'admin', '/notification/stats', NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 60;
 
--- 运营：view 类 + task:create + template:manage（不含 publish）+ audience:manage
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id 
-FROM roles r CROSS JOIN permissions p 
-WHERE r.code = 'operator' 
-  AND p.code IN (
-    'notification:type:view',
-    'notification:template:view','notification:template:manage',
-    'notification:task:view','notification:task:create','notification:task:control',
-    'notification:audience:view','notification:audience:manage',
-    'notification:message:view',
-    'notification:stats:view'
-  )
-  AND NOT EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id);
+-- ============================================================
+-- 新增按钮/操作权限（type=3）— 7 个
+-- ============================================================
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:type:manage', '管理通知类型', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:type') t), 10
+UNION ALL
+SELECT 'notification:template:manage', '管理通知模板', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 10
+UNION ALL
+SELECT 'notification:template:publish', '发布通知模板', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 20
+UNION ALL
+SELECT 'notification:task:create', '创建通知任务', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 10
+UNION ALL
+SELECT 'notification:task:control', '暂停/取消通知任务', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 20
+UNION ALL
+SELECT 'notification:audience:manage', '管理受众分组', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 10
+UNION ALL
+SELECT 'notification:stats:export', '导出通知统计报表', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 10;
 
--- 数据分析师：所有 view + stats:export
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id 
-FROM roles r CROSS JOIN permissions p 
-WHERE r.code = 'data_analyst' 
+-- ============================================================
+-- 新增系统配置 + 导出权限（type=3，挂在顶级目录下）
+-- ============================================================
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:config:manage', '管理通知系统配置', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 90
+UNION ALL
+SELECT 'notification:export:create', '创建通知导出任务', 3, 'notification', 'admin', NULL, NULL,
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 20;
+
+-- ============================================================
+-- 新增 API 权限（type=4）— 48 条
+-- ============================================================
+
+-- ----- 通知类型 API — 4 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:type:list', '通知类型列表', 4, 'notification', 'admin',
+       '/api/admin/notification/types', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:type') t), 100
+UNION ALL
+SELECT 'notification:type:create', '创建通知类型', 4, 'notification', 'admin',
+       '/api/admin/notification/types', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:type') t), 110
+UNION ALL
+SELECT 'notification:type:update', '更新通知类型', 4, 'notification', 'admin',
+       '/api/admin/notification/types/:id', 'PUT',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:type') t), 120
+UNION ALL
+SELECT 'notification:type:delete', '删除通知类型', 4, 'notification', 'admin',
+       '/api/admin/notification/types/:id', 'DELETE',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:type') t), 130;
+
+-- ----- 通知模板 API — 8 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:template:list', '模板列表', 4, 'notification', 'admin',
+       '/api/admin/notification/templates', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 100
+UNION ALL
+SELECT 'notification:template:detail', '模板详情', 4, 'notification', 'admin',
+       '/api/admin/notification/templates/:id', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 110
+UNION ALL
+SELECT 'notification:template:create', '创建模板', 4, 'notification', 'admin',
+       '/api/admin/notification/templates', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 120
+UNION ALL
+SELECT 'notification:template:update', '更新模板', 4, 'notification', 'admin',
+       '/api/admin/notification/templates/:id', 'PUT',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 130
+UNION ALL
+SELECT 'notification:template:do-publish', '发布模板', 4, 'notification', 'admin',
+       '/api/admin/notification/templates/:id/publish', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 140
+UNION ALL
+SELECT 'notification:template:preview', '预览模板', 4, 'notification', 'admin',
+       '/api/admin/notification/templates/:id/preview', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 150
+UNION ALL
+SELECT 'notification:template:test-send', '测试发送模板', 4, 'notification', 'admin',
+       '/api/admin/notification/templates/:id/test-send', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 160
+UNION ALL
+SELECT 'notification:template:rollback', '回滚模板版本', 4, 'notification', 'admin',
+       '/api/admin/notification/templates/:id/rollback/:versionId', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:template') t), 170;
+
+-- ----- 通知任务 API — 8 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:task:list', '任务列表', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 100
+UNION ALL
+SELECT 'notification:task:detail', '任务详情', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks/:id', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 110
+UNION ALL
+SELECT 'notification:task:do-create', '创建即时任务', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 120
+UNION ALL
+SELECT 'notification:task:create-scheduled', '创建定时任务', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks/scheduled', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 130
+UNION ALL
+SELECT 'notification:task:pause', '暂停任务', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks/:id/pause', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 140
+UNION ALL
+SELECT 'notification:task:resume', '恢复任务', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks/:id/resume', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 150
+UNION ALL
+SELECT 'notification:task:cancel', '取消任务', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks/:id/cancel', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 160
+UNION ALL
+SELECT 'notification:task:undo', '撤回任务', 4, 'notification', 'admin',
+       '/api/admin/notification/tasks/:id/undo', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:task') t), 170;
+
+-- ----- 消息记录 API — 2 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:message:list', '消息列表', 4, 'notification', 'admin',
+       '/api/admin/notification/messages', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:message') t), 100
+UNION ALL
+SELECT 'notification:message:detail', '消息详情', 4, 'notification', 'admin',
+       '/api/admin/notification/messages/:id', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:message') t), 110;
+
+-- ----- 受众分组 API — 7 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:audience:fields', '受众字段白名单', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences/fields', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 100
+UNION ALL
+SELECT 'notification:audience:preview', '受众预览', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences/preview', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 110
+UNION ALL
+SELECT 'notification:audience:list', '受众列表', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 120
+UNION ALL
+SELECT 'notification:audience:detail', '受众详情', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences/:id', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 130
+UNION ALL
+SELECT 'notification:audience:create', '创建受众', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 140
+UNION ALL
+SELECT 'notification:audience:update', '更新受众', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences/:id', 'PUT',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 150
+UNION ALL
+SELECT 'notification:audience:delete', '删除受众', 4, 'notification', 'admin',
+       '/api/admin/notification/audiences/:id', 'DELETE',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:audience') t), 160;
+
+-- ----- 通知统计 API — 5 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:stats:overview', '统计概览', 4, 'notification', 'admin',
+       '/api/admin/notification/stats/overview', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 100
+UNION ALL
+SELECT 'notification:stats:trend', '统计趋势', 4, 'notification', 'admin',
+       '/api/admin/notification/stats/trend', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 110
+UNION ALL
+SELECT 'notification:stats:by-channel', '按渠道统计', 4, 'notification', 'admin',
+       '/api/admin/notification/stats/by-channel', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 120
+UNION ALL
+SELECT 'notification:stats:by-type', '按类型统计', 4, 'notification', 'admin',
+       '/api/admin/notification/stats/by-type', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 130
+UNION ALL
+SELECT 'notification:stats:funnel', '发送漏斗', 4, 'notification', 'admin',
+       '/api/admin/notification/stats/funnel', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 140;
+
+-- ----- 导出 API — 3 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:export:do-create', '创建导出任务', 4, 'notification', 'admin',
+       '/api/admin/notification/exports', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 200
+UNION ALL
+SELECT 'notification:export:list', '导出任务列表', 4, 'notification', 'admin',
+       '/api/admin/notification/exports', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 210
+UNION ALL
+SELECT 'notification:export:download', '下载导出文件', 4, 'notification', 'admin',
+       '/api/admin/notification/exports/:id/download', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 220;
+
+-- ----- 频控配置 API — 4 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:rate-limit:list', '频控规则列表', 4, 'notification', 'admin',
+       '/api/admin/notification/rate-limits', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 200
+UNION ALL
+SELECT 'notification:rate-limit:create', '创建频控规则', 4, 'notification', 'admin',
+       '/api/admin/notification/rate-limits', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 210
+UNION ALL
+SELECT 'notification:rate-limit:update', '更新频控规则', 4, 'notification', 'admin',
+       '/api/admin/notification/rate-limits/:id', 'PUT',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 220
+UNION ALL
+SELECT 'notification:rate-limit:delete', '删除频控规则', 4, 'notification', 'admin',
+       '/api/admin/notification/rate-limits/:id', 'DELETE',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 230;
+
+-- ----- 渠道配置 API — 3 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:channel:list', '渠道配置列表', 4, 'notification', 'admin',
+       '/api/admin/notification/channels', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 240
+UNION ALL
+SELECT 'notification:channel:update', '更新渠道配置', 4, 'notification', 'admin',
+       '/api/admin/notification/channels/:id', 'PUT',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 250
+UNION ALL
+SELECT 'notification:channel:test-smtp', '测试 SMTP 连接', 4, 'notification', 'admin',
+       '/api/admin/notification/channels/test-smtp', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 260;
+
+-- ----- Schedule API — 3 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:schedule:list', 'Schedule 列表', 4, 'notification', 'admin',
+       '/api/admin/notification/schedules', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 270
+UNION ALL
+SELECT 'notification:schedule:pause', '暂停 Schedule', 4, 'notification', 'admin',
+       '/api/admin/notification/schedules/:id/pause', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 280
+UNION ALL
+SELECT 'notification:schedule:resume', '恢复 Schedule', 4, 'notification', 'admin',
+       '/api/admin/notification/schedules/:id/resume', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification') t), 290;
+
+-- ----- 队列监控 API — 1 条 -----
+INSERT INTO `permissions`
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
+SELECT 'notification:queue:depths', '队列深度监控', 4, 'notification', 'admin',
+       '/api/admin/notification/queues/depths', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'notification:stats') t), 300;
+
+-- ============================================================
+-- 角色 × 权限映射
+-- ============================================================
+-- 说明：super_admin 中间件短路，不受 RBAC 限制，无需写入 role_permissions
+
+-- ----- admin 角色：全部 notification 权限 -----
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'admin'
+  AND p.module = 'notification';
+
+-- ----- operator 角色：所有菜单 + 部分操作 + 对应 API（无 publish、无 config:manage、无 stats:export） -----
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'operator'
+  AND p.module = 'notification'
   AND p.code IN (
-    'notification:type:view',
-    'notification:template:view',
-    'notification:task:view',
-    'notification:audience:view',
-    'notification:message:view',
-    'notification:stats:view','notification:stats:export'
-  )
-  AND NOT EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id);
+    -- 顶级目录 + 菜单
+    'notification',
+    'notification:type', 'notification:template', 'notification:task',
+    'notification:audience', 'notification:message', 'notification:stats',
+    -- 操作
+    'notification:type:manage',
+    'notification:template:manage',
+    'notification:task:create', 'notification:task:control',
+    'notification:audience:manage',
+    -- 类型 API
+    'notification:type:list', 'notification:type:create',
+    'notification:type:update', 'notification:type:delete',
+    -- 模板 API（不含 publish/rollback）
+    'notification:template:list', 'notification:template:detail',
+    'notification:template:create', 'notification:template:update',
+    'notification:template:preview', 'notification:template:test-send',
+    -- 任务 API（全部）
+    'notification:task:list', 'notification:task:detail',
+    'notification:task:do-create', 'notification:task:create-scheduled',
+    'notification:task:pause', 'notification:task:resume',
+    'notification:task:cancel', 'notification:task:undo',
+    -- 消息 API
+    'notification:message:list', 'notification:message:detail',
+    -- 受众 API（全部）
+    'notification:audience:fields', 'notification:audience:preview',
+    'notification:audience:list', 'notification:audience:detail',
+    'notification:audience:create', 'notification:audience:update', 'notification:audience:delete',
+    -- 统计 API（只读）
+    'notification:stats:overview', 'notification:stats:trend',
+    'notification:stats:by-channel', 'notification:stats:by-type', 'notification:stats:funnel',
+    -- 队列监控
+    'notification:queue:depths'
+  );
+
+-- ----- auditor 角色：所有菜单（只读）+ 只读 API + stats:export + 导出 -----
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'auditor'
+  AND p.module = 'notification'
+  AND p.code IN (
+    -- 顶级目录 + 菜单
+    'notification',
+    'notification:type', 'notification:template', 'notification:task',
+    'notification:audience', 'notification:message', 'notification:stats',
+    -- 操作
+    'notification:stats:export', 'notification:export:create',
+    -- 只读 API
+    'notification:type:list',
+    'notification:template:list', 'notification:template:detail', 'notification:template:preview',
+    'notification:task:list', 'notification:task:detail',
+    'notification:message:list', 'notification:message:detail',
+    'notification:audience:fields', 'notification:audience:list', 'notification:audience:detail',
+    'notification:stats:overview', 'notification:stats:trend',
+    'notification:stats:by-channel', 'notification:stats:by-type', 'notification:stats:funnel',
+    -- 导出 API
+    'notification:export:do-create', 'notification:export:list', 'notification:export:download',
+    -- 队列监控
+    'notification:queue:depths'
+  );
+
+-- ============================================================
+-- 数据校验（手动执行）
+-- ============================================================
+-- 检查 notification 模块权限总数
+-- SELECT COUNT(*) FROM `permissions` WHERE module = 'notification';
+-- 期望: 1(目录) + 6(菜单) + 9(按钮/操作) + 48(API) = 64
+--
+-- 检查各层级数量
+-- SELECT type, COUNT(*) FROM `permissions` WHERE module = 'notification' GROUP BY type;
+-- 期望: type=1 → 1, type=2 → 6, type=3 → 9, type=4 → 48
+--
+-- 检查角色权限数量
+-- SELECT r.code, COUNT(rp.permission_id) FROM `role_permissions` rp
+--   JOIN `roles` r ON rp.role_id = r.id
+--   JOIN `permissions` p ON rp.permission_id = p.id
+--   WHERE p.module = 'notification'
+--   GROUP BY r.code ORDER BY COUNT(rp.permission_id) DESC;
+-- 期望: admin=64(全部), operator≈46, auditor≈28

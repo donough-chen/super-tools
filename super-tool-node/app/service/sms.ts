@@ -220,6 +220,15 @@ export default class SmsService extends BaseService {
   }
 
   /**
+   * 发送通知短信（非验证码类，供通知系统 adapter 调用）
+   */
+  async sendNotification(dto: { mobile: string; content: string }): Promise<{ success: boolean }> {
+    // TODO: 对接真实短信服务商
+    this.ctx.logger.info(`[SMS Mock] 发送通知短信到 ${dto.mobile}: ${dto.content.substring(0, 50)}`);
+    return { success: true };
+  }
+
+  /**
    * 实际短信发送（模拟实现，待对接真实 SMS 服务商）
    */
   private async doSend(phone: string, code: string, type: string): Promise<void> {

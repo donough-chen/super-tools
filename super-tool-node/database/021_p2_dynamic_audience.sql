@@ -6,4 +6,4 @@
 -- audiences 表在 P1 已建（notification_audiences），字段已完整
 -- 本次仅补充可能缺失的索引
 ALTER TABLE notification_audiences
-  ADD INDEX IF NOT EXISTS idx_audience_type (audience_type);
+  ADD INDEX idx_audience_type (audience_type);
