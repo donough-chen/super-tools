@@ -427,6 +427,33 @@ export default class ToolService extends BaseService {
       { where: { id: { [Op.in]: ids } } } as any,
     );
     await this.clearCache('tool:*');
+
+    // P2.4: 触发工具上线/下架通知（通知收藏了这些工具的用户）
+    try {
+      const typeCode = status === 1 ? 'BUSINESS_TOOL_PUBLISHED' : 'BUSINESS_TOOL_UNPUBLISHED';
+      for (const toolId of ids) {
+        const tool = await this.ctx.model.Tool.findByPk(toolId, { attributes: ['id', 'name', 'code'] });
+        if (!tool) continue;
+        // 查收藏该工具的用户
+        const favorites = await this.ctx.model.UserToolFavorite.findAll({
+          where: { toolCode: (tool as any).code },
+          attributes: ['userId'],
+          raw: true,
+        });
+        const userIds = favorites.map((f: any) => f.userId);
+        if (userIds.length > 0) {
+          await this.ctx.service.notification.sendByAudience({
+            typeCode,
+            audienceType: 'static',
+            staticUserIds: userIds,
+            variables: { toolName: (tool as any).name },
+          });
+        }
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[tool.batchPublish] notification failed: ${e.message}`);
+    }
+
     return { affected };
   }
 

@@ -268,6 +268,7 @@ export default (app: Application) => {
   router.post('/api/admin/notification/templates/:id/publish', auth, perm('notification:template:publish'), adminCtrl.notificationTemplate.publish);
   router.post('/api/admin/notification/templates/:id/preview', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.preview);
   router.post('/api/admin/notification/templates/:id/test-send', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.testSend);
+  router.post('/api/admin/notification/templates/:id/rollback/:versionId', auth, perm('notification:template:publish'), adminCtrl.notificationTemplate.rollback);
 
   // 任务
   router.get('/api/admin/notification/tasks', auth, perm('notification:task:view'), adminCtrl.notificationTask.list);

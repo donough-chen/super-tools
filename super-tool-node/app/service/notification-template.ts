@@ -157,4 +157,58 @@ export default class NotificationTemplateService extends BaseService {
 
     return tpl.reload();
   }
+
+  /**
+   * P2.4: 回滚到指定历史版本
+   */
+  async rollbackToVersion(input: { templateId: number; versionId: number; operatorId: number }) {
+    const { ctx } = this;
+    const tpl = await ctx.model.NotificationTemplate.findByPk(input.templateId);
+    if (!tpl) ctx.throw(404, '模板不存在');
+
+    const version = await ctx.model.NotificationTemplateVersion.findByPk(input.versionId);
+    if (!version) ctx.throw(404, '版本快照不存在');
+    if ((version as any).templateId !== input.templateId) {
+      ctx.throw(400, '版本快照不属于该模板');
+    }
+
+    const v = version as any;
+    await ctx.model.transaction(async (t: any) => {
+      // 先写当前版本的快照
+      const currentTpl = tpl as any;
+      await ctx.model.NotificationTemplateVersion.create({
+        templateId: input.templateId,
+        version: currentTpl.currentVersion,
+        titleTemplate: currentTpl.titleTemplate,
+        contentTemplate: currentTpl.contentTemplate,
+        extraConfig: currentTpl.extraConfig,
+        changeNote: `回滚前备份 (v${currentTpl.currentVersion})`,
+        publishedBy: input.operatorId,
+      }, { transaction: t });
+
+      // 回滚模板内容
+      const newVersion = currentTpl.currentVersion + 1;
+      await tpl.update({
+        titleTemplate: v.titleTemplate,
+        contentTemplate: v.contentTemplate,
+        extraConfig: v.extraConfig,
+        currentVersion: newVersion,
+        status: 1, // 发布
+        updatedBy: input.operatorId,
+      }, { transaction: t });
+
+      // 写回滚版本快照
+      await ctx.model.NotificationTemplateVersion.create({
+        templateId: input.templateId,
+        version: newVersion,
+        titleTemplate: v.titleTemplate,
+        contentTemplate: v.contentTemplate,
+        extraConfig: v.extraConfig,
+        changeNote: `回滚至 v${v.version}`,
+        publishedBy: input.operatorId,
+      }, { transaction: t });
+    });
+
+    return tpl.reload();
+  }
 }
