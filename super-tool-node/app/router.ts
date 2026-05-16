@@ -269,6 +269,25 @@ export default (app: Application) => {
   router.post('/api/admin/notification/templates/:id/preview', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.preview);
   router.post('/api/admin/notification/templates/:id/test-send', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.testSend);
 
+  // 任务
+  router.get('/api/admin/notification/tasks', auth, perm('notification:task:view'), adminCtrl.notificationTask.list);
+  router.get('/api/admin/notification/tasks/:id', auth, perm('notification:task:view'), adminCtrl.notificationTask.detail);
+  router.post('/api/admin/notification/tasks', auth, perm('notification:task:create'), adminCtrl.notificationTask.create);
+
+  // 消息（管理员视角）
+  router.get('/api/admin/notification/messages', auth, perm('notification:message:view'), adminCtrl.notificationMessage.list);
+  router.get('/api/admin/notification/messages/:id', auth, perm('notification:message:view'), adminCtrl.notificationMessage.detail);
+
+  // ==================== 通知（C 端用户） ====================
+  router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
+  router.post('/api/notifications/mark-read', auth, controller.notification.markRead);
+  router.post('/api/notifications/mark-all-read', auth, controller.notification.markAllRead);
+  router.get('/api/notification-preferences', auth, controller.notification.listPreferences);
+  router.put('/api/notification-preferences', auth, controller.notification.upsertPreference);
+  router.post('/api/notifications/:id/archive', auth, controller.notification.archive);
+  router.get('/api/notifications/:id', auth, controller.notification.detail);
+  router.get('/api/notifications', auth, controller.notification.list);
+
   // ==================== Socket.IO 路由（通知命名空间） ====================
   const io = (app as any).io;
   if (io) {

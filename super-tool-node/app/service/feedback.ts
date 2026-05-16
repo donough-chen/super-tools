@@ -111,6 +111,22 @@ export default class FeedbackService extends Service {
       replyUserId,
       repliedAt: new Date(),
     });
+
+    // 触发通知：反馈回复
+    try {
+      await this.ctx.service.notification.send({
+        typeCode: 'BUSINESS_FEEDBACK_REPLY',
+        userId: (fb as any).userId,
+        variables: {
+          feedbackTitle: (fb as any).title || '反馈',
+          replyContent: replyContent.slice(0, 200),
+        },
+        extra: { feedbackId: id },
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[feedback.reply] notification failed: ${e.message}`);
+    }
+
     return fb;
   }
 
