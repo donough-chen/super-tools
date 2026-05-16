@@ -21,6 +21,11 @@ const plugin: EggPlugin = {
     enable: true,
     package: 'egg-validate',
   },
+  // 【新增】Socket.IO 实时通信
+  io: {
+    enable: true,
+    package: 'egg-socket.io',
+  },
 };
 
 // 本地开发环境若无数据库/Redis 可临时关闭:
