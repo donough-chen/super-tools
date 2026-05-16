@@ -129,6 +129,13 @@ export const ErrorCodes = {
   // 队列/服务 108901-108999
   NOTIFY_QUEUE_UNAVAILABLE: { code: 108901, message: '队列连接异常' },
   NOTIFY_CHANNEL_DOWN: { code: 108902, message: '渠道整体降级中' },
+  // 统计/导出 109001-109099
+  NOTIFY_STATS_TIMEOUT: { code: 109001, message: '统计查询超时' },
+  NOTIFY_STATS_RANGE_TOO_LARGE: { code: 109002, message: '统计时间范围超过 90 天' },
+  NOTIFY_EXPORT_NOT_FOUND: { code: 109003, message: '导出任务不存在' },
+  NOTIFY_EXPORT_NOT_READY: { code: 109004, message: '导出任务尚未完成' },
+  NOTIFY_EXPORT_EXPIRED: { code: 109005, message: '导出文件已过期（>7 天）' },
+  NOTIFY_EXPORT_TOO_LARGE: { code: 109006, message: '导出条数超限（>10 万）' },
 };
 
 /**
@@ -163,4 +170,10 @@ export const NOTIF_ERR = {
   PREFERENCE_LOCKED: ErrorCodes.NOTIFY_PREFERENCE_LOCKED,
   QUEUE_UNAVAILABLE: ErrorCodes.NOTIFY_QUEUE_UNAVAILABLE,
   CHANNEL_DOWN: ErrorCodes.NOTIFY_CHANNEL_DOWN,
+  STATS_TIMEOUT: ErrorCodes.NOTIFY_STATS_TIMEOUT,
+  STATS_RANGE_TOO_LARGE: ErrorCodes.NOTIFY_STATS_RANGE_TOO_LARGE,
+  EXPORT_NOT_FOUND: ErrorCodes.NOTIFY_EXPORT_NOT_FOUND,
+  EXPORT_NOT_READY: ErrorCodes.NOTIFY_EXPORT_NOT_READY,
+  EXPORT_EXPIRED: ErrorCodes.NOTIFY_EXPORT_EXPIRED,
+  EXPORT_TOO_LARGE: ErrorCodes.NOTIFY_EXPORT_TOO_LARGE,
 } as const;
