@@ -47,6 +47,21 @@ export async function detailTask(id: number) {
 export async function createTask(data: any) {
   return request('/api/admin/notification/tasks', { method: 'POST', data });
 }
+export async function createScheduledTask(data: any) {
+  return request('/api/admin/notification/tasks/scheduled', { method: 'POST', data });
+}
+export async function pauseTask(id: number) {
+  return request(`/api/admin/notification/tasks/${id}/pause`, { method: 'POST' });
+}
+export async function resumeTask(id: number) {
+  return request(`/api/admin/notification/tasks/${id}/resume`, { method: 'POST' });
+}
+export async function cancelTask(id: number) {
+  return request(`/api/admin/notification/tasks/${id}/cancel`, { method: 'POST' });
+}
+export async function undoTask(id: number) {
+  return request(`/api/admin/notification/tasks/${id}/undo`, { method: 'POST' });
+}
 
 // ==================== Messages (admin) ====================
 export async function listMessages(params?: any) {

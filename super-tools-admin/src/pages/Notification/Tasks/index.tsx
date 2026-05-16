@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Tag, Space, Drawer, Form, Input, Select, InputNumber, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { listTasks, createTask, detailTask } from '@/services/notification';
+import { listTasks, createTask, detailTask, createScheduledTask, pauseTask, resumeTask, cancelTask, undoTask } from '@/services/notification';
 
 const statusColors: any = {
   pending: 'default', running: 'processing', completed: 'success', failed: 'error',
@@ -100,10 +100,28 @@ export default () => {
           <div>
             <p><strong>名称：</strong>{detailData.name}</p>
             <p><strong>状态：</strong><Tag color={statusColors[detailData.status]}>{detailData.status}</Tag></p>
+            <p><strong>调度类型：</strong>{detailData.scheduleType}</p>
             <p><strong>总数：</strong>{detailData.totalCount} | 成功：{detailData.successCount} | 失败：{detailData.failCount}</p>
             <p><strong>开始：</strong>{detailData.startedAt}</p>
             <p><strong>结束：</strong>{detailData.finishedAt || '-'}</p>
+            {detailData.nextFireAt && <p><strong>下次触发：</strong>{detailData.nextFireAt}</p>}
+            {detailData.cronExpression && <p><strong>Cron：</strong>{detailData.cronExpression}</p>}
+            {detailData.rrule && <p><strong>RRULE：</strong>{detailData.rrule}</p>}
             {detailData.errorMessage && <p style={{ color: '#ff4d4f' }}><strong>错误：</strong>{detailData.errorMessage}</p>}
+            <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {['running', 'scheduled'].includes(detailData.status) && (
+                <Button size="small" onClick={async () => { await pauseTask(detailData.id); message.success('已暂停'); showDetail(detailData.id); }}>暂停</Button>
+              )}
+              {detailData.status === 'paused' && (
+                <Button size="small" type="primary" onClick={async () => { await resumeTask(detailData.id); message.success('已恢复'); showDetail(detailData.id); }}>恢复</Button>
+              )}
+              {!['completed', 'canceled'].includes(detailData.status) && (
+                <Button size="small" danger onClick={async () => { await cancelTask(detailData.id); message.success('已取消'); showDetail(detailData.id); }}>取消</Button>
+              )}
+              {detailData.scheduleType === 'immediate' && detailData.undoWindowSec > 0 && detailData.status === 'scheduled' && (
+                <Button size="small" onClick={async () => { await undoTask(detailData.id); message.success('已撤销'); showDetail(detailData.id); }}>撤销</Button>
+              )}
+            </div>
           </div>
         )}
       </Drawer>

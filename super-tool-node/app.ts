@@ -17,6 +17,17 @@ export default class AppBootHook {
         this.app.logger.error(`[notif] queue start failed (service will run without queue): ${e.message}`);
         this.app.logger.warn('[notif] notifications will use sync dispatch fallback until queue is available');
       }
+
+      // P2.2: 任务调度恢复 + stuck 扫描
+      try {
+        const ctx = this.app.createAnonymousContext();
+        const recovered = await ctx.service.notificationTaskScheduler.recoverScheduledTasks();
+        this.app.logger.info(`[scheduler] recovered ${recovered} cron/rrule tasks`);
+        const stuck = await ctx.service.notificationTaskScheduler.scanStuckTasks();
+        if (stuck > 0) this.app.logger.warn(`[scheduler] marked ${stuck} stuck tasks as failed`);
+      } catch (e: any) {
+        this.app.logger.error(`[scheduler] boot scan failed: ${e.message}`);
+      }
     }
   }
 
