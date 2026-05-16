@@ -14,7 +14,7 @@ export default (app: Application) => {
     extraConfig:      { type: JSON_TYPE, allowNull: true, field: 'extra_config' },
     sampleVariables:  { type: JSON_TYPE, allowNull: true, field: 'sample_variables' },
     currentVersion:   { type: INTEGER, allowNull: false, defaultValue: 1, field: 'current_version' },
-    status:           { type: TINYINT(1), allowNull: false, defaultValue: 0 },
+    status:           { type: TINYINT, allowNull: false, defaultValue: 0 },
     description:      { type: STRING(500), allowNull: true },
     createdBy:        { type: BIGINT.UNSIGNED, allowNull: false, field: 'created_by' },
     updatedBy:        { type: BIGINT.UNSIGNED, allowNull: true, field: 'updated_by' },

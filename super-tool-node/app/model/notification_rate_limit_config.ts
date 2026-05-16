@@ -10,7 +10,7 @@ export default (app: Application) => {
     window:           { type: STRING(20), allowNull: false },
     maxCount:         { type: INTEGER, allowNull: false, field: 'max_count' },
     skipPriority:     { type: TINYINT, allowNull: true, field: 'skip_priority' },
-    enabled:          { type: TINYINT(1), allowNull: false, defaultValue: 1 },
+    enabled:          { type: TINYINT, allowNull: false, defaultValue: 1 },
     description:      { type: STRING(200), allowNull: true },
     updatedBy:        { type: BIGINT.UNSIGNED, allowNull: true, field: 'updated_by' },
   }, {
