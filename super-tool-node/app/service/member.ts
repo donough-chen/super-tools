@@ -489,6 +489,17 @@ export default class MemberService extends BaseService {
     const levelData = (level as any).toJSON();
     await (member as any).update({ levelId: levelData.id, levelCode: levelData.code });
 
+    // P2.4: 触发会员升级通知
+    try {
+      await this.ctx.service.notification.send({
+        typeCode: 'BUSINESS_MEMBER_UPGRADE',
+        userId,
+        variables: { levelName: levelData.name, levelCode: levelData.code },
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[member.adjustLevel] notification failed: ${e.message}`);
+    }
+
     return { levelId: levelData.id, levelCode: levelData.code, levelName: levelData.name };
   }
 

@@ -148,4 +148,21 @@ export default class NotificationTemplateController extends Controller {
     });
     (ctx as any).success(r);
   }
+
+  /**
+   * P2.4: 回滚到指定历史版本
+   */
+  async rollback() {
+    const { ctx } = this;
+    const templateId = Number(ctx.params.id);
+    const versionId = Number(ctx.params.versionId);
+    const adminUser = (ctx as any).adminUser || (ctx as any).state?.user;
+
+    const result = await ctx.service.notificationTemplate.rollbackToVersion({
+      templateId,
+      versionId,
+      operatorId: adminUser?.id || 0,
+    });
+    (ctx as any).success(result);
+  }
 }
