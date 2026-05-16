@@ -227,6 +227,18 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
         cleanupExports: { cron: '15 * * * *', enabled: true },
       },
     },
+    sms: {
+      enabled: true,
+      fallbackToLog: process.env.SMS_FALLBACK === 'true',
+    },
+    progress: {
+      enabled: true,
+      batchSize: 100,
+      minTotalForEmit: 1000,
+    },
+    queueMonitor: {
+      refreshIntervalMs: 5000,
+    },
   };
 
   // ==================== Socket.IO ====================

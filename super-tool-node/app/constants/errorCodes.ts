@@ -148,6 +148,13 @@ export const ErrorCodes = {
   NOTIFY_MAIL_PROVIDER_NOT_FOUND: { code: 108721, message: '指定的邮件服务商不存在' },
   NOTIFY_I18N_LANG_INVALID: { code: 108722, message: '不支持的语言' },
   NOTIFY_I18N_TEMPLATE_MISSING: { code: 108723, message: '模板缺失目标语言版本' },
+  // SMS / 进度 / 队列 108730-108735
+  NOTIFY_SMS_PROVIDER_DOWN: { code: 108730, message: '短信服务商不可用' },
+  NOTIFY_SMS_INVALID_MOBILE: { code: 108731, message: '手机号格式非法' },
+  NOTIFY_SMS_QUOTA_EXHAUSTED: { code: 108732, message: '短信余额不足' },
+  NOTIFY_PROGRESS_TASK_NOT_FOUND: { code: 108733, message: '进度推送任务不存在' },
+  NOTIFY_QUEUE_NOT_FOUND: { code: 108734, message: '队列不存在' },
+  NOTIFY_QUEUE_REDIS_DOWN: { code: 108735, message: 'Redis 连接异常' },
 };
 
 /**
@@ -198,4 +205,10 @@ export const NOTIF_ERR = {
   MAIL_PROVIDER_NOT_FOUND: ErrorCodes.NOTIFY_MAIL_PROVIDER_NOT_FOUND,
   I18N_LANG_INVALID: ErrorCodes.NOTIFY_I18N_LANG_INVALID,
   I18N_TEMPLATE_MISSING: ErrorCodes.NOTIFY_I18N_TEMPLATE_MISSING,
+  SMS_PROVIDER_DOWN: ErrorCodes.NOTIFY_SMS_PROVIDER_DOWN,
+  SMS_INVALID_MOBILE: ErrorCodes.NOTIFY_SMS_INVALID_MOBILE,
+  SMS_QUOTA_EXHAUSTED: ErrorCodes.NOTIFY_SMS_QUOTA_EXHAUSTED,
+  PROGRESS_TASK_NOT_FOUND: ErrorCodes.NOTIFY_PROGRESS_TASK_NOT_FOUND,
+  QUEUE_NOT_FOUND: ErrorCodes.NOTIFY_QUEUE_NOT_FOUND,
+  QUEUE_REDIS_DOWN: ErrorCodes.NOTIFY_QUEUE_REDIS_DOWN,
 } as const;
