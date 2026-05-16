@@ -72,10 +72,41 @@ export default class NotificationService extends BaseService {
       return { skipped: true, reason: 'no_subscribed_channel', messages: [] };
     }
 
+    // P2.1: 静默时段检查（逐渠道）
+    const postQuietChannels: string[] = [];
+    for (const ch of allowedChannels) {
+      const quietResult = await ctx.service.notificationQuietHours.isQuietNow({
+        userId: input.userId,
+        typeId: type.id,
+        channel: ch as any,
+        priority: type.priority ?? 2,
+      });
+      if (!quietResult.quiet) {
+        postQuietChannels.push(ch);
+      } else {
+        ctx.logger.info(`[notif] skipped ${ch} for userId=${input.userId}: ${quietResult.reason}`);
+      }
+    }
+    if (postQuietChannels.length === 0) {
+      return { skipped: true, reason: 'quiet_hours', messages: [] };
+    }
+
+    // P2.1: 频控检查
+    const rateResult = await ctx.service.notificationRateLimit.isLimited({
+      userId: input.userId,
+      typeId: type.id,
+      channel: postQuietChannels[0] as string,
+      priority: type.priority ?? 2,
+    });
+    if (rateResult.limited) {
+      ctx.logger.info(`[notif] rate limited userId=${input.userId}: ${rateResult.rule}`);
+      return { skipped: true, reason: 'rate_limited', messages: [] };
+    }
+
     return this._dispatchToUser({
       type,
       userId: input.userId,
-      channels: allowedChannels as any,
+      channels: postQuietChannels as any,
       variables: input.variables,
       taskId: input.taskId ?? null,
       idempotentKey: input.idempotentKey,
