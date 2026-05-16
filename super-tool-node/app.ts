@@ -28,6 +28,16 @@ export default class AppBootHook {
       } catch (e: any) {
         this.app.logger.error(`[scheduler] boot scan failed: ${e.message}`);
       }
+
+      // P3.2: Schedule 系统注册（4 个内置 schedule）
+      try {
+        require('./app/schedule/notification'); // 触发 handler 注册
+        const ctx2 = this.app.createAnonymousContext();
+        const registered = await ctx2.service.notificationSchedule.registerAll();
+        this.app.logger.info(`[schedule] registered ${registered} schedule tasks`);
+      } catch (e: any) {
+        this.app.logger.error(`[schedule] boot register failed: ${e.message}`);
+      }
     }
   }
 

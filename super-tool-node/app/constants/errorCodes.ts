@@ -136,6 +136,13 @@ export const ErrorCodes = {
   NOTIFY_EXPORT_NOT_READY: { code: 109004, message: '导出任务尚未完成' },
   NOTIFY_EXPORT_EXPIRED: { code: 109005, message: '导出文件已过期（>7 天）' },
   NOTIFY_EXPORT_TOO_LARGE: { code: 109006, message: '导出条数超限（>10 万）' },
+  // Schedule 108710-108715
+  NOTIFY_SCHEDULE_NOT_FOUND: { code: 108710, message: 'schedule 任务不存在' },
+  NOTIFY_SCHEDULE_ALREADY_EXISTS: { code: 108711, message: 'schedule 已注册' },
+  NOTIFY_SCHEDULE_HANDLER_MISSING: { code: 108712, message: 'schedule 处理器未实现' },
+  NOTIFY_SCHEDULE_PAUSED: { code: 108713, message: 'schedule 已暂停' },
+  NOTIFY_MEMBER_EXPIRE_NO_TARGET: { code: 108714, message: '到期会员扫描未命中' },
+  NOTIFY_CLEANUP_FAILED: { code: 108715, message: '数据清理执行失败' },
 };
 
 /**
@@ -176,4 +183,10 @@ export const NOTIF_ERR = {
   EXPORT_NOT_READY: ErrorCodes.NOTIFY_EXPORT_NOT_READY,
   EXPORT_EXPIRED: ErrorCodes.NOTIFY_EXPORT_EXPIRED,
   EXPORT_TOO_LARGE: ErrorCodes.NOTIFY_EXPORT_TOO_LARGE,
+  SCHEDULE_NOT_FOUND: ErrorCodes.NOTIFY_SCHEDULE_NOT_FOUND,
+  SCHEDULE_ALREADY_EXISTS: ErrorCodes.NOTIFY_SCHEDULE_ALREADY_EXISTS,
+  SCHEDULE_HANDLER_MISSING: ErrorCodes.NOTIFY_SCHEDULE_HANDLER_MISSING,
+  SCHEDULE_PAUSED: ErrorCodes.NOTIFY_SCHEDULE_PAUSED,
+  MEMBER_EXPIRE_NO_TARGET: ErrorCodes.NOTIFY_MEMBER_EXPIRE_NO_TARGET,
+  CLEANUP_FAILED: ErrorCodes.NOTIFY_CLEANUP_FAILED,
 } as const;
