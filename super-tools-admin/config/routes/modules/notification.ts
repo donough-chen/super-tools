@@ -38,6 +38,11 @@ const notificationRoutes = [
         component: '@/pages/Notification/Audiences',
         wrappers: ['@/components/AuthWrapper'],
       },
+      {
+        path: '/notification/stats',
+        component: '@/pages/Notification/Stats',
+        wrappers: ['@/components/AuthWrapper'],
+      },
     ],
   },
 ];

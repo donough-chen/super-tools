@@ -84,3 +84,20 @@ export async function markRead(ids: number[]) {
 export async function markAllRead() {
   return request('/api/notifications/mark-all-read', { method: 'POST' });
 }
+
+// ==================== Stats (P3.1) ====================
+export const NotificationStatsApi = {
+  overview: (p: any) => request('/api/admin/notification/stats/overview', { params: p }),
+  trend: (p: any) => request('/api/admin/notification/stats/trend', { params: p }),
+  byChannel: (p: any) => request('/api/admin/notification/stats/by-channel', { params: p }),
+  byType: (p: any) => request('/api/admin/notification/stats/by-type', { params: p }),
+  funnel: (p: any) => request('/api/admin/notification/stats/funnel', { params: p }),
+};
+
+// ==================== Export (P3.1) ====================
+export const NotificationExportApi = {
+  list: (p?: any) => request('/api/admin/notification/exports', { params: p }),
+  create: (data: any) => request('/api/admin/notification/exports', { method: 'POST', data }),
+  downloadUrl: (id: number) => `/api/admin/notification/exports/${id}/download`,
+};
+
