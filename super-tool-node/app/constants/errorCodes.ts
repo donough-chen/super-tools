@@ -104,6 +104,11 @@ export const ErrorCodes = {
   NOTIFY_TASK_STATUS_INVALID: { code: 108302, message: '任务状态不允许此操作' },
   NOTIFY_TASK_SCHEDULE_TOO_SOON: { code: 108303, message: '定时时间必须在 30 秒后' },
   NOTIFY_TASK_CRON_INVALID: { code: 108304, message: 'Cron 表达式非法' },
+  NOTIFY_TASK_RRULE_INVALID: { code: 108310, message: 'RRULE 格式非法' },
+  NOTIFY_TASK_CANNOT_PAUSE: { code: 108311, message: '任务状态不允许暂停' },
+  NOTIFY_TASK_CANNOT_RESUME: { code: 108312, message: '任务状态不允许恢复' },
+  NOTIFY_TASK_CANNOT_CANCEL: { code: 108313, message: '任务状态不允许取消' },
+  NOTIFY_TASK_UNDO_EXPIRED: { code: 108314, message: '撤销窗口已过' },
   // 消息相关 108401-108499
   NOTIFY_MESSAGE_NOT_FOUND: { code: 108401, message: '消息不存在或无权访问' },
   // 业务跳过 108501-108599（HTTP 200，仅业务标记）

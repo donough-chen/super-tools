@@ -93,4 +93,58 @@ export default class NotificationTaskController extends Controller {
       });
     }
   }
+
+  /**
+   * P2.2: 创建调度任务（支持 4 种 sendType）
+   */
+  async createScheduled() {
+    const { ctx } = this;
+    const body = ctx.request.body as any;
+    const adminUser = (ctx as any).adminUser || (ctx as any).state?.user;
+    const type = await ctx.model.NotificationType.findByPk(body.typeId);
+    if (!type) ctx.throw(404, '通知类型不存在');
+
+    const task = await ctx.service.notificationTaskScheduler.createAndSchedule({
+      name: body.name || `调度任务-${new Date().toISOString()}`,
+      typeId: body.typeId,
+      templateCode: body.templateCode || (type as any).code,
+      channels: body.channels || (type as any).defaultChannels,
+      audienceType: body.audienceType || 'static',
+      staticUserIds: body.staticUserIds,
+      variables: body.variables || {},
+      sendType: body.sendType || 'immediate',
+      scheduledAt: body.scheduledAt,
+      cronExpression: body.cronExpression,
+      rrule: body.rrule,
+      undoWindowSec: body.undoWindowSec || 0,
+      priority: body.priority ?? (type as any).priority ?? 2,
+      description: body.description,
+      createdBy: adminUser?.id,
+    });
+    (ctx as any).success(task);
+  }
+
+  async pause() {
+    const { ctx } = this;
+    const task = await ctx.service.notificationTaskScheduler.pause(Number(ctx.params.id));
+    (ctx as any).success(task);
+  }
+
+  async resume() {
+    const { ctx } = this;
+    const task = await ctx.service.notificationTaskScheduler.resume(Number(ctx.params.id));
+    (ctx as any).success(task);
+  }
+
+  async cancel() {
+    const { ctx } = this;
+    const task = await ctx.service.notificationTaskScheduler.cancel(Number(ctx.params.id));
+    (ctx as any).success(task);
+  }
+
+  async undo() {
+    const { ctx } = this;
+    const task = await ctx.service.notificationTaskScheduler.undo(Number(ctx.params.id));
+    (ctx as any).success(task);
+  }
 }

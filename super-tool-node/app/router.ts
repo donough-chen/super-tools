@@ -273,6 +273,11 @@ export default (app: Application) => {
   router.get('/api/admin/notification/tasks', auth, perm('notification:task:view'), adminCtrl.notificationTask.list);
   router.get('/api/admin/notification/tasks/:id', auth, perm('notification:task:view'), adminCtrl.notificationTask.detail);
   router.post('/api/admin/notification/tasks', auth, perm('notification:task:create'), adminCtrl.notificationTask.create);
+  router.post('/api/admin/notification/tasks/scheduled', auth, perm('notification:task:create'), adminCtrl.notificationTask.createScheduled);
+  router.post('/api/admin/notification/tasks/:id/pause', auth, perm('notification:task:control'), adminCtrl.notificationTask.pause);
+  router.post('/api/admin/notification/tasks/:id/resume', auth, perm('notification:task:control'), adminCtrl.notificationTask.resume);
+  router.post('/api/admin/notification/tasks/:id/cancel', auth, perm('notification:task:control'), adminCtrl.notificationTask.cancel);
+  router.post('/api/admin/notification/tasks/:id/undo', auth, perm('notification:task:control'), adminCtrl.notificationTask.undo);
 
   // 消息（管理员视角）
   router.get('/api/admin/notification/messages', auth, perm('notification:message:view'), adminCtrl.notificationMessage.list);
