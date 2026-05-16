@@ -278,6 +278,17 @@ export default (app: Application) => {
   router.get('/api/admin/notification/messages', auth, perm('notification:message:view'), adminCtrl.notificationMessage.list);
   router.get('/api/admin/notification/messages/:id', auth, perm('notification:message:view'), adminCtrl.notificationMessage.detail);
 
+  // 频控规则（P2.1）
+  router.get('/api/admin/notification/rate-limits', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.list);
+  router.post('/api/admin/notification/rate-limits', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.create);
+  router.put('/api/admin/notification/rate-limits/:id', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.update);
+  router.delete('/api/admin/notification/rate-limits/:id', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.destroy);
+
+  // 渠道配置（P2.1）
+  router.get('/api/admin/notification/channels', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.list);
+  router.put('/api/admin/notification/channels/:id', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.update);
+  router.post('/api/admin/notification/channels/test-smtp', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.testSmtp);
+
   // ==================== 通知（C 端用户） ====================
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
   router.post('/api/notifications/mark-read', auth, controller.notification.markRead);
