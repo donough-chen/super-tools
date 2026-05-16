@@ -316,6 +316,11 @@ export default (app: Application) => {
   router.get('/api/admin/notification/exports', auth, perm('notification:export:create'), adminCtrl.notificationExport.list);
   router.get('/api/admin/notification/exports/:id/download', auth, perm('notification:export:create'), adminCtrl.notificationExport.download);
 
+  // Schedule（P3.2）
+  router.get('/api/admin/notification/schedules', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.list);
+  router.post('/api/admin/notification/schedules/:id/pause', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.pause);
+  router.post('/api/admin/notification/schedules/:id/resume', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.resume);
+
   // ==================== 通知（C 端用户） ====================
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
   router.post('/api/notifications/mark-read', auth, controller.notification.markRead);

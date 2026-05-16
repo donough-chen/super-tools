@@ -217,6 +217,16 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
       fileTtlDays: 7,
       storageDir: process.env.EXPORT_STORAGE_DIR || './run/exports',
     },
+    schedule: {
+      enabled: true,
+      queueName: 'notif.schedule',
+      presets: {
+        memberExpireSoon: { cron: '0 9 * * *', enabled: true, days: [7, 3, 1] },
+        cleanupMessages: { cron: '0 3 * * *', enabled: true, retentionDays: 90 },
+        cleanupSendLogs: { cron: '30 3 * * *', enabled: true, retentionDays: 30 },
+        cleanupExports: { cron: '15 * * * *', enabled: true },
+      },
+    },
   };
 
   // ==================== Socket.IO ====================
