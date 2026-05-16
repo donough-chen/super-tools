@@ -11,7 +11,12 @@ export default class AppBootHook {
   async didReady() {
     // unittest 环境不启动队列 worker
     if (this.app.config.env !== 'unittest') {
-      await this.queueLifecycle.start();
+      try {
+        await this.queueLifecycle.start();
+      } catch (e: any) {
+        this.app.logger.error(`[notif] queue start failed (service will run without queue): ${e.message}`);
+        this.app.logger.warn('[notif] notifications will use sync dispatch fallback until queue is available');
+      }
     }
   }
 

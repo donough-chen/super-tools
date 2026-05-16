@@ -13,8 +13,12 @@ export class QueueLifecycle {
       this.app.logger.warn('[notif] notification disabled by config, skipping queue');
       return;
     }
-    this.worker = startSendWorker(this.app);
-    this.app.logger.info('[notif] queue lifecycle started');
+    try {
+      this.worker = startSendWorker(this.app);
+      this.app.logger.info('[notif] queue lifecycle started');
+    } catch (e: any) {
+      this.app.logger.error(`[notif] worker start failed: ${e.message}`);
+    }
   }
 
   async stop() {
