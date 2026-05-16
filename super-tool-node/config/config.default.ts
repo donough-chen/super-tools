@@ -69,7 +69,7 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
     client: {
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: Number(process.env.REDIS_PORT) || 6379,
-      password: process.env.REDIS_PASS || '',
+      password: process.env.REDIS_PASS || '123456',
       db: 0,
     },
   } as any;
@@ -172,7 +172,38 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
       pingTimeout: 60000,
     },
     rateLimit: {
+      enabled: true,
       cacheRulesSeconds: 300,
+      redisKeyPrefix: 'notif:rl:',
+      defaults: {
+        perUserPerType: { window: 60, max: 10 },
+        perUserGlobal: { window: 3600, max: 50 },
+        perGlobal: { window: 60, max: 5000 },
+      },
+    },
+    quietHours: {
+      enabled: true,
+      defaultTimezone: 'Asia/Shanghai',
+    },
+    mail: {
+      enabled: true,
+      from: '"super-tools" <noreply@super-tools.local>',
+      transport: {
+        host: process.env.SMTP_HOST || 'smtp.example.com',
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: false,
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100,
+        auth: {
+          user: process.env.SMTP_USER || 'noreply@example.com',
+          pass: process.env.SMTP_PASS || 'CHANGE_IN_PROD',
+        },
+      },
+    },
+    frontend: {
+      h5BaseUrl: process.env.H5_BASE_URL || 'https://m.super-tools.local',
+      pcBaseUrl: process.env.PC_BASE_URL || 'https://www.super-tools.local',
     },
   };
 
@@ -188,6 +219,7 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
     redis: {
       host: process.env.REDIS_HOST || '127.0.0.1',
       port: Number(process.env.REDIS_PORT) || 6379,
+      password: process.env.REDIS_PASS || '123456',
       db: 0,
     },
   };

@@ -23,6 +23,16 @@ const notificationRoutes = [
         component: '@/pages/Notification/Messages',
         wrappers: ['@/components/AuthWrapper'],
       },
+      {
+        path: '/notification/rate-limits',
+        component: '@/pages/Notification/RateLimits',
+        wrappers: ['@/components/AuthWrapper'],
+      },
+      {
+        path: '/notification/channels',
+        component: '@/pages/Notification/Channels',
+        wrappers: ['@/components/AuthWrapper'],
+      },
     ],
   },
 ];
