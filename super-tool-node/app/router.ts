@@ -321,6 +321,9 @@ export default (app: Application) => {
   router.post('/api/admin/notification/schedules/:id/pause', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.pause);
   router.post('/api/admin/notification/schedules/:id/resume', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.resume);
 
+  // 队列监控（P3.4）
+  router.get('/api/admin/notification/queues/depths', auth, perm('notification:stats:view'), adminCtrl.notificationQueueMonitor.depths);
+
   // ==================== 通知（C 端用户） ====================
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
   router.post('/api/notifications/mark-read', auth, controller.notification.markRead);
