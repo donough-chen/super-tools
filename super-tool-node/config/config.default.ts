@@ -194,29 +194,3 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
 
   return config;
 };
-
-declare module 'egg' {
-  interface EggAppConfig {
-    notification: {
-      enabled: boolean;
-      globalQuietHours: {
-        enabled: boolean;
-        start: string;
-        end: string;
-        timezone: string;
-        affectedPriorities: number[];
-      };
-      message: { retentionDays: number; expireDefaultDays: number };
-      sendLog: { retentionDays: number };
-      queue: {
-        sendConcurrency: number;
-        broadcastConcurrency: number;
-        exportConcurrency: number;
-        defaultAttempts: number;
-        p0Attempts: number;
-      };
-      socket: { namespace: string; pingInterval: number; pingTimeout: number };
-      rateLimit: { cacheRulesSeconds: number };
-    };
-  }
-}
