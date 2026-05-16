@@ -142,5 +142,55 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
     verifyLockTtl: 1800, // 验证失败锁定 30 分钟
   };
 
+  // ==================== 通知系统 ====================
+  (config as any).notification = {
+    enabled: true,                              // kill switch（紧急关闭）
+    globalQuietHours: {
+      enabled: true,
+      start: '22:00',
+      end: '08:00',
+      timezone: 'Asia/Shanghai',
+      affectedPriorities: [3],                  // 仅 P3 受全局静默约束
+    },
+    message: {
+      retentionDays: 90,
+      expireDefaultDays: 180,
+    },
+    sendLog: {
+      retentionDays: 90,
+    },
+    queue: {
+      sendConcurrency: 50,
+      broadcastConcurrency: 5,
+      exportConcurrency: 2,
+      defaultAttempts: 3,
+      p0Attempts: 5,
+    },
+    socket: {
+      namespace: '/notification',
+      pingInterval: 25000,
+      pingTimeout: 60000,
+    },
+    rateLimit: {
+      cacheRulesSeconds: 300,
+    },
+  };
+
+  // ==================== Socket.IO ====================
+  (config as any).io = {
+    init: { wsEngine: 'ws' },
+    namespace: {
+      '/notification': {
+        connectionMiddleware: ['notificationAuth'],
+        packetMiddleware: [],
+      },
+    },
+    redis: {
+      host: process.env.REDIS_HOST || '127.0.0.1',
+      port: Number(process.env.REDIS_PORT) || 6379,
+      db: 0,
+    },
+  };
+
   return config;
 };

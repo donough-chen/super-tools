@@ -600,7 +600,35 @@ export default class AuthService extends BaseService {
    */
   async sendVerifyCode(dto: { target: string; type: string; platform?: string }) {
     const { target, type, platform } = dto;
-    return this.service.sms.sendCode({ phone: target, type, platform });
+    const result = await this.service.sms.sendCode({ phone: target, type, platform });
+
+    // 触发通知：验证码发送审计（仅站内信，避免循环发短信）
+    // 需要有 userId 才能发通知；验证码发送时可能是未登录状态，此时跳过
+    try {
+      const user = (this.ctx as any).state?.user || (this.ctx as any).user;
+      if (user?.id) {
+        const typeCodeMap: Record<string, string> = {
+          login: 'VERIFY_CODE_LOGIN',
+          register: 'VERIFY_CODE_REGISTER',
+          reset: 'VERIFY_CODE_RESET',
+          bind: 'VERIFY_CODE_BIND',
+        };
+        const typeCode = typeCodeMap[type] || 'VERIFY_CODE_LOGIN';
+        await this.ctx.service.notification.sendDirect({
+          typeCode,
+          userId: user.id,
+          variables: {
+            target: target.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2'),
+            scene: type,
+          },
+          channels: ['in_app'],
+        });
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[auth.sendVerifyCode] notification failed: ${e.message}`);
+    }
+
+    return result;
   }
 
   // ===== 私有方法 =====
@@ -686,7 +714,34 @@ export default class AuthService extends BaseService {
       userAgent: this.ctx.get('user-agent'),
     } as any);
 
+    // 触发通知：异常登录检测（非阻塞）
+    this._checkAndNotifyUnusualLogin(user).catch((e: any) => {
+      this.ctx.logger.warn(`[auth] unusual login notification failed: ${e.message}`);
+    });
+
     return { accessToken, refreshToken, expiresIn: accessTtl, sessionId };
+  }
+
+  /**
+   * 检测异常登录并发送通知
+   * 简单逻辑：当前 IP 与上次登录 IP 不同时视为异地登录
+   */
+  private async _checkAndNotifyUnusualLogin(user: any) {
+    if (!user.lastLoginIp || user.lastLoginIp === this.ctx.ip) return;
+    try {
+      await this.ctx.service.notification.sendDirect({
+        typeCode: 'SYSTEM_UNUSUAL_LOGIN',
+        userId: user.id,
+        variables: {
+          ip: this.ctx.ip,
+          lastIp: user.lastLoginIp,
+          device: this.ctx.get('user-agent')?.substring(0, 100) || '未知',
+          time: new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }),
+        },
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[auth] unusual login notify error: ${e.message}`);
+    }
   }
 
   private async writeLoginLog(data: any) {

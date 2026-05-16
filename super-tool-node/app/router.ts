@@ -254,4 +254,44 @@ export default (app: Application) => {
   router.get('/api/favorites', auth, controller.favorite.index);
   router.post('/api/favorites', auth, controller.favorite.create);
   router.delete('/api/favorites/:toolCode', auth, controller.favorite.destroy);
+
+  // ==================== 通知管理（管理端） ====================
+  router.get('/api/admin/notification/types', auth, perm('notification:type:view'), adminCtrl.notificationType.list);
+  router.post('/api/admin/notification/types', auth, perm('notification:type:manage'), adminCtrl.notificationType.create);
+  router.put('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), adminCtrl.notificationType.update);
+  router.delete('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), adminCtrl.notificationType.destroy);
+
+  router.get('/api/admin/notification/templates', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.list);
+  router.get('/api/admin/notification/templates/:id', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.detail);
+  router.post('/api/admin/notification/templates', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.create);
+  router.put('/api/admin/notification/templates/:id', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.update);
+  router.post('/api/admin/notification/templates/:id/publish', auth, perm('notification:template:publish'), adminCtrl.notificationTemplate.publish);
+  router.post('/api/admin/notification/templates/:id/preview', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.preview);
+  router.post('/api/admin/notification/templates/:id/test-send', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.testSend);
+
+  // 任务
+  router.get('/api/admin/notification/tasks', auth, perm('notification:task:view'), adminCtrl.notificationTask.list);
+  router.get('/api/admin/notification/tasks/:id', auth, perm('notification:task:view'), adminCtrl.notificationTask.detail);
+  router.post('/api/admin/notification/tasks', auth, perm('notification:task:create'), adminCtrl.notificationTask.create);
+
+  // 消息（管理员视角）
+  router.get('/api/admin/notification/messages', auth, perm('notification:message:view'), adminCtrl.notificationMessage.list);
+  router.get('/api/admin/notification/messages/:id', auth, perm('notification:message:view'), adminCtrl.notificationMessage.detail);
+
+  // ==================== 通知（C 端用户） ====================
+  router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
+  router.post('/api/notifications/mark-read', auth, controller.notification.markRead);
+  router.post('/api/notifications/mark-all-read', auth, controller.notification.markAllRead);
+  router.get('/api/notification-preferences', auth, controller.notification.listPreferences);
+  router.put('/api/notification-preferences', auth, controller.notification.upsertPreference);
+  router.post('/api/notifications/:id/archive', auth, controller.notification.archive);
+  router.get('/api/notifications/:id', auth, controller.notification.detail);
+  router.get('/api/notifications', auth, controller.notification.list);
+
+  // ==================== Socket.IO 路由（通知命名空间） ====================
+  const io = (app as any).io;
+  if (io) {
+    io.of('/notification').route('disconnect', io.controller.notification.disconnect);
+    io.of('/notification').route('heartbeat', io.controller.notification.heartbeat);
+  }
 };
