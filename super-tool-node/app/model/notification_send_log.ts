@@ -2,7 +2,7 @@ import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 
 export default (app: Application) => {
-  const { BIGINT, STRING, TEXT, TINYINT, INTEGER, DATE } = DataTypes;
+  const { BIGINT, STRING, TEXT, TINYINT, INTEGER, DATE, JSON: JSON_TYPE } = DataTypes;
   const NotificationSendLog = app.model.define('NotificationSendLog', {
     id:               { type: BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
     messageId:        { type: BIGINT.UNSIGNED, allowNull: true, field: 'message_id' },
@@ -18,6 +18,7 @@ export default (app: Application) => {
     errorCode:        { type: STRING(64), allowNull: true, field: 'error_code' },
     errorMessage:     { type: STRING(500), allowNull: true, field: 'error_message' },
     rawResponse:      { type: TEXT, allowNull: true, field: 'raw_response' },
+    extra:            { type: JSON_TYPE, allowNull: true },
     costMs:           { type: INTEGER, allowNull: true, field: 'cost_ms' },
     sentAt:           { type: DATE, allowNull: true, field: 'sent_at' },
     deliveredAt:      { type: DATE, allowNull: true, field: 'delivered_at' },

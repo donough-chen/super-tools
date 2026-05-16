@@ -13,6 +13,7 @@ export default (app: Application) => {
     defaultChannels:  { type: JSON_TYPE, allowNull: false, field: 'default_channels' },
     userCancelable:   { type: TINYINT, allowNull: false, defaultValue: 1, field: 'user_cancelable' },
     priority:         { type: TINYINT, allowNull: false, defaultValue: 2 },
+    quietHourPolicy:  { type: STRING(16), allowNull: false, defaultValue: 'respect', field: 'quiet_hour_policy' },
     icon:             { type: STRING(64), allowNull: true },
     color:            { type: STRING(16), allowNull: true },
     status:           { type: TINYINT, allowNull: false, defaultValue: 1 },
