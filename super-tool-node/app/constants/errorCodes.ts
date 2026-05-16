@@ -143,6 +143,11 @@ export const ErrorCodes = {
   NOTIFY_SCHEDULE_PAUSED: { code: 108713, message: 'schedule 已暂停' },
   NOTIFY_MEMBER_EXPIRE_NO_TARGET: { code: 108714, message: '到期会员扫描未命中' },
   NOTIFY_CLEANUP_FAILED: { code: 108715, message: '数据清理执行失败' },
+  // 多 SMTP / i18n 108720-108725
+  NOTIFY_MAIL_ALL_PROVIDERS_DOWN: { code: 108720, message: '所有邮件服务商均不可用' },
+  NOTIFY_MAIL_PROVIDER_NOT_FOUND: { code: 108721, message: '指定的邮件服务商不存在' },
+  NOTIFY_I18N_LANG_INVALID: { code: 108722, message: '不支持的语言' },
+  NOTIFY_I18N_TEMPLATE_MISSING: { code: 108723, message: '模板缺失目标语言版本' },
 };
 
 /**
@@ -189,4 +194,8 @@ export const NOTIF_ERR = {
   SCHEDULE_PAUSED: ErrorCodes.NOTIFY_SCHEDULE_PAUSED,
   MEMBER_EXPIRE_NO_TARGET: ErrorCodes.NOTIFY_MEMBER_EXPIRE_NO_TARGET,
   CLEANUP_FAILED: ErrorCodes.NOTIFY_CLEANUP_FAILED,
+  MAIL_ALL_PROVIDERS_DOWN: ErrorCodes.NOTIFY_MAIL_ALL_PROVIDERS_DOWN,
+  MAIL_PROVIDER_NOT_FOUND: ErrorCodes.NOTIFY_MAIL_PROVIDER_NOT_FOUND,
+  I18N_LANG_INVALID: ErrorCodes.NOTIFY_I18N_LANG_INVALID,
+  I18N_TEMPLATE_MISSING: ErrorCodes.NOTIFY_I18N_TEMPLATE_MISSING,
 } as const;
