@@ -6,6 +6,7 @@ import toolRoutes from './modules/tool';
 import feedbackRoutes from './modules/feedback';
 import statsRoutes from './modules/stats';
 import memberRoutes from './modules/member';
+import notificationRoutes from './modules/notification';
 
 const routes = [
   {
@@ -38,6 +39,7 @@ const routes = [
           ...feedbackRoutes,
           ...statsRoutes,
           ...memberRoutes,
+          ...notificationRoutes,
 
           { path: '/403', component: '@/pages/403' },
           { component: '@/pages/404' },

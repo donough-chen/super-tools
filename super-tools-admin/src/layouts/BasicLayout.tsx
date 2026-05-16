@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Layout, Menu, Avatar, Dropdown, Space } from 'antd';
 import * as Icons from '@ant-design/icons';
+import NotificationBell from '@/components/NotificationBell';
 import {
   LogoutOutlined,
   UserOutlined,
@@ -148,6 +149,7 @@ const BasicLayout: React.FC = () => {
             {collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
           </span>
           <div className={styles.right}>
+            <NotificationBell />
             <Dropdown menu={userMenu}>
               <Space className={styles.userInfo}>
                 <Avatar size="small" icon={<UserOutlined />} />
