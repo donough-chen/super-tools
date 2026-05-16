@@ -33,6 +33,11 @@ const notificationRoutes = [
         component: '@/pages/Notification/Channels',
         wrappers: ['@/components/AuthWrapper'],
       },
+      {
+        path: '/notification/audiences',
+        component: '@/pages/Notification/Audiences',
+        wrappers: ['@/components/AuthWrapper'],
+      },
     ],
   },
 ];

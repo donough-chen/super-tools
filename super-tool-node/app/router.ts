@@ -294,6 +294,15 @@ export default (app: Application) => {
   router.put('/api/admin/notification/channels/:id', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.update);
   router.post('/api/admin/notification/channels/test-smtp', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.testSmtp);
 
+  // 受众分组（P2.3）
+  router.get('/api/admin/notification/audiences/fields', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.fieldWhitelist);
+  router.post('/api/admin/notification/audiences/preview', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.preview);
+  router.get('/api/admin/notification/audiences', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.list);
+  router.get('/api/admin/notification/audiences/:id', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.detail);
+  router.post('/api/admin/notification/audiences', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.create);
+  router.put('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.update);
+  router.delete('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.destroy);
+
   // ==================== 通知（C 端用户） ====================
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
   router.post('/api/notifications/mark-read', auth, controller.notification.markRead);
