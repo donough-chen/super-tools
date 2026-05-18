@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Tag, Space, Drawer, Form, Input, Select, InputNumber, message } from 'antd';
+import NotificationTypeSelect, { NotificationTypeOption } from '@/components/NotificationTypeSelect';
 import { PlusOutlined } from '@ant-design/icons';
-import { listTasks, createTask, detailTask, createScheduledTask, pauseTask, resumeTask, cancelTask, undoTask } from '@/services/notification';
+import { listTasks, createTask, detailTask, createScheduledTask, pauseTask, resumeTask, cancelTask, undoTask, listTypes } from '@/services/notification';
 
 const statusColors: any = {
   pending: 'default', running: 'processing', completed: 'success', failed: 'error',
@@ -14,6 +15,8 @@ export default () => {
   const [page, setPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
+  const [typeOptions, setTypeOptions] = useState<NotificationTypeOption[]>([]);
+  const [typeLoading, setTypeLoading] = useState(false);
   const [form] = Form.useForm();
 
   const fetch = async () => {
@@ -30,6 +33,29 @@ export default () => {
   };
 
   useEffect(() => { fetch(); }, [page]);
+
+  useEffect(() => {
+    const loadTypes = async () => {
+      setTypeLoading(true);
+      try {
+        const res = await listTypes({ pageSize: 200 });
+        if (res?.code === 200) {
+          const list: any[] = res.data?.list || [];
+          setTypeOptions(
+            list
+              .filter((item) => item.status === 1)
+              .map((item) => ({
+                label: `${item.name}[${item.id}] (${item.code})`,
+                value: item.id,
+              })),
+          );
+        }
+      } finally {
+        setTypeLoading(false);
+      }
+    };
+    loadTypes();
+  }, []);
 
   const handleCreate = async () => {
     const values = await form.validateFields();
@@ -85,7 +111,16 @@ export default () => {
         extra={<Button type="primary" onClick={handleCreate}>确认发送</Button>}>
         <Form form={form} layout="vertical">
           <Form.Item name="name" label="任务名称" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="typeId" label="通知类型 ID" rules={[{ required: true }]}><InputNumber style={{ width: '100%' }} /></Form.Item>
+          <Form.Item name="typeId" label="通知类型" rules={[{ required: true }]}><NotificationTypeSelect options={typeOptions} loading={typeLoading} style={{ width: '100%' }} /></Form.Item>
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.typeId !== cur.typeId}>
+            {({ getFieldValue }) => {
+              const typeId = getFieldValue('typeId');
+              const opt = typeOptions.find((o) => o.value === typeId);
+              if (!opt) return null;
+              const match = String(opt.label).match(/\(([^)]+)\)$/);
+              return match ? <div style={{ marginTop: -16, marginBottom: 16, color: '#8c8c8c', fontSize: 12 }}>code：<span style={{ fontFamily: 'monospace', color: '#595959' }}>{match[1]}</span></div> : null;
+            }}
+          </Form.Item>
           <Form.Item name="audienceType" label="受众类型" rules={[{ required: true }]} initialValue="static">
             <Select options={[{ label: '全部用户', value: 'all' }, { label: '指定用户', value: 'static' }]} />
           </Form.Item>

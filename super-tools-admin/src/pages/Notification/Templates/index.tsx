@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Space, Tag, Drawer, Form, Input, Select, message, Modal } from 'antd';
+import NotificationTypeSelect, { NotificationTypeOption } from '@/components/NotificationTypeSelect';
 import { PlusOutlined } from '@ant-design/icons';
-import { listTemplates, createTemplate, updateTemplate, publishTemplate, previewTemplate } from '@/services/notification';
+import { listTemplates, createTemplate, updateTemplate, publishTemplate, previewTemplate, listTypes } from '@/services/notification';
 
 const channelOpts = [
   { label: '站内信', value: 'in_app' },
@@ -19,6 +20,8 @@ export default () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [previewResult, setPreviewResult] = useState<any>(null);
+  const [typeOptions, setTypeOptions] = useState<NotificationTypeOption[]>([]);
+  const [typeLoading, setTypeLoading] = useState(false);
   const [form] = Form.useForm();
 
   const fetch = async () => {
@@ -35,6 +38,29 @@ export default () => {
   };
 
   useEffect(() => { fetch(); }, [page]);
+
+  useEffect(() => {
+    const loadTypes = async () => {
+      setTypeLoading(true);
+      try {
+        const res = await listTypes({ pageSize: 200 });
+        if (res?.code === 200) {
+          const list: any[] = res.data?.list || [];
+          setTypeOptions(
+            list
+              .filter((item) => item.status === 1)
+              .map((item) => ({
+                label: `${item.name}[${item.id}] (${item.code})`,
+                value: item.id,
+              })),
+          );
+        }
+      } finally {
+        setTypeLoading(false);
+      }
+    };
+    loadTypes();
+  }, []);
 
   const handleSave = async () => {
     const values = await form.validateFields();
@@ -109,7 +135,16 @@ export default () => {
         extra={<Button type="primary" onClick={handleSave}>保存</Button>}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="typeId" label="类型ID" rules={[{ required: true }]}><Input type="number" /></Form.Item>
+          <Form.Item name="typeId" label="通知类型" rules={[{ required: true }]}><NotificationTypeSelect options={typeOptions} loading={typeLoading} style={{ width: '100%' }} /></Form.Item>
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev.typeId !== cur.typeId}>
+            {({ getFieldValue }) => {
+              const typeId = getFieldValue('typeId');
+              const opt = typeOptions.find((o) => o.value === typeId);
+              if (!opt) return null;
+              const match = String(opt.label).match(/\(([^)]+)\)$/);
+              return match ? <div style={{ marginTop: -16, marginBottom: 16, color: '#8c8c8c', fontSize: 12 }}>code：<span style={{ fontFamily: 'monospace', color: '#595959' }}>{match[1]}</span></div> : null;
+            }}
+          </Form.Item>
           <Form.Item name="code" label="编码" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="name" label="名称" rules={[{ required: true }]}><Input /></Form.Item>
           <Form.Item name="channel" label="渠道" rules={[{ required: true }]}><Select options={channelOpts} /></Form.Item>
