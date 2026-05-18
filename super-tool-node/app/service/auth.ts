@@ -543,7 +543,7 @@ export default class AuthService extends BaseService {
     }
 
     const client = await this.ctx.model.OauthClient.findOne({ where: { clientId: sessionData.clientId } });
-    const clientData = client ? (client as any).toJSON() : { accessTokenTtl: 7200, refreshTokenTtl: 2592000 };
+    const clientData = client ? (client as any).toJSON() : { accessTokenTtl: 86400, refreshTokenTtl: 2592000 };
 
     // 使旧 session 失效
     await (session as any).update({ isActive: 0, logoutType: 2 });
@@ -691,7 +691,7 @@ export default class AuthService extends BaseService {
 
   private async createSession(user: any, client: any, platform: string) {
     const jwtConfig = (this.app.config as any).jwt;
-    const accessTtl = client.accessTokenTtl || 7200;
+    const accessTtl = client.accessTokenTtl || 86400;
     const refreshTtl = client.refreshTokenTtl || 2592000;
 
     const payload = { id: user.id, uuid: user.uuid, username: user.username, nonce: Math.random().toString(36).slice(2) };

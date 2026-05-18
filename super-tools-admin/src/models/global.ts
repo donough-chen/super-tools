@@ -1,4 +1,4 @@
-import type { Effect, ImmerReducer } from 'umi';
+import type { Effect, Reducer } from 'umi';
 import { fetchMenusApi, fetchPermissionsApi } from '@/services/menu';
 import {
   getCachedMenus, setCachedMenus,
@@ -22,10 +22,10 @@ export interface GlobalModelType {
     refreshRBAC: Effect;
   };
   reducers: {
-    setCollapsed: ImmerReducer<GlobalModelState>;
-    setRBAC: ImmerReducer<GlobalModelState>;
-    setRBACReady: ImmerReducer<GlobalModelState>;
-    resetRBAC: ImmerReducer<GlobalModelState>;
+    setCollapsed: Reducer<GlobalModelState>;
+    setRBAC: Reducer<GlobalModelState>;
+    setRBACReady: Reducer<GlobalModelState>;
+    resetRBAC: Reducer<GlobalModelState>;
   };
 }
 

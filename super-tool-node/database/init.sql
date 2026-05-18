@@ -753,7 +753,7 @@ VALUES
 ('web_client',         'WEB_SECRET',    '官网PC端',   'web',         '["password","refresh_token","sms","wechat"]', 7200,   2592000),
 ('h5_client',          'H5_SECRET',     '移动H5端',   'h5',          '["password","refresh_token","sms","wechat"]', 7200,   2592000),
 ('miniprogram_client', 'MP_SECRET',     '微信小程序', 'miniprogram', '["wechat","sms","refresh_token"]',            86400,  2592000),
-('admin_client',       'ADMIN_SECRET',  '管理后台',   'admin',       '["password","refresh_token"]',               3600,   86400),
+('admin_client',       'ADMIN_SECRET',  '管理后台',   'admin',       '["password","refresh_token"]',               86400,  2592000),
 ('ios_client',         'IOS_SECRET',    'iOS App',    'ios',         '["password","refresh_token","sms","wechat"]', 86400,  2592000),
 ('android_client',     'ANDROID_SECRET','Android App','android',     '["password","refresh_token","sms","wechat"]', 86400,  2592000);
 

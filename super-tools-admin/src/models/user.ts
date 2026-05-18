@@ -1,4 +1,4 @@
-import type { Effect, ImmerReducer } from 'umi';
+import type { Effect, Reducer } from 'umi';
 import { history } from 'umi';
 import { message } from 'antd';
 import { loginApi, registerApi, logoutApi, getUserProfileApi } from '@/services/auth';
@@ -10,6 +10,7 @@ import {
   isAuthenticated,
 } from '@/utils/authority';
 import { clearRbacCache } from '@/utils/menuCache';
+import { resolveSafeRedirect } from '@/utils/redirect';
 
 /** 用户状态 */
 export interface UserModelState {
@@ -29,11 +30,11 @@ export interface UserModelType {
     fetchCurrent: Effect;
   };
   reducers: {
-    setCurrentUser: ImmerReducer<UserModelState>;
-    setLoginLoading: ImmerReducer<UserModelState>;
-    setRegisterLoading: ImmerReducer<UserModelState>;
-    setLoggedIn: ImmerReducer<UserModelState>;
-    reset: ImmerReducer<UserModelState>;
+    setCurrentUser: Reducer<UserModelState>;
+    setLoginLoading: Reducer<UserModelState>;
+    setRegisterLoading: Reducer<UserModelState>;
+    setLoggedIn: Reducer<UserModelState>;
+    reset: Reducer<UserModelState>;
   };
 }
 
@@ -78,31 +79,29 @@ const UserModel: UserModelType = {
             accessToken: response.data.accessToken,
             refreshToken: response.data.refreshToken,
             sessionId: response.data.sessionId,
+            expiresIn: response.data.expiresIn,
           });
           yield put({ type: 'setLoggedIn', payload: true });
           message.success('登录成功');
 
           // 2. 等待用户信息 + RBAC 初始化（任一失败不阻塞跳转）
-          //    使用 put.resolve 等待 effect 完成；fetchCurrent / initRBAC 内部各自
-          //    catch 掉异常，避免 saga 抛异常打断主流程
+          //    dva 的 `put` 调用返回 Promise，`yield` 即可等待 effect 完成；
+          //    fetchCurrent / initRBAC 内部各自 catch 掉异常，正常情况下不会
+          //    抛到这里。即便未来内部行为变更，这里再包一层 try 防御，避免
+          //    把"登录后置流程"的异常误判为"登录失败"。
           try {
-            yield (put as any).resolve({ type: 'fetchCurrent' });
-          } catch { /* swallow */ }
+            yield put({ type: 'fetchCurrent' });
+          } catch (e) {
+            console.warn('[login] fetchCurrent post-step failed:', e);
+          }
           try {
-            yield (put as any).resolve({ type: 'global/initRBAC' });
-          } catch { /* swallow */ }
+            yield put({ type: 'global/initRBAC' });
+          } catch (e) {
+            console.warn('[login] initRBAC post-step failed:', e);
+          }
 
-          // 3. 计算跳转目标（白名单防御：避免 redirect=/login 之类的循环）
-          const raw = new URLSearchParams(window.location.search).get('redirect');
-          const safeRedirect = (() => {
-            if (!raw) return '/';
-            // 必须是站内绝对路径，且不允许指回登录/注册页
-            if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
-            const pathOnly = raw.split('?')[0];
-            if (pathOnly === '/login' || pathOnly === '/register') return '/';
-            return raw;
-          })();
-          history.replace(safeRedirect);
+          // 3. 计算跳转目标（严格白名单：避免 open-redirect / 登录页循环）
+          history.replace(resolveSafeRedirect());
           return { success: true };
         }
         message.error(response?.message || '登录失败');
