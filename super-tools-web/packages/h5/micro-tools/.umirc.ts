@@ -10,6 +10,7 @@ export default defineConfig({
     type: 'none',
   },
   alias: {
+    '@shared': join(process.cwd(), 'packages/shared'),
     '@/utils': join(process.cwd(), 'packages/shared/utils'),
     '@/appsdk': join(process.cwd(), 'packages/shared/appsdk'),
     '@/hooks': join(process.cwd(), 'packages/shared/hooks'),

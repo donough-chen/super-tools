@@ -57,6 +57,8 @@ export const PAGE_ROUTES: MicroToolsRoute[] = [
   { path: '/member', component: '@/pages/member', title: '会员' },
   { path: '/help', component: '@/pages/help', title: '使用帮助' },
   { path: '/about', component: '@/pages/about', title: '关于我们' },
+  { path: '/notifications/detail/:id', component: '@/pages/notifications/detail/[id]', title: '消息详情' },
+  { path: '/notifications', component: '@/pages/notifications', title: '消息' },
 ];
 
 /**

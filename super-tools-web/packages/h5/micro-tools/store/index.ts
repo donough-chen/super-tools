@@ -9,3 +9,4 @@ export { useUserStore } from './user';
 export { useMemberStore } from './member';
 export { useDeviceStore } from './device';
 export { useSendCodeStore } from './sendCode';
+export { useNotificationStore, notificationSdk } from './notification';

@@ -1,17 +1,19 @@
 /**
  * 通知设置 /settings/notification
  *
- * 两区分组：
+ * 三区分组：
  *  1) 通知渠道：push / sms / email → user_profiles.notificationSettings（500ms 防抖）
  *  2) 当前设备推送：单独写入 user_devices.pushEnabled（针对 useDeviceInfo().deviceId）
+ *  3) 分类偏好：使用 notification SDK 管理每个通知类型的订阅设置
  */
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import Switch from '../../../components/Switch';
-import { useUserStore, useDeviceStore } from '../../../store';
+import { useUserStore, useDeviceStore, notificationSdk } from '../../../store';
 import { useDeviceInfo } from '../../../hooks/useDeviceInfo';
 import { showToast } from '../../../utils/toast';
+import { usePreferences } from '../../../../../shared/notification';
 import type { NotificationSettings } from '../../../types/auth';
 import './index.less';
 
@@ -19,6 +21,13 @@ const DEFAULTS: Required<NotificationSettings> = {
   push: true,
   sms: true,
   email: true,
+};
+
+/** 渠道显示名 */
+const CHANNEL_LABELS: Record<string, string> = {
+  in_app: '站内信',
+  email: '邮件',
+  sms: '短信',
 };
 
 const NotificationPage: React.FC = () => {
@@ -32,6 +41,12 @@ const NotificationPage: React.FC = () => {
   const [settings, setSettings] = useState<Required<NotificationSettings>>(DEFAULTS);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncedRef = useRef(false);
+
+  // SDK 偏好设置 hook
+  const { list: preferences, loading: prefLoading, saving: prefSaving, update: updatePreference } = usePreferences({
+    fetchAll: () => notificationSdk.preferences.list(),
+    saveOne: (input) => notificationSdk.preferences.upsert(input),
+  });
 
   useEffect(() => {
     fetchProfileExtra();
@@ -71,6 +86,37 @@ const NotificationPage: React.FC = () => {
     }
     const res = await updateDevicePush(currentDevice.deviceId, val);
     if (!res.success) showToast(res.message || '更新失败', 'error');
+  };
+
+  // 将偏好按 typeId 分组
+  const groupedPreferences = useMemo(() => {
+    const groups: Record<number, {
+      typeId: number;
+      typeName: string;
+      channels: { channel: string; isSubscribed: boolean }[];
+    }> = {};
+    for (const p of preferences) {
+      if (!groups[p.typeId]) {
+        groups[p.typeId] = {
+          typeId: p.typeId,
+          typeName: p.typeName,
+          channels: [],
+        };
+      }
+      groups[p.typeId].channels.push({
+        channel: p.channel,
+        isSubscribed: p.isSubscribed,
+      });
+    }
+    return Object.values(groups);
+  }, [preferences]);
+
+  const handlePreferenceChange = async (typeId: number, channel: string, isSubscribed: boolean) => {
+    try {
+      await updatePreference({ typeId, channel, isSubscribed });
+    } catch {
+      showToast('更新失败', 'error');
+    }
   };
 
   return (
@@ -119,6 +165,43 @@ const NotificationPage: React.FC = () => {
             />
           </div>
         </div>
+
+        {/* 分类偏好设置 */}
+        <div className="settings-section-title">
+          分类订阅
+          {prefLoading && <span className="settings-section-hint">加载中...</span>}
+        </div>
+        {groupedPreferences.length === 0 && !prefLoading && (
+          <div className="settings-card">
+            <div className="settings-row">
+              <div className="settings-row__main">
+                <div className="settings-row__sub">暂无可配置的通知类型</div>
+              </div>
+            </div>
+          </div>
+        )}
+        {groupedPreferences.map((group) => (
+          <div className="settings-card" key={group.typeId}>
+            <div className="settings-row settings-row--group-title">
+              <div className="settings-row__main">
+                <div className="settings-row__name">{group.typeName}</div>
+              </div>
+            </div>
+            {group.channels.map((ch) => (
+              <div className="settings-row" key={`${group.typeId}-${ch.channel}`}>
+                <div className="settings-row__main">
+                  <div className="settings-row__sub">{CHANNEL_LABELS[ch.channel] || ch.channel}</div>
+                </div>
+                <Switch
+                  checked={ch.isSubscribed}
+                  onChange={(val) => handlePreferenceChange(group.typeId, ch.channel, val)}
+                  disabled={prefSaving}
+                  ariaLabel={`${group.typeName} ${CHANNEL_LABELS[ch.channel] || ch.channel}`}
+                />
+              </div>
+            ))}
+          </div>
+        ))}
       </main>
     </div>
   );

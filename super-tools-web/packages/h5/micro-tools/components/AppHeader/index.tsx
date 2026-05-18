@@ -4,10 +4,11 @@
  */
 import React, { FC, ReactNode } from 'react';
 import classnames from 'classnames';
+import { useNotificationStore } from '../../store';
 import './AppHeader.less';
 
 export interface HeaderButtonConfig {
-  type: 'search' | 'agent' | 'settings' | 'sort' | 'add' | 'scan' | 'placeholder';
+  type: 'search' | 'agent' | 'settings' | 'sort' | 'add' | 'scan' | 'message' | 'placeholder';
   visible?: boolean | (() => boolean);
   onClick?: () => void;
 }
@@ -33,10 +34,39 @@ const AppHeader: FC<AppHeaderProps> = ({
   onBack,
   rightSlot,
 }) => {
+  const unreadCount = useNotificationStore(s => s.unreadCount);
+
   const isButtonVisible = (config: HeaderButtonConfig) => {
     if (typeof config.visible === 'function') return config.visible();
     if (typeof config.visible === 'boolean') return config.visible;
     return true;
+  };
+
+  const renderButton = (btn: HeaderButtonConfig, idx: number) => {
+    if (btn.type === 'message') {
+      return (
+        <div
+          key={`${btn.type}-${idx}`}
+          className={classnames('app-header__btn', 'app-header__btn--message')}
+          onClick={btn.onClick}
+          aria-label="消息"
+        >
+          {unreadCount > 0 && (
+            <span className="app-header__badge">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </div>
+      );
+    }
+    return (
+      <div
+        key={`${btn.type}-${idx}`}
+        className={classnames('app-header__btn', `app-header__btn--${btn.type}`)}
+        onClick={btn.onClick}
+        aria-label={btn.type}
+      />
+    );
   };
 
   return (
@@ -51,14 +81,7 @@ const AppHeader: FC<AppHeaderProps> = ({
             ? rightSlot
             : buttons
               .filter(isButtonVisible)
-              .map((btn, idx) => (
-                <div
-                  key={`${btn.type}-${idx}`}
-                  className={classnames('app-header__btn', `app-header__btn--${btn.type}`)}
-                  onClick={btn.onClick}
-                  aria-label={btn.type}
-                />
-              ))}
+              .map(renderButton)}
         </div>
       </div>
     </header>

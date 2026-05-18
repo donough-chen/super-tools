@@ -343,6 +343,7 @@ const HomePage: React.FC = () => {
             visible: () => !isSearchBoxVisible,
             onClick: () => navigateTo('/search'),
           },
+          { type: 'message', onClick: () => navigateTo('/notifications') },
           { type: 'agent' },
           { type: 'settings' },
         ]}

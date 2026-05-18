@@ -1,2 +1,19 @@
 /* 复用 privacy 的页面与公共样式（settings-card / settings-row / settings-section-title） */
 @import '../privacy/index.less';
+
+/* 分类订阅区域追加样式 */
+.settings-section-hint {
+  font-size: 22px;
+  color: var(--text-tertiary, #999);
+  margin-left: 12px;
+  font-weight: normal;
+}
+
+.settings-row--group-title {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+
+  .settings-row__name {
+    font-weight: 600;
+    color: var(--text-primary, #333);
+  }
+}

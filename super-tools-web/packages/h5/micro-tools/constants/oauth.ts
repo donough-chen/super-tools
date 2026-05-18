@@ -10,7 +10,7 @@ export const SESSION_ID_STORAGE_KEY = 'super-tools-session-id';
 export const DEVICE_ID_STORAGE_KEY = 'super-tools-device-id';
 
 /** 强鉴权路由前缀（未登录时跳 /login） */
-export const PROTECTED_PATHS = ['/profile', '/settings', '/favorites', '/member'];
+export const PROTECTED_PATHS = ['/profile', '/settings', '/favorites', '/member', '/notifications'];
 
 /** 鉴权白名单（请求拦截器跳过 token 注入；响应拦截器跳过 401 自动刷新） */
 export const AUTH_WHITELIST = [

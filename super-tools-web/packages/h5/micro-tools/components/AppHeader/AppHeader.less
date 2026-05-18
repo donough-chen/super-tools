@@ -128,10 +128,41 @@
       background-size: 60% 60%;
       background-position: center;
     }
+    &--message {
+      /* 消息按钮样式：圆环背景 + 铃铛/消息图标 */
+      position: relative;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.06);
+      background-image: url('~@/assets/icons/message.png');
+      background-repeat: no-repeat;
+      background-size: 60% 60%;
+      background-position: center;
+    }
     &--placeholder {
       /* 占位按钮样式：圆环背景 */
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.06);
     }
+  }
+
+  /* 未读数角标 */
+  &__badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: #f5222d;
+    color: #fff;
+    font-size: 20px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 1;
   }
 }

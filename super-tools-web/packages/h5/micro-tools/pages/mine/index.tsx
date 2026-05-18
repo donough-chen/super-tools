@@ -66,6 +66,7 @@ const MinePage: React.FC = () => {
       <AppHeader
         title="我的"
         buttons={[
+          { type: 'message', onClick: () => navigateTo('/notifications') },
           { type: 'agent' },
           { type: 'scan' },
         ]}
