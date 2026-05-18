@@ -114,7 +114,7 @@ export default class FeedbackService extends Service {
 
     // 触发通知：反馈回复
     try {
-      await this.ctx.service.notification.send({
+      await this.ctx.service.notification.core.send({
         typeCode: 'BUSINESS_FEEDBACK_REPLY',
         userId: (fb as any).userId,
         variables: {

@@ -614,7 +614,7 @@ export default class AuthService extends BaseService {
           bind: 'VERIFY_CODE_BIND',
         };
         const typeCode = typeCodeMap[type] || 'VERIFY_CODE_LOGIN';
-        await this.ctx.service.notification.sendDirect({
+        await this.ctx.service.notification.core.sendDirect({
           typeCode,
           userId: user.id,
           variables: {
@@ -729,7 +729,7 @@ export default class AuthService extends BaseService {
   private async _checkAndNotifyUnusualLogin(user: any) {
     if (!user.lastLoginIp || user.lastLoginIp === this.ctx.ip) return;
     try {
-      await this.ctx.service.notification.sendDirect({
+      await this.ctx.service.notification.core.sendDirect({
         typeCode: 'SYSTEM_UNUSUAL_LOGIN',
         userId: user.id,
         variables: {

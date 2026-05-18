@@ -16,7 +16,10 @@ export default class NotificationController extends BaseController {
     if (!userId) ctx.throw(401, '未授权');
 
     const { isRead, typeId, archived = '0', page = 1, pageSize = 20 } = ctx.query;
-    const where: any = { userId };
+    const where: any = { 
+      userId,
+      channels: { [Op.like]: '%in_app%' }
+    };
     if (isRead !== undefined) where.isRead = Number(isRead);
     if (typeId) where.typeId = Number(typeId);
     if (archived === '1') {
@@ -42,7 +45,12 @@ export default class NotificationController extends BaseController {
     const { ctx } = this;
     const user = (ctx as any).state?.user || (ctx as any).user;
     const count = await ctx.model.NotificationMessage.count({
-      where: { userId: user.id, isRead: 0, isArchived: 0 },
+      where: { 
+        userId: user.id, 
+        isRead: 0, 
+        isArchived: 0,
+        channels: { [Op.like]: '%in_app%' }
+      },
     });
     this.success({ count });
   }
@@ -92,7 +100,14 @@ export default class NotificationController extends BaseController {
     const user = (ctx as any).state?.user || (ctx as any).user;
     const [affected] = await ctx.model.NotificationMessage.update(
       { isRead: 1, readAt: new Date() },
-      { where: { userId: user.id, isRead: 0, isArchived: 0 } },
+      { 
+        where: { 
+          userId: user.id, 
+          isRead: 0, 
+          isArchived: 0,
+          channels: { [Op.like]: '%in_app%' }
+        } 
+      },
     );
     this.success({ affected });
   }
@@ -118,7 +133,7 @@ export default class NotificationController extends BaseController {
   async listPreferences() {
     const { ctx } = this;
     const user = (ctx as any).state?.user || (ctx as any).user;
-    const list = await (ctx.service.notification as any).preference.listForUser({ userId: user.id });
+    const list = await ctx.service.notification.preference.listForUser({ userId: user.id });
     this.success(list);
   }
 
@@ -129,7 +144,7 @@ export default class NotificationController extends BaseController {
     const { ctx } = this;
     const user = (ctx as any).state?.user || (ctx as any).user;
     const body = ctx.request.body as any;
-    const row = await (ctx.service.notification as any).preference.upsert({
+    const row = await ctx.service.notification.preference.upsert({
       userId: user.id,
       typeId: body.typeId,
       channel: body.channel,

@@ -442,7 +442,7 @@ export default class ToolService extends BaseService {
         });
         const userIds = favorites.map((f: any) => f.userId);
         if (userIds.length > 0) {
-          await this.ctx.service.notification.sendByAudience({
+          await this.ctx.service.notification.core.sendByAudience({
             typeCode,
             audienceType: 'static',
             staticUserIds: userIds,

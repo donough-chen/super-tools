@@ -250,7 +250,7 @@ export default class MemberService extends BaseService {
   async addPoints(params: AddPointsParams) {
     const { userId, points, growthDelta, source, type = 1, bizType, bizId, remark } = params;
 
-    return await this.ctx.model.transaction(async (t: any) => {
+    const result = await this.ctx.model.transaction(async (t: any) => {
       // 行级锁防并发
       const member = await this.ctx.model.UserMember.findOne({
         where: { userId },
@@ -288,6 +288,24 @@ export default class MemberService extends BaseService {
         newLevel: levelUpResult.newLevel,
       };
     });
+
+    // 事务成功后异步触发积分变动通知（不阻塞主流程）
+    try {
+      await (this.ctx.service.notification as any).core.send({
+        typeCode: 'BUSINESS_POINTS_CHANGE',
+        userId,
+        variables: {
+          changeType: points >= 0 ? '增加' : '扣减',
+          points: Math.abs(points),
+          balance: result.currentPoints,
+          remark: remark || source,
+        },
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[member.addPoints] notification failed: ${e.message}`);
+    }
+
+    return result;
   }
 
   /**
@@ -422,6 +440,21 @@ export default class MemberService extends BaseService {
       });
     }
 
+    // 触发开通套餐通知
+    try {
+      await this.ctx.service.notification.core.send({
+        typeCode: 'BUSINESS_PLAN_ACTIVATED',
+        userId,
+        variables: {
+          planName: planData.name,
+          planCode,
+          expireAt: expireAt ? expireAt.toISOString().slice(0, 10) : '永久',
+        },
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[member.activatePaidPlan] notification failed: ${e.message}`);
+    }
+
     return {
       planCode,
       planName: planData.name,
@@ -491,7 +524,7 @@ export default class MemberService extends BaseService {
 
     // P2.4: 触发会员升级通知
     try {
-      await this.ctx.service.notification.send({
+      await this.ctx.service.notification.core.send({
         typeCode: 'BUSINESS_MEMBER_UPGRADE',
         userId,
         variables: { levelName: levelData.name, levelCode: levelData.code },
