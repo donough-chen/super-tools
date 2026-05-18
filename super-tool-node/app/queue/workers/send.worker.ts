@@ -28,7 +28,7 @@ export function startSendWorker(app: Application): Worker {
         return { skipped: true, reason: 'message_not_found' };
       }
 
-      const result = await ctx.service.notificationChannel.dispatch({
+      const result = await (ctx.service.notification as any).channel.dispatch({
         channel: job.data.channel,
         message,
       });

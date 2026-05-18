@@ -256,73 +256,77 @@ export default (app: Application) => {
   router.delete('/api/favorites/:toolCode', auth, controller.favorite.destroy);
 
   // ==================== 通知管理（管理端） ====================
-  router.get('/api/admin/notification/types', auth, perm('notification:type:view'), adminCtrl.notificationType.list);
-  router.post('/api/admin/notification/types', auth, perm('notification:type:manage'), adminCtrl.notificationType.create);
-  router.put('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), adminCtrl.notificationType.update);
-  router.delete('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), adminCtrl.notificationType.destroy);
+  const nCtrl = adminCtrl.notification;
 
-  router.get('/api/admin/notification/templates', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.list);
-  router.get('/api/admin/notification/templates/:id', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.detail);
-  router.post('/api/admin/notification/templates', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.create);
-  router.put('/api/admin/notification/templates/:id', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.update);
-  router.post('/api/admin/notification/templates/:id/publish', auth, perm('notification:template:publish'), adminCtrl.notificationTemplate.publish);
-  router.post('/api/admin/notification/templates/:id/preview', auth, perm('notification:template:view'), adminCtrl.notificationTemplate.preview);
-  router.post('/api/admin/notification/templates/:id/test-send', auth, perm('notification:template:manage'), adminCtrl.notificationTemplate.testSend);
-  router.post('/api/admin/notification/templates/:id/rollback/:versionId', auth, perm('notification:template:publish'), adminCtrl.notificationTemplate.rollback);
+  // 类型
+  router.get('/api/admin/notification/types', auth, perm('notification:type:view'), nCtrl.type.list);
+  router.post('/api/admin/notification/types', auth, perm('notification:type:manage'), nCtrl.type.create);
+  router.put('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), nCtrl.type.update);
+  router.delete('/api/admin/notification/types/:id', auth, perm('notification:type:manage'), nCtrl.type.destroy);
+
+  // 模板
+  router.get('/api/admin/notification/templates', auth, perm('notification:template:view'), nCtrl.template.list);
+  router.get('/api/admin/notification/templates/:id', auth, perm('notification:template:view'), nCtrl.template.detail);
+  router.post('/api/admin/notification/templates', auth, perm('notification:template:manage'), nCtrl.template.create);
+  router.put('/api/admin/notification/templates/:id', auth, perm('notification:template:manage'), nCtrl.template.update);
+  router.post('/api/admin/notification/templates/:id/publish', auth, perm('notification:template:publish'), nCtrl.template.publish);
+  router.post('/api/admin/notification/templates/:id/preview', auth, perm('notification:template:view'), nCtrl.template.preview);
+  router.post('/api/admin/notification/templates/:id/test-send', auth, perm('notification:template:manage'), nCtrl.template.testSend);
+  router.post('/api/admin/notification/templates/:id/rollback/:versionId', auth, perm('notification:template:publish'), nCtrl.template.rollback);
 
   // 任务
-  router.get('/api/admin/notification/tasks', auth, perm('notification:task:view'), adminCtrl.notificationTask.list);
-  router.get('/api/admin/notification/tasks/:id', auth, perm('notification:task:view'), adminCtrl.notificationTask.detail);
-  router.post('/api/admin/notification/tasks', auth, perm('notification:task:create'), adminCtrl.notificationTask.create);
-  router.post('/api/admin/notification/tasks/scheduled', auth, perm('notification:task:create'), adminCtrl.notificationTask.createScheduled);
-  router.post('/api/admin/notification/tasks/:id/pause', auth, perm('notification:task:control'), adminCtrl.notificationTask.pause);
-  router.post('/api/admin/notification/tasks/:id/resume', auth, perm('notification:task:control'), adminCtrl.notificationTask.resume);
-  router.post('/api/admin/notification/tasks/:id/cancel', auth, perm('notification:task:control'), adminCtrl.notificationTask.cancel);
-  router.post('/api/admin/notification/tasks/:id/undo', auth, perm('notification:task:control'), adminCtrl.notificationTask.undo);
+  router.get('/api/admin/notification/tasks', auth, perm('notification:task:view'), nCtrl.task.list);
+  router.get('/api/admin/notification/tasks/:id', auth, perm('notification:task:view'), nCtrl.task.detail);
+  router.post('/api/admin/notification/tasks', auth, perm('notification:task:create'), nCtrl.task.create);
+  router.post('/api/admin/notification/tasks/scheduled', auth, perm('notification:task:create'), nCtrl.task.createScheduled);
+  router.post('/api/admin/notification/tasks/:id/pause', auth, perm('notification:task:control'), nCtrl.task.pause);
+  router.post('/api/admin/notification/tasks/:id/resume', auth, perm('notification:task:control'), nCtrl.task.resume);
+  router.post('/api/admin/notification/tasks/:id/cancel', auth, perm('notification:task:control'), nCtrl.task.cancel);
+  router.post('/api/admin/notification/tasks/:id/undo', auth, perm('notification:task:control'), nCtrl.task.undo);
 
   // 消息（管理员视角）
-  router.get('/api/admin/notification/messages', auth, perm('notification:message:view'), adminCtrl.notificationMessage.list);
-  router.get('/api/admin/notification/messages/:id', auth, perm('notification:message:view'), adminCtrl.notificationMessage.detail);
+  router.get('/api/admin/notification/messages', auth, perm('notification:message:view'), nCtrl.message.list);
+  router.get('/api/admin/notification/messages/:id', auth, perm('notification:message:view'), nCtrl.message.detail);
 
-  // 频控规则（P2.1）
-  router.get('/api/admin/notification/rate-limits', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.list);
-  router.post('/api/admin/notification/rate-limits', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.create);
-  router.put('/api/admin/notification/rate-limits/:id', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.update);
-  router.delete('/api/admin/notification/rate-limits/:id', auth, perm('notification:config:manage'), adminCtrl.notificationRateLimit.destroy);
+  // 频控规则
+  router.get('/api/admin/notification/rate-limits', auth, perm('notification:config:manage'), nCtrl.rateLimit.list);
+  router.post('/api/admin/notification/rate-limits', auth, perm('notification:config:manage'), nCtrl.rateLimit.create);
+  router.put('/api/admin/notification/rate-limits/:id', auth, perm('notification:config:manage'), nCtrl.rateLimit.update);
+  router.delete('/api/admin/notification/rate-limits/:id', auth, perm('notification:config:manage'), nCtrl.rateLimit.destroy);
 
-  // 渠道配置（P2.1）
-  router.get('/api/admin/notification/channels', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.list);
-  router.put('/api/admin/notification/channels/:id', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.update);
-  router.post('/api/admin/notification/channels/test-smtp', auth, perm('notification:config:manage'), adminCtrl.notificationChannel.testSmtp);
+  // 渠道配置
+  router.get('/api/admin/notification/channels', auth, perm('notification:config:manage'), nCtrl.channel.list);
+  router.put('/api/admin/notification/channels/:id', auth, perm('notification:config:manage'), nCtrl.channel.update);
+  router.post('/api/admin/notification/channels/test-smtp', auth, perm('notification:config:manage'), nCtrl.channel.testSmtp);
 
-  // 受众分组（P2.3）
-  router.get('/api/admin/notification/audiences/fields', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.fieldWhitelist);
-  router.post('/api/admin/notification/audiences/preview', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.preview);
-  router.get('/api/admin/notification/audiences', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.list);
-  router.get('/api/admin/notification/audiences/:id', auth, perm('notification:audience:view'), adminCtrl.notificationAudience.detail);
-  router.post('/api/admin/notification/audiences', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.create);
-  router.put('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.update);
-  router.delete('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), adminCtrl.notificationAudience.destroy);
+  // 受众分组
+  router.get('/api/admin/notification/audiences/fields', auth, perm('notification:audience:view'), nCtrl.audience.fieldWhitelist);
+  router.post('/api/admin/notification/audiences/preview', auth, perm('notification:audience:view'), nCtrl.audience.preview);
+  router.get('/api/admin/notification/audiences', auth, perm('notification:audience:view'), nCtrl.audience.list);
+  router.get('/api/admin/notification/audiences/:id', auth, perm('notification:audience:view'), nCtrl.audience.detail);
+  router.post('/api/admin/notification/audiences', auth, perm('notification:audience:manage'), nCtrl.audience.create);
+  router.put('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), nCtrl.audience.update);
+  router.delete('/api/admin/notification/audiences/:id', auth, perm('notification:audience:manage'), nCtrl.audience.destroy);
 
-  // 统计（P3.1）
-  router.get('/api/admin/notification/stats/overview', auth, perm('notification:stats:view'), adminCtrl.notificationStats.overview);
-  router.get('/api/admin/notification/stats/trend', auth, perm('notification:stats:view'), adminCtrl.notificationStats.trend);
-  router.get('/api/admin/notification/stats/by-channel', auth, perm('notification:stats:view'), adminCtrl.notificationStats.byChannel);
-  router.get('/api/admin/notification/stats/by-type', auth, perm('notification:stats:view'), adminCtrl.notificationStats.byType);
-  router.get('/api/admin/notification/stats/funnel', auth, perm('notification:stats:view'), adminCtrl.notificationStats.funnel);
+  // 统计
+  router.get('/api/admin/notification/stats/overview', auth, perm('notification:stats:view'), nCtrl.stats.overview);
+  router.get('/api/admin/notification/stats/trend', auth, perm('notification:stats:view'), nCtrl.stats.trend);
+  router.get('/api/admin/notification/stats/by-channel', auth, perm('notification:stats:view'), nCtrl.stats.byChannel);
+  router.get('/api/admin/notification/stats/by-type', auth, perm('notification:stats:view'), nCtrl.stats.byType);
+  router.get('/api/admin/notification/stats/funnel', auth, perm('notification:stats:view'), nCtrl.stats.funnel);
 
-  // 导出（P3.1）
-  router.post('/api/admin/notification/exports', auth, perm('notification:export:create'), adminCtrl.notificationExport.create);
-  router.get('/api/admin/notification/exports', auth, perm('notification:export:create'), adminCtrl.notificationExport.list);
-  router.get('/api/admin/notification/exports/:id/download', auth, perm('notification:export:create'), adminCtrl.notificationExport.download);
+  // 导出
+  router.post('/api/admin/notification/exports', auth, perm('notification:export:create'), nCtrl.export.create);
+  router.get('/api/admin/notification/exports', auth, perm('notification:export:create'), nCtrl.export.list);
+  router.get('/api/admin/notification/exports/:id/download', auth, perm('notification:export:create'), nCtrl.export.download);
 
-  // Schedule（P3.2）
-  router.get('/api/admin/notification/schedules', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.list);
-  router.post('/api/admin/notification/schedules/:id/pause', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.pause);
-  router.post('/api/admin/notification/schedules/:id/resume', auth, perm('notification:config:manage'), adminCtrl.notificationSchedule.resume);
+  // Schedule
+  router.get('/api/admin/notification/schedules', auth, perm('notification:config:manage'), nCtrl.schedule.list);
+  router.post('/api/admin/notification/schedules/:id/pause', auth, perm('notification:config:manage'), nCtrl.schedule.pause);
+  router.post('/api/admin/notification/schedules/:id/resume', auth, perm('notification:config:manage'), nCtrl.schedule.resume);
 
-  // 队列监控（P3.4）
-  router.get('/api/admin/notification/queues/depths', auth, perm('notification:stats:view'), adminCtrl.notificationQueueMonitor.depths);
+  // 队列监控
+  router.get('/api/admin/notification/queues/depths', auth, perm('notification:stats:view'), nCtrl.queueMonitor.depths);
 
   // ==================== 通知（C 端用户） ====================
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);

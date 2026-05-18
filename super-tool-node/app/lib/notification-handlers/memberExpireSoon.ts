@@ -1,4 +1,4 @@
-import { registerScheduleHandler } from '../../service/notification-schedule';
+import { registerScheduleHandler } from '../../service/notification/schedule';
 
 registerScheduleHandler('memberExpireSoon', async (ctx, params: { days?: number[] }) => {
   const days: number[] = params.days || [7, 3, 1];

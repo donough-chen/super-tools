@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { registerScheduleHandler } from '../../service/notification-schedule';
+import { registerScheduleHandler } from '../../service/notification/schedule';
 
 registerScheduleHandler('cleanupExports', async (ctx) => {
   const Op = ctx.app.Sequelize.Op;

@@ -1,9 +1,6 @@
-import { Controller } from 'egg';
+import BaseController from '../../base';
 
-/**
- * Admin 频控规则管理
- */
-export default class NotificationRateLimitController extends Controller {
+export default class NotificationRateLimitController extends BaseController {
 
   async list() {
     const { ctx } = this;
@@ -18,16 +15,14 @@ export default class NotificationRateLimitController extends Controller {
       limit: Number(pageSize),
       order: [['id', 'ASC']],
     });
-    (ctx as any).success({ list: rows, total: count });
+    this.success({ list: rows, total: count });
   }
 
   async create() {
     const { ctx } = this;
-    const body = ctx.request.body as any;
-    const row = await ctx.model.NotificationRateLimitConfig.create(body);
-    // 清除规则缓存
+    const row = await ctx.model.NotificationRateLimitConfig.create(ctx.request.body as any);
     await this._clearRuleCache();
-    (ctx as any).success(row);
+    this.success(row);
   }
 
   async update() {
@@ -37,7 +32,7 @@ export default class NotificationRateLimitController extends Controller {
     if (!row) ctx.throw(404, '规则不存在');
     await row.update(ctx.request.body as any);
     await this._clearRuleCache();
-    (ctx as any).success(row);
+    this.success(row);
   }
 
   async destroy() {
@@ -47,12 +42,10 @@ export default class NotificationRateLimitController extends Controller {
     if (!row) ctx.throw(404, '规则不存在');
     await row.destroy();
     await this._clearRuleCache();
-    (ctx as any).success();
+    this.success();
   }
 
   private async _clearRuleCache() {
-    try {
-      await this.app.redis.del('notif:rate_rules');
-    } catch {}
+    try { await this.app.redis.del('notif:rate_rules'); } catch {}
   }
 }

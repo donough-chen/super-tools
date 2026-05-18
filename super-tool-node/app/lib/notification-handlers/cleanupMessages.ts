@@ -1,4 +1,4 @@
-import { registerScheduleHandler } from '../../service/notification-schedule';
+import { registerScheduleHandler } from '../../service/notification/schedule';
 
 registerScheduleHandler('cleanupMessages', async (ctx, params: { retentionDays?: number }) => {
   const cutoff = new Date(Date.now() - (params.retentionDays || 90) * 86400_000);

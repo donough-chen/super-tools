@@ -14,7 +14,7 @@ export function startExportWorker(app: Application): Worker {
   const worker = new Worker<ExportJobData>(exp.queueName, async (job: Job<ExportJobData>) => {
     const ctx = app.createAnonymousContext();
     ctx.logger.info(`[notif.export] worker job=${job.id} export=${job.data.jobId}`);
-    await ctx.service.notificationExport.executeJob(job.data.jobId);
+    await (ctx.service.notification as any).export.executeJob(job.data.jobId);
     return { ok: true };
   }, { connection, concurrency: exp.concurrency });
 

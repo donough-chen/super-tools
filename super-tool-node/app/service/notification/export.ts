@@ -1,7 +1,7 @@
 import { Service } from 'egg';
 import * as path from 'path';
 import * as fs from 'fs';
-import { buildXlsx } from '../lib/xlsxBuilder';
+import { buildXlsx } from '../../lib/xlsxBuilder';
 
 export interface CreateExportInput {
   name: string;
@@ -15,27 +15,19 @@ export default class NotificationExportService extends Service {
   async create(input: CreateExportInput) {
     const { ctx, app } = this;
     const exportCfg = (app.config as any).notification.export;
-    // 预估行数
     const count = await this._countRows(input.filter);
-    if (count > exportCfg.maxRows) {
-      ctx.throw(400, `导出条数超限（>${exportCfg.maxRows}）`);
-    }
+    if (count > exportCfg.maxRows) ctx.throw(400, `导出条数超限（>${exportCfg.maxRows}）`);
     const expiresAt = new Date(Date.now() + exportCfg.fileTtlDays * 86400_000);
     const job = await ctx.model.NotificationExportJob.create({
-      name: input.name,
-      filter: input.filter,
-      recipientEmail: input.recipientEmail ?? null,
-      createdBy: input.operatorId,
-      expiresAt,
+      name: input.name, filter: input.filter,
+      recipientEmail: input.recipientEmail ?? null, createdBy: input.operatorId, expiresAt,
     });
-    // 入队
     try {
-      const { getExportQueue } = require('../queue/queues');
+      const { getExportQueue } = require('../../queue/queues');
       const queue = getExportQueue(app);
       await queue.add('export', { jobId: (job as any).id }, { jobId: `exp-${(job as any).id}` });
     } catch (e: any) {
       ctx.logger.warn(`[notif.export] queue enqueue failed, running sync: ${e.message}`);
-      // 降级同步执行
       await this.executeJob((job as any).id);
     }
     return job;
@@ -57,27 +49,18 @@ export default class NotificationExportService extends Service {
         fields: ['id', 'typeCode', 'userId', 'channel', 'title', 'status', 'createdAt'],
         rows,
       }]);
-      await (job as any).update({
-        status: 'completed', finishedAt: new Date(),
-        totalRows: rows.length, filePath, fileSize: size,
-      });
-      // 邮件通知
+      await (job as any).update({ status: 'completed', finishedAt: new Date(), totalRows: rows.length, filePath, fileSize: size });
       if ((job as any).recipientEmail) {
         try {
           await ctx.service.mail.send({
             to: (job as any).recipientEmail,
             subject: `[super-tools] 您的通知导出已完成：${(job as any).name}`,
-            html: `<p>导出共 ${rows.length} 行；文件已生成。</p>
-                   <p>请在 ${exportCfg.fileTtlDays} 天内下载，过期将自动清理。</p>`,
+            html: `<p>导出共 ${rows.length} 行；文件已生成。</p><p>请在 ${exportCfg.fileTtlDays} 天内下载，过期将自动清理。</p>`,
           });
-        } catch (e: any) {
-          ctx.logger.warn(`[notif.export] mail failed: ${e.message}`);
-        }
+        } catch (e: any) { ctx.logger.warn(`[notif.export] mail failed: ${e.message}`); }
       }
     } catch (e: any) {
-      await (job as any).update({
-        status: 'failed', finishedAt: new Date(), errorMessage: e.message,
-      });
+      await (job as any).update({ status: 'failed', finishedAt: new Date(), errorMessage: e.message });
       throw e;
     }
   }
@@ -96,14 +79,10 @@ export default class NotificationExportService extends Service {
   async list(operatorId: number, page = 1, pageSize = 20) {
     const { rows, count } = await this.ctx.model.NotificationExportJob.findAndCountAll({
       where: { created_by: operatorId } as any,
-      order: [['id', 'DESC']],
-      offset: (page - 1) * pageSize,
-      limit: pageSize,
+      order: [['id', 'DESC']], offset: (page - 1) * pageSize, limit: pageSize,
     });
     return { list: rows, total: count };
   }
-
-  // -------- 内部 --------
 
   private async _countRows(filter: any): Promise<number> {
     const { where, params } = this._buildWhere(filter);
@@ -114,12 +93,8 @@ export default class NotificationExportService extends Service {
 
   private async _loadRows(filter: any): Promise<any[]> {
     const { where, params } = this._buildWhere(filter);
-    const sql = `SELECT m.id, t.code AS typeCode, m.user_id AS userId, m.channel,
-                  m.title, m.status, m.created_at AS createdAt
-                FROM notification_messages m
-                LEFT JOIN notification_types t ON t.id = m.type_id
-                WHERE ${where}
-                ORDER BY m.id DESC`;
+    const sql = `SELECT m.id, t.code AS typeCode, m.user_id AS userId, m.channel, m.title, m.status, m.created_at AS createdAt
+                FROM notification_messages m LEFT JOIN notification_types t ON t.id = m.type_id WHERE ${where} ORDER BY m.id DESC`;
     const [rows] = await this.ctx.model.query(sql, { replacements: params }) as any;
     return rows;
   }

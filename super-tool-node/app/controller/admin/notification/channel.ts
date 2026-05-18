@@ -1,9 +1,6 @@
-import { Controller } from 'egg';
+import BaseController from '../../base';
 
-/**
- * Admin 渠道服务商配置
- */
-export default class NotificationChannelController extends Controller {
+export default class NotificationChannelController extends BaseController {
 
   async list() {
     const { ctx } = this;
@@ -17,7 +14,7 @@ export default class NotificationChannelController extends Controller {
       limit: Number(pageSize),
       order: [['channel', 'ASC'], ['id', 'ASC']],
     });
-    (ctx as any).success({ list: rows, total: count });
+    this.success({ list: rows, total: count });
   }
 
   async update() {
@@ -26,19 +23,16 @@ export default class NotificationChannelController extends Controller {
     const row = await ctx.model.NotificationChannelConfig.findByPk(id);
     if (!row) ctx.throw(404, '渠道配置不存在');
     await row.update(ctx.request.body as any);
-    (ctx as any).success(row);
+    this.success(row);
   }
 
-  /**
-   * 测试 SMTP 连接
-   */
   async testSmtp() {
     const { ctx } = this;
     try {
       const ok = await ctx.service.mail.verify();
-      (ctx as any).success({ ok, message: 'SMTP 连接成功' });
+      this.success({ ok, message: 'SMTP 连接成功' });
     } catch (e: any) {
-      (ctx as any).success({ ok: false, message: `SMTP 连接失败: ${e.message}` });
+      this.success({ ok: false, message: `SMTP 连接失败: ${e.message}` });
     }
   }
 }

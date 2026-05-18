@@ -1,10 +1,10 @@
-import { Controller } from 'egg';
 import { Op } from 'sequelize';
+import BaseController from './base';
 
 /**
  * C 端（用户视角）通知 API
  */
-export default class NotificationController extends Controller {
+export default class NotificationController extends BaseController {
 
   /**
    * 消息列表
@@ -30,9 +30,9 @@ export default class NotificationController extends Controller {
       include: [{ model: ctx.model.NotificationType, as: 'type', attributes: ['id', 'code', 'name', 'icon', 'color'] }],
       offset: (Number(page) - 1) * Number(pageSize),
       limit: Number(pageSize),
-      order: [['createdAt', 'DESC']],
+      order: [['created_at', 'DESC']],
     });
-    (ctx as any).success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
+    this.success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
   }
 
   /**
@@ -44,7 +44,7 @@ export default class NotificationController extends Controller {
     const count = await ctx.model.NotificationMessage.count({
       where: { userId: user.id, isRead: 0, isArchived: 0 },
     });
-    (ctx as any).success({ count });
+    this.success({ count });
   }
 
   /**
@@ -64,7 +64,7 @@ export default class NotificationController extends Controller {
     if (!(msg as any).isRead) {
       await msg.update({ isRead: 1, readAt: new Date() });
     }
-    (ctx as any).success(msg);
+    this.success(msg);
   }
 
   /**
@@ -81,7 +81,7 @@ export default class NotificationController extends Controller {
       { isRead: 1, readAt: new Date() },
       { where: { id: { [Op.in]: ids }, userId: user.id, isRead: 0 } },
     );
-    (ctx as any).success({ affected });
+    this.success({ affected });
   }
 
   /**
@@ -94,7 +94,7 @@ export default class NotificationController extends Controller {
       { isRead: 1, readAt: new Date() },
       { where: { userId: user.id, isRead: 0, isArchived: 0 } },
     );
-    (ctx as any).success({ affected });
+    this.success({ affected });
   }
 
   /**
@@ -109,7 +109,7 @@ export default class NotificationController extends Controller {
       { where: { id, userId: user.id } },
     );
     if (affected === 0) ctx.throw(404, '消息不存在或无权操作');
-    (ctx as any).success();
+    this.success();
   }
 
   /**
@@ -118,8 +118,8 @@ export default class NotificationController extends Controller {
   async listPreferences() {
     const { ctx } = this;
     const user = (ctx as any).state?.user || (ctx as any).user;
-    const list = await ctx.service.notificationPreference.listForUser({ userId: user.id });
-    (ctx as any).success(list);
+    const list = await (ctx.service.notification as any).preference.listForUser({ userId: user.id });
+    this.success(list);
   }
 
   /**
@@ -129,12 +129,12 @@ export default class NotificationController extends Controller {
     const { ctx } = this;
     const user = (ctx as any).state?.user || (ctx as any).user;
     const body = ctx.request.body as any;
-    const row = await ctx.service.notificationPreference.upsert({
+    const row = await (ctx.service.notification as any).preference.upsert({
       userId: user.id,
       typeId: body.typeId,
       channel: body.channel,
       isSubscribed: !!body.isSubscribed,
     });
-    (ctx as any).success(row);
+    this.success(row);
   }
 }

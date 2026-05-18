@@ -1,9 +1,6 @@
-import { Controller } from 'egg';
+import BaseController from '../../base';
 
-/**
- * Admin 消息记录查询
- */
-export default class NotificationMessageController extends Controller {
+export default class NotificationMessageController extends BaseController {
 
   async list() {
     const { ctx } = this;
@@ -21,7 +18,7 @@ export default class NotificationMessageController extends Controller {
       limit: Number(pageSize),
       order: [['id', 'DESC']],
     });
-    (ctx as any).success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
+    this.success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
   }
 
   async detail() {
@@ -31,11 +28,9 @@ export default class NotificationMessageController extends Controller {
       include: [{ model: ctx.model.NotificationType, as: 'type', attributes: ['id', 'code', 'name'] }],
     });
     if (!msg) ctx.throw(404, '消息不存在');
-
     const sendLogs = await ctx.model.NotificationSendLog.findAll({
-      where: { messageId: id },
-      order: [['id', 'ASC']],
+      where: { messageId: id }, order: [['id', 'ASC']],
     });
-    (ctx as any).success({ message: msg, sendLogs });
+    this.success({ message: msg, sendLogs });
   }
 }
