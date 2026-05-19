@@ -34,20 +34,35 @@ export default class NotificationTaskController extends BaseController {
     if (!type) ctx.throw(404, '通知类型不存在');
     const adminUser = (ctx as any).adminUser || (ctx as any).state?.user;
 
+    if (!body.templateCode) ctx.throw(400, '请指定模板编码 templateCode');
+
+    // 若传了 audienceId，从受众分组中读取受众配置
+    let resolvedAudienceType = body.audienceType || 'static';
+    let resolvedStaticUserIds = body.staticUserIds || [];
+    let resolvedDynamicRules = body.dynamicRules || null;
+    if (body.audienceId) {
+      const audienceRow = await ctx.model.NotificationAudience.findByPk(body.audienceId);
+      if (!audienceRow) ctx.throw(404, '受众分组不存在');
+      const ag = audienceRow as any;
+      resolvedAudienceType = ag.audienceType;
+      resolvedStaticUserIds = ag.staticUserIds || [];
+      resolvedDynamicRules = ag.dynamicRules || null;
+    }
+
     const task = await ctx.model.NotificationTask.create({
       name: body.name || `手动任务-${new Date().toISOString()}`,
       description: body.description || null, typeId: body.typeId,
-      templateCode: body.templateCode || (type as any).code,
+      templateCode: body.templateCode,
       channels: body.channels || (type as any).defaultChannels,
       audienceId: body.audienceId || null,
-      audienceSnapshot: body.audienceType === 'static' ? { userIds: body.staticUserIds || [] } : null,
+      audienceSnapshot: resolvedAudienceType === 'static' ? { userIds: resolvedStaticUserIds } : null,
       variables: body.variables || {}, scheduleType: 'immediate',
       priority: body.priority ?? (type as any).priority ?? 2,
       status: 'running', source: 'admin',
       createdBy: adminUser?.id || null, startedAt: new Date(),
     });
 
-    this._runTask(task, type, body).catch((e) => {
+    this._runTask(task, type, { ...body, audienceType: resolvedAudienceType, staticUserIds: resolvedStaticUserIds, dynamicRules: resolvedDynamicRules }).catch((e) => {
       ctx.logger.error(`[notif.task] task ${task.id} run failed: ${e.message}`);
     });
     this.success(task);
@@ -58,8 +73,8 @@ export default class NotificationTaskController extends BaseController {
     try {
       const r = await (ctx.service.notification as any).core.sendByAudience({
         typeCode: type.code, audienceType: body.audienceType || 'static',
-        staticUserIds: body.staticUserIds || [], variables: body.variables || {},
-        channels: task.channels, taskId: task.id,
+        staticUserIds: body.staticUserIds || [], dynamicRules: body.dynamicRules || null,
+        variables: body.variables || {}, channels: task.channels, taskId: task.id,
       });
       await task.update({
         status: 'completed', finishedAt: new Date(),
@@ -78,11 +93,27 @@ export default class NotificationTaskController extends BaseController {
     const adminUser = (ctx as any).adminUser || (ctx as any).state?.user;
     const type = await ctx.model.NotificationType.findByPk(body.typeId);
     if (!type) ctx.throw(404, '通知类型不存在');
+    if (!body.templateCode) ctx.throw(400, '请指定模板编码 templateCode');
+
+    // 若传了 audienceId，从受众分组中读取受众配置
+    let resolvedAudienceType = body.audienceType || 'static';
+    let resolvedStaticUserIds = body.staticUserIds;
+    let resolvedDynamicRules = body.dynamicRules;
+    if (body.audienceId) {
+      const audienceRow = await ctx.model.NotificationAudience.findByPk(body.audienceId);
+      if (!audienceRow) ctx.throw(404, '受众分组不存在');
+      const ag = audienceRow as any;
+      resolvedAudienceType = ag.audienceType;
+      resolvedStaticUserIds = ag.staticUserIds || [];
+      resolvedDynamicRules = ag.dynamicRules || null;
+    }
+
     const task = await (ctx.service.notification as any).taskScheduler.createAndSchedule({
       name: body.name || `调度任务-${new Date().toISOString()}`,
-      typeId: body.typeId, templateCode: body.templateCode || (type as any).code,
+      typeId: body.typeId, templateCode: body.templateCode,
       channels: body.channels || (type as any).defaultChannels,
-      audienceType: body.audienceType || 'static', staticUserIds: body.staticUserIds,
+      audienceType: resolvedAudienceType, staticUserIds: resolvedStaticUserIds,
+      dynamicRules: resolvedDynamicRules,
       variables: body.variables || {}, sendType: body.sendType || 'immediate',
       scheduledAt: body.scheduledAt, cronExpression: body.cronExpression, rrule: body.rrule,
       undoWindowSec: body.undoWindowSec || 0,

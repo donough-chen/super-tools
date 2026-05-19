@@ -69,9 +69,10 @@ function _compileCondition(cond: Condition, params: any[], joins: Set<string>): 
     throw new Error(`字段 ${cond.field} 不支持操作符 ${cond.op}`);
   }
 
-  // 收集 join
+  // 收集 join（支持单条字符串或数组，Set 自动去重）
   if (meta.joinClause) {
-    joins.add(meta.joinClause);
+    const clauses = Array.isArray(meta.joinClause) ? meta.joinClause : [meta.joinClause];
+    clauses.forEach(c => joins.add(c));
   }
 
   const col = `${meta.table}.${meta.column}`;

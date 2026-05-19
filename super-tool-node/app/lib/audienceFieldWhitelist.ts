@@ -16,7 +16,7 @@ export interface FieldMeta {
   type: 'string' | 'number' | 'date' | 'boolean';
   label: string;
   ops: string[];
-  joinClause?: string;
+  joinClause?: string | string[];
 }
 
 export const AUDIENCE_FIELDS: Record<string, FieldMeta> = {
@@ -32,18 +32,26 @@ export const AUDIENCE_FIELDS: Record<string, FieldMeta> = {
     table: 'users', column: 'gender', type: 'number', label: '性别',
     ops: ['eq', 'ne', 'in'],
   },
-  'member.level_id': {
-    table: 'user_members', column: 'level_id', type: 'number', label: '会员等级',
+  'member.level': {
+    table: 'member_levels', column: 'level', type: 'number', label: '会员等级',
     ops: ['eq', 'ne', 'gt', 'gte', 'lt', 'lte', 'in'],
-    joinClause: 'LEFT JOIN user_members ON user_members.user_id = users.id',
+    joinClause: [
+      'LEFT JOIN user_members ON user_members.user_id = users.id',
+      'LEFT JOIN member_levels ON member_levels.id = user_members.level_id',
+    ],
   },
   'member.is_paid': {
     table: 'user_members', column: 'is_paid', type: 'boolean', label: '是否付费会员',
     ops: ['eq'],
     joinClause: 'LEFT JOIN user_members ON user_members.user_id = users.id',
   },
-  'member.expire_at': {
-    table: 'user_members', column: 'expire_at', type: 'date', label: '会员到期时间',
+  'member.paid_expire_at': {
+    table: 'user_members', column: 'paid_expire_at', type: 'date', label: '付费会员到期时间',
+    ops: ['gt', 'gte', 'lt', 'lte', 'between'],
+    joinClause: 'LEFT JOIN user_members ON user_members.user_id = users.id',
+  },
+  'member.level_expire_at': {
+    table: 'user_members', column: 'level_expire_at', type: 'date', label: '等级到期时间',
     ops: ['gt', 'gte', 'lt', 'lte', 'between'],
     joinClause: 'LEFT JOIN user_members ON user_members.user_id = users.id',
   },

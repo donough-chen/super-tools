@@ -40,7 +40,10 @@ export default () => {
       title: '已读', dataIndex: 'isRead', width: 60,
       render: (v: number) => v ? <Tag color="green">是</Tag> : <Tag>否</Tag>,
     },
-    { title: '创建时间', dataIndex: 'createdAt', width: 170 },
+    {
+      title: '创建时间', dataIndex: 'created_at', width: 160,
+      render: (v: string) => v ? new Date(v).toLocaleString('zh-CN') : '-',
+    },
     {
       title: '操作', width: 60,
       render: (_: any, r: any) => <a onClick={() => showDetail(r.id)}>详情</a>,

@@ -10,7 +10,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
 
   async createAndSchedule(input: {
     name: string; typeId: number; templateCode: string; channels: string[];
-    audienceType: string; staticUserIds?: number[]; variables: Record<string, any>;
+    audienceType: string; staticUserIds?: number[]; dynamicRules?: any; variables: Record<string, any>;
     sendType: SendType; scheduledAt?: string; cronExpression?: string; rrule?: string;
     undoWindowSec?: number; priority?: number; description?: string; createdBy?: number;
   }) {

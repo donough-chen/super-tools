@@ -42,11 +42,17 @@ export default class NotificationTemplateService extends BaseService {
     await ctx.model.transaction(async (t: any) => {
       const oldActive = await ctx.model.NotificationTemplate.findOne({ where: { typeId: tpl.typeId, channel: tpl.channel, status: 1 }, transaction: t });
       if (oldActive && oldActive.id !== tpl.id) {
-        await ctx.model.NotificationTemplateVersion.create({ templateId: oldActive.id, version: oldActive.currentVersion, titleTemplate: oldActive.titleTemplate, contentTemplate: oldActive.contentTemplate, extraConfig: oldActive.extraConfig, changeNote: `被 v${tpl.currentVersion} 替代`, publishedBy: input.operatorId }, { transaction: t });
+        const existOldSnap = await ctx.model.NotificationTemplateVersion.findOne({ where: { templateId: oldActive.id, version: oldActive.currentVersion }, transaction: t });
+        if (!existOldSnap) {
+          await ctx.model.NotificationTemplateVersion.create({ templateId: oldActive.id, version: oldActive.currentVersion, titleTemplate: oldActive.titleTemplate, contentTemplate: oldActive.contentTemplate, extraConfig: oldActive.extraConfig, changeNote: `被 v${tpl.currentVersion} 替代`, publishedBy: input.operatorId }, { transaction: t });
+        }
         await oldActive.update({ status: 2 }, { transaction: t });
       }
       await tpl.update({ status: 1, updatedBy: input.operatorId }, { transaction: t });
-      await ctx.model.NotificationTemplateVersion.create({ templateId: tpl.id, version: tpl.currentVersion, titleTemplate: tpl.titleTemplate, contentTemplate: tpl.contentTemplate, extraConfig: tpl.extraConfig, changeNote: input.changeNote || null, publishedBy: input.operatorId }, { transaction: t });
+      const existNewSnap = await ctx.model.NotificationTemplateVersion.findOne({ where: { templateId: tpl.id, version: tpl.currentVersion }, transaction: t });
+      if (!existNewSnap) {
+        await ctx.model.NotificationTemplateVersion.create({ templateId: tpl.id, version: tpl.currentVersion, titleTemplate: tpl.titleTemplate, contentTemplate: tpl.contentTemplate, extraConfig: tpl.extraConfig, changeNote: input.changeNote || null, publishedBy: input.operatorId }, { transaction: t });
+      }
     });
     return tpl.reload();
   }
