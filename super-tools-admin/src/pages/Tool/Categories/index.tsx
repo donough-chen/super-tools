@@ -84,7 +84,9 @@ const CategoriesPage: React.FC = () => {
         <Switch checked={v === 1} onChange={(c) => handleStatusToggle(row, c)} />
       ),
     },
-    { title: '创建时间', dataIndex: 'createdAt', width: 180 },
+    { title: '创建时间', dataIndex: 'created_at', width: 180,
+      render: (v: string) => v ? new Date(v).toLocaleString('zh-CN') : '-',
+    },
     {
       title: '操作',
       width: 140,

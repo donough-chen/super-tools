@@ -41,11 +41,11 @@ interface Category {
 }
 
 const LEVEL_NAME_MAP: Record<LevelCode, string> = {
-  free: '免费',
-  silver: '银',
-  gold: '金',
-  diamond: '钻',
-  black: '黑',
+  free: '普通用户',
+  silver: '银牌会员',
+  gold: '金牌会员',
+  diamond: '钻石会员',
+  black: '黑金会员',
 };
 
 const LEVEL_COLOR_MAP: Record<LevelCode, string> = {
