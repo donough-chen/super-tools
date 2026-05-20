@@ -82,6 +82,7 @@ export default () => {
       render: (v: string[]) => v?.map((c: string) => <Tag key={c}>{c}</Tag>),
     },
     { title: '优先级', dataIndex: 'priority', width: 70 },
+    { title: '图标', dataIndex: 'icon', width: 70 },
     {
       title: '状态', dataIndex: 'status', width: 80,
       render: (_: any, r: any) => (
@@ -140,6 +141,9 @@ export default () => {
           </Form.Item>
           <Form.Item name="priority" label="优先级" initialValue={2}>
             <Select options={[{ label: 'P0 紧急', value: 0 }, { label: 'P1 高', value: 1 }, { label: 'P2 普通', value: 2 }, { label: 'P3 低', value: 3 }]} />
+          </Form.Item>
+          <Form.Item name="icon" label="图标" initialValue={''}>
+            <Input />
           </Form.Item>
         </Form>
       </Modal>

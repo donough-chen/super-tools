@@ -51,23 +51,11 @@ export default (app: Application) => {
   router.delete('/api/users/:id', auth, perm('user:delete'), controller.user.destroy);
 
   // ==================== 用户管理增强（Spec-C2a） ====================
-  router.post('/api/admin/users/:id/reset-password',
-    auth, perm('user:reset-password'),
-    controller.user.resetPassword);
-  router.put('/api/admin/users/:id/status',
-    auth, perm('user:disable'),
-    controller.user.changeStatus);
-  router.put('/api/admin/users/:id/roles',
-    auth, perm('user:assign-roles'),
-    controller.user.assignRoles);
-  router.get('/api/admin/users/:id/devices',
-    auth, perm('user:device:list'),
-    controller.user.adminListDevices);
-  router.get('/api/admin/users/:id/addresses',
-    auth, perm('user:address:list'),
-    controller.user.adminListAddresses);
-
-
+  router.post('/api/admin/users/:id/reset-password', auth, perm('user:reset-password'), controller.user.resetPassword);
+  router.put('/api/admin/users/:id/status', auth, perm('user:disable'), controller.user.changeStatus);
+  router.put('/api/admin/users/:id/roles', auth, perm('user:assign-roles'), controller.user.assignRoles);
+  router.get('/api/admin/users/:id/devices', auth, perm('user:device:list'), controller.user.adminListDevices);
+  router.get('/api/admin/users/:id/addresses', auth, perm('user:address:list'), controller.user.adminListAddresses);
 
   // ==================== 角色管理 ====================
   router.get('/api/admin/roles', auth, perm('system:role:list'), controller.admin.role.index);
@@ -86,9 +74,7 @@ export default (app: Application) => {
   // 注意：精确路径（tree/modules/test）必须放在 :id 之前，否则被 :id 参数吞掉
   router.get('/api/admin/permissions/tree', auth, perm('system:permission:tree'), controller.admin.permission.tree);
   router.get('/api/admin/permissions/modules', auth, perm('system:permission:tree'), controller.admin.permission.modules);
-  router.get('/api/admin/permissions/test',
-    auth, perm('system:permission-test:run'),
-    (controller.admin as any).permission.test);
+  router.get('/api/admin/permissions/test', auth, perm('system:permission-test:run'), (controller.admin as any).permission.test);
   router.get('/api/admin/permissions/:id', auth, perm('system:permission:list'), controller.admin.permission.show);
   router.post('/api/admin/permissions', auth, perm('system:permission:create'), controller.admin.permission.create);
   router.put('/api/admin/permissions/:id', auth, perm('system:permission:update'), controller.admin.permission.update);
@@ -102,65 +88,33 @@ export default (app: Application) => {
   router.get('/api/admin/auth/permissions', auth, adminCtrl.auth.permissions);
 
   // ==================== 权限-角色联动 ====================
-  router.get('/api/admin/permissions/:id/holders',
-    auth, perm('system:permission:holders'),
-    adminCtrl.permission.holders);
-  router.put('/api/admin/permissions/:id/batch-assign',
-    auth, perm('system:permission:batch-assign'),
-    adminCtrl.permission.batchAssign);
+  router.get('/api/admin/permissions/:id/holders', auth, perm('system:permission:holders'), adminCtrl.permission.holders);
+  router.put('/api/admin/permissions/:id/batch-assign', auth, perm('system:permission:batch-assign'), adminCtrl.permission.batchAssign);
 
   // ==================== 审计日志 ====================
   // 注意：export 路由必须放在 :id 之前，否则 /export 被 :id 吞掉
-  router.get('/api/admin/audit-logs',
-    auth, perm('system:audit-log:list'),
-    adminCtrl.auditLog.list);
-  router.get('/api/admin/audit-logs/export',
-    auth, perm('system:audit-log:export'),
-    adminCtrl.auditLog.exportCsv);
-  router.get('/api/admin/audit-logs/:id',
-    auth, perm('system:audit-log:detail'),
-    adminCtrl.auditLog.detail);
+  router.get('/api/admin/audit-logs', auth, perm('system:audit-log:list'), adminCtrl.auditLog.list);
+  router.get('/api/admin/audit-logs/export', auth, perm('system:audit-log:export'), adminCtrl.auditLog.exportCsv);
+  router.get('/api/admin/audit-logs/:id', auth, perm('system:audit-log:detail'), adminCtrl.auditLog.detail);
 
   // ==================== 反馈（C 端） ====================
   // 可登录可不登录（controller 内手动解析 token）；限流 10 req/h/IP
   const userCtrl = controller as any;
-  router.post('/api/feedback',
-    app.middleware.rateLimit({ max: 10, window: 3600 }, app),
-    userCtrl.feedback.create);
+  router.post('/api/feedback', app.middleware.rateLimit({ max: 10, window: 3600 }, app), userCtrl.feedback.create);
 
   // ==================== 反馈（管理端） ====================
-  router.get('/api/admin/feedbacks',
-    auth, perm('feedback:list'),
-    adminCtrl.feedback.list);
-  router.post('/api/admin/feedbacks/:id/reply',
-    auth, perm('feedback:reply'),
-    adminCtrl.feedback.reply);
-  router.put('/api/admin/feedbacks/:id',
-    auth, perm('feedback:update'),
-    adminCtrl.feedback.update);
-  router.delete('/api/admin/feedbacks/:id',
-    auth, perm('feedback:delete'),
-    adminCtrl.feedback.destroy);
-  router.get('/api/admin/feedbacks/:id',
-    auth, perm('feedback:detail'),
-    adminCtrl.feedback.detail);
+  router.get('/api/admin/feedbacks', auth, perm('feedback:list'), adminCtrl.feedback.list);
+  router.post('/api/admin/feedbacks/:id/reply', auth, perm('feedback:reply'), adminCtrl.feedback.reply);
+  router.put('/api/admin/feedbacks/:id', auth, perm('feedback:update'), adminCtrl.feedback.update);
+  router.delete('/api/admin/feedbacks/:id', auth, perm('feedback:delete'), adminCtrl.feedback.destroy);
+  router.get('/api/admin/feedbacks/:id', auth, perm('feedback:detail'), adminCtrl.feedback.detail);
 
   // ==================== 数据统计 ====================
-  router.get('/api/admin/stats/overview',
-    auth, perm('stats:overview'),
-    adminCtrl.stats.overview);
-  router.get('/api/admin/stats/tool-usage',
-    auth, perm('stats:tool-usage'),
-    adminCtrl.stats.toolUsage);
-  router.get('/api/admin/stats/user-active',
-    auth, perm('stats:user-active'),
-    adminCtrl.stats.userActive);
-  router.get('/api/admin/stats/trend',
-    auth, perm('stats:trend'),
-    adminCtrl.stats.trend);
-  router.get('/api/admin/stats/export',
-    auth, perm('stats:export'),
-    adminCtrl.stats.exportCsv);
+  router.get('/api/admin/stats/overview', auth, perm('stats:overview'), adminCtrl.stats.overview);
+  router.get('/api/admin/stats/tool-usage', auth, perm('stats:tool-usage'), adminCtrl.stats.toolUsage);
+  router.get('/api/admin/stats/user-active', auth, perm('stats:user-active'), adminCtrl.stats.userActive);
+  router.get('/api/admin/stats/trend', auth, perm('stats:trend'), adminCtrl.stats.trend);
+  router.get('/api/admin/stats/export', auth, perm('stats:export'), adminCtrl.stats.exportCsv);
 
   // ==================== Stats 扩展 (Dashboard Phase 1) ====================
   router.get('/api/admin/stats/user-retention', auth, perm('stats:overview'), adminCtrl.stats.userRetention);
@@ -329,6 +283,7 @@ export default (app: Application) => {
   router.get('/api/admin/notification/queues/depths', auth, perm('notification:stats:view'), nCtrl.queueMonitor.depths);
 
   // ==================== 通知（C 端用户） ====================
+  router.get('/api/notification-types', auth, controller.notification.listTypes);
   router.get('/api/notifications/unread-count', auth, controller.notification.unreadCount);
   router.post('/api/notifications/mark-read', auth, controller.notification.markRead);
   router.post('/api/notifications/mark-all-read', auth, controller.notification.markAllRead);

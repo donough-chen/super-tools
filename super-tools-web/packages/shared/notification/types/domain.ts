@@ -4,6 +4,17 @@ export type NotificationChannel = 'in_app' | 'email' | 'sms';
 /** 优先级 (0=P0紧急 1=P1高 2=P2普通 3=P3低) */
 export type NotificationPriority = 0 | 1 | 2 | 3;
 
+/** 通知类型 */
+export interface NotificationType {
+  id: number;
+  code: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  category: 'system' | 'business' | 'marketing';
+  sortOrder: number;
+}
+
 /** 消息记录 */
 export interface NotificationMessage {
   id: number;

@@ -128,6 +128,30 @@ export default class NotificationController extends BaseController {
   }
 
   /**
+   * 消息类型列表（仅返回 default_channels 包含 in_app 的类型）
+   */
+  async listTypes() {
+    const { ctx } = this;
+    const rows = await ctx.model.NotificationType.findAll({
+      where: { status: 1 },
+      // 包含 defaultChannels 用于过滤，最终不返回给前端
+      attributes: ['id', 'code', 'name', 'icon', 'color', 'category', 'sortOrder', 'defaultChannels'],
+      order: [['sort_order', 'ASC']],
+    });
+    // 过滤 defaultChannels 包含 in_app 的类型，并移除该字段
+    const filtered = (rows as any[])
+      .filter((row) => {
+        const channels: string[] = row.defaultChannels || [];
+        return Array.isArray(channels) && channels.includes('in_app');
+      })
+      .map((row) => {
+        const { defaultChannels: _omit, ...rest } = row.toJSON ? row.toJSON() : row;
+        return rest;
+      });
+    this.success(filtered);
+  }
+
+  /**
    * 偏好列表
    */
   async listPreferences() {

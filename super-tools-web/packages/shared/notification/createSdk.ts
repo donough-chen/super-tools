@@ -1,6 +1,7 @@
 import { createApiClient, type ApiClientConfig } from './api/client';
 import { createMessagesApi } from './api/messages';
 import { createPreferencesApi } from './api/preferences';
+import { createTypesApi } from './api/types';
 import { createSocketClient, type SocketClientConfig } from './socket/client';
 
 /**
@@ -24,6 +25,7 @@ export function createNotificationSdk(opts: {
   return {
     messages: createMessagesApi(apiClient),
     preferences: createPreferencesApi(apiClient),
+    types: createTypesApi(apiClient),
     socket: createSocketClient(opts.socket),
   };
 }
