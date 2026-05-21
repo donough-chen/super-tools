@@ -48,7 +48,7 @@ const FeedbackPage: React.FC = () => {
         type,
         content: content.trim(),
         contact: contact.trim() || undefined,
-        platform: 'micro-tools',
+        platform: 'h5',
       });
       if (res?.code === 201 || res?.code === 200) {
         showToast('提交成功，感谢您的反馈', 'success');
@@ -70,7 +70,7 @@ const FeedbackPage: React.FC = () => {
 
   return (
     <div className="page-feedback">
-      <AppHeader title="意见反馈" showBack />
+      <AppHeader title="意见反馈" showBack onBack={() => navigateTo('/mine')} />
 
       <div className="page-feedback__form">
         {/* 类型 */}

@@ -6,6 +6,7 @@ import React, { FC, ReactNode } from 'react';
 import classnames from 'classnames';
 import { useNotificationStore } from '../../store';
 import './AppHeader.less';
+import { navigateBack } from '@/utils/navigator';
 
 export interface HeaderButtonConfig {
   type: 'search' | 'agent' | 'settings' | 'sort' | 'add' | 'scan' | 'message' | 'placeholder';
@@ -31,7 +32,7 @@ const AppHeader: FC<AppHeaderProps> = ({
   title,
   buttons = [],
   showBack = false,
-  onBack,
+  onBack = () => navigateBack(),
   rightSlot,
 }) => {
   const unreadCount = useNotificationStore(s => s.unreadCount);

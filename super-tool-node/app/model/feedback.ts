@@ -35,6 +35,8 @@ export default (app: Application) => {
     replyUserId:  { type: BIGINT.UNSIGNED, allowNull: true,  field: 'reply_user_id' },
     repliedAt:    { type: DATE, allowNull: true,  field: 'replied_at' },
     deletedAt:    { type: DATE, allowNull: true,  field: 'deleted_at' },
+    createdAt:    { type: DATE, allowNull: true,  field: 'created_at' },
+    updatedAt:    { type: DATE, allowNull: true,  field: 'updated_at' },
   }, {
     tableName: 'feedbacks',
     timestamps: true,

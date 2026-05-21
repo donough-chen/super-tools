@@ -1,5 +1,6 @@
 import { Service } from 'egg';
 import { Op } from 'sequelize';
+import moment from 'moment';
 
 export interface FeedbackCreatePayload {
   userId?: number | null;
@@ -203,6 +204,7 @@ export default class FeedbackService extends Service {
           variables: {
             feedbackTitle: ((fb as any).content || '').slice(0, 20) || '反馈',
             replyContent: replyContent.slice(0, 200),
+            repliedAt: moment().format('YYYY-MM-DD HH:mm:ss'),
           },
           extra: { feedbackId: id },
         });
@@ -245,6 +247,7 @@ export default class FeedbackService extends Service {
             variables: {
               feedbackTitle: ((fb as any).content || '').slice(0, 20) || '反馈',
               newStatus: STATUS_LABELS[payload.status] || String(payload.status),
+              updateAt: moment().format('YYYY-MM-DD HH:mm:ss'),
             },
             extra: { feedbackId: id },
           });

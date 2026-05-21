@@ -29,6 +29,7 @@ const MENU_ITEMS = [
   { key: 'settings', name: '设置', path: '/settings', icon: '/assets/icons/setting.png'},
   { key: 'help', name: '使用帮助', path: '/help', icon: '/assets/icons/help.png'},
   { key: 'logout', name: '退出登录', path: '', icon: '/assets/icons/logout.png'},
+  { key: 'feedback', name: '意见反馈', path: '/feedback', icon: '/assets/icons/feedback.png'},
 ];
 
 const MinePage: React.FC = () => {
