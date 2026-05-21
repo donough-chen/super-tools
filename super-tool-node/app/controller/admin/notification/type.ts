@@ -1,8 +1,15 @@
+/**
+ * @file 管理端 - 通知类型控制器
+ * @description 管理通知类型的 CRUD 操作。系统内置类型(is_system=1)不可删除、不可修改 code/category。
+ *              删除前检查是否有关联模板，有则拒绝删除。
+ * @module controller/admin/notification/type
+ */
 import { Op } from 'sequelize';
 import BaseController from '../../base';
 
 export default class NotificationTypeController extends BaseController {
 
+  /** 类型列表（分页），支持关键词搜索(code/name)、分类和状态筛选 */
   async list() {
     const { ctx } = this;
     const { keyword, category, status, page = 1, pageSize = 20 } = ctx.query;
@@ -25,6 +32,7 @@ export default class NotificationTypeController extends BaseController {
     this.success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
   }
 
+  /** 创建自定义通知类型（code 全局唯一） */
   async create() {
     const { ctx } = this;
     const body = ctx.request.body as any;
@@ -41,6 +49,7 @@ export default class NotificationTypeController extends BaseController {
     this.success(row);
   }
 
+  /** 更新通知类型（系统内置类型限制修改 code 和 category） */
   async update() {
     const { ctx } = this;
     const id = Number(ctx.params.id);
@@ -54,6 +63,7 @@ export default class NotificationTypeController extends BaseController {
     this.success(row);
   }
 
+  /** 删除通知类型（系统内置不可删除，有关联模板时拒绝） */
   async destroy() {
     const { ctx } = this;
     const id = Number(ctx.params.id);

@@ -1,5 +1,17 @@
+/**
+ * @file 通知统计服务
+ * @description 提供通知系统的多维度数据统计能力，支持概览、趋势、渠道分布、类型分布和发送漏斗。
+ *   所有统计接口均有 5 分钟内存缓存（可配置），最大查询跨度 90 天。
+ *
+ *   数据来源：
+ *   - notification_messages: 消息总量、已读率（用户视角）
+ *   - notification_send_logs: 发送量、送达率、失败率（渠道视角）
+ *
+ * @module service/notification/stats
+ */
 import { Service } from 'egg';
 
+/** 内存级统计缓存（key → {timestamp, data}），TTL 由 config.notification.stats.cacheMs 控制 */
 const CACHE = new Map<string, { at: number; data: any }>();
 interface Range { from: Date; to: Date; }
 
@@ -12,6 +24,7 @@ interface Range { from: Date; to: Date; }
  */
 export default class NotificationStatsService extends Service {
 
+  /** 概览统计：消息总量、发送数、送达数、失败数、跳过数、阅读率 */
   async overview(input: Range) {
     this._guardRange(input);
     return this._cached(`ov:${this._key(input)}`, async () => {
@@ -42,6 +55,7 @@ export default class NotificationStatsService extends Service {
     });
   }
 
+  /** 趋势统计：按天/小时粒度的发送量时序数据 */
   async trend(input: Range & { granularity: 'day' | 'hour' }) {
     this._guardRange(input);
     return this._cached(`tr:${input.granularity}:${this._key(input)}`, async () => {
@@ -59,6 +73,7 @@ export default class NotificationStatsService extends Service {
     });
   }
 
+  /** 渠道分布：各渠道的发送总量、成功数、失败数 */
   async byChannel(input: Range) {
     this._guardRange(input);
     return this._cached(`bc:${this._key(input)}`, async () => {
@@ -75,6 +90,7 @@ export default class NotificationStatsService extends Service {
     });
   }
 
+  /** 类型分布：发送量 Top N 的通知类型 */
   async byType(input: Range & { limit: number }) {
     this._guardRange(input);
     return this._cached(`bt:${input.limit}:${this._key(input)}`, async () => {
@@ -92,6 +108,7 @@ export default class NotificationStatsService extends Service {
     });
   }
 
+  /** 发送漏斗：total → queued → sent → delivered → read 各环节转化 */
   async funnel(input: Range & { typeKey?: string }) {
     this._guardRange(input);
     return this._cached(`fn:${input.typeKey ?? 'all'}:${this._key(input)}`, async () => {
@@ -132,13 +149,16 @@ export default class NotificationStatsService extends Service {
     });
   }
 
+  /** 清除统计缓存（规则变更或数据导入后调用） */
   invalidateCache() { CACHE.clear(); }
 
+  /** 校验时间范围不超过最大天数（默认 90 天） */
   private _guardRange(input: Range) {
     const days = (input.to.getTime() - input.from.getTime()) / 86400_000;
     if (days > ((this.app.config as any).notification?.stats?.maxRangeDays ?? 90)) this.ctx.throw(400, '统计时间范围超过 90 天');
   }
   private _key(input: Range) { return `${input.from.toISOString()}_${input.to.toISOString()}`; }
+  /** 内存缓存包装，避免频繁查询 DB（TTL 由 config.notification.stats.cacheMs 控制） */
   private async _cached<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const ttl = (this.app.config as any).notification?.stats?.cacheMs ?? 300_000;
     const c = CACHE.get(key);

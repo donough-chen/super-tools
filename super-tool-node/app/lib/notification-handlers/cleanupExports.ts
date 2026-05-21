@@ -1,3 +1,8 @@
+/**
+ * @file 导出文件清理处理器
+ * @description 定时清理已过期的导出文件：删除物理文件并将任务状态标记为 expired。
+ *   handler key: 'cleanupExports'
+ */
 import * as fs from 'fs';
 import { registerScheduleHandler } from '../../service/notification/schedule';
 

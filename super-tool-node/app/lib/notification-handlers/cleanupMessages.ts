@@ -1,3 +1,9 @@
+/**
+ * @file 消息清理处理器
+ * @description 定时清理过期的 notification_messages 记录。
+ *   默认保留 90 天，每次最多删除 50000 条（避免长事务锁表）。
+ *   handler key: 'cleanupMessages'
+ */
 import { registerScheduleHandler } from '../../service/notification/schedule';
 
 registerScheduleHandler('cleanupMessages', async (ctx, params: { retentionDays?: number }) => {

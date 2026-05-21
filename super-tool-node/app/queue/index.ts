@@ -1,3 +1,12 @@
+/**
+ * @file 队列生命周期管理器
+ * @description 管理通知系统 BullMQ 队列的启动和停止。
+ *   应用启动时初始化 send worker 和 export worker；
+ *   应用关闭时优雅停止所有 worker 并关闭队列连接。
+ *   通过 config.notification.enabled 控制是否启动队列。
+ *
+ * @module queue/index
+ */
 import { Application } from 'egg';
 import { startSendWorker } from './workers/send.worker';
 import { startExportWorker } from './workers/export.worker';

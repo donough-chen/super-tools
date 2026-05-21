@@ -1,3 +1,10 @@
+/**
+ * @file XLSX 文件构建器
+ * @description 将结构化数据生成 Excel (.xlsx) 文件，用于通知数据导出功能。
+ *   支持多 Sheet、自动创建目录、返回文件大小。
+ *
+ * @module lib/xlsxBuilder
+ */
 import * as XLSX from 'xlsx';
 import * as fs from 'fs';
 import * as path from 'path';

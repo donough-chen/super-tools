@@ -1,3 +1,11 @@
+/**
+ * @file Cron 表达式工具
+ * @description 提供 Cron 表达式的验证、下次触发时间计算和预览功能。
+ *   基于 cron-parser 库，默认时区 Asia/Shanghai。
+ *   用于任务调度服务中的 cron 类型任务。
+ *
+ * @module lib/cronHelper
+ */
 import * as cronParser from 'cron-parser';
 
 /**

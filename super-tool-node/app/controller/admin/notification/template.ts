@@ -1,8 +1,16 @@
+/**
+ * @file 管理端 - 通知模板控制器
+ * @description 管理通知模板的 CRUD、发布、预览、测试发送和版本回滚。
+ *              模板生命周期：草稿(0) → 已发布(1) → 已停用(2)。
+ *              发布时自动生成版本快照，支持回滚到历史版本。
+ * @module controller/admin/notification/template
+ */
 import BaseController from '../../base';
 import { renderTemplate } from '../../../lib/templateRenderer';
 
 export default class NotificationTemplateController extends BaseController {
 
+  /** 模板列表（分页），支持按类型/渠道/状态筛选 */
   async list() {
     const { ctx } = this;
     const { typeId, channel, status, page = 1, pageSize = 20 } = ctx.query;
@@ -21,6 +29,7 @@ export default class NotificationTemplateController extends BaseController {
     this.success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
   }
 
+  /** 模板详情，同时返回所有历史版本快照 */
   async detail() {
     const { ctx } = this;
     const id = Number(ctx.params.id);
@@ -34,6 +43,7 @@ export default class NotificationTemplateController extends BaseController {
     this.success({ template: tpl, versions });
   }
 
+  /** 创建草稿模板 */
   async create() {
     const { ctx } = this;
     const body = ctx.request.body as any;
@@ -47,6 +57,7 @@ export default class NotificationTemplateController extends BaseController {
     this.success(draft);
   }
 
+  /** 更新草稿模板（已发布状态不可直接修改） */
   async update() {
     const { ctx } = this;
     const id = Number(ctx.params.id);
@@ -59,6 +70,10 @@ export default class NotificationTemplateController extends BaseController {
     this.success(tpl);
   }
 
+  /**
+   * 发布模板
+   * 将草稿状态变为已发布，同时停用同类型同渠道的旧模板，生成版本快照
+   */
   async publish() {
     const { ctx } = this;
     const id = Number(ctx.params.id);
@@ -70,6 +85,10 @@ export default class NotificationTemplateController extends BaseController {
     this.success(tpl);
   }
 
+  /**
+   * 预览模板渲染结果
+   * 传入变量后返回渲染后的标题和正文，以及缺失变量列表
+   */
   async preview() {
     const { ctx } = this;
     const id = Number(ctx.params.id);
@@ -87,6 +106,10 @@ export default class NotificationTemplateController extends BaseController {
     });
   }
 
+  /**
+   * 测试发送
+   * 使用指定模板向目标用户发送一条真实通知（用于验证模板效果）
+   */
   async testSend() {
     const { ctx } = this;
     const id = Number(ctx.params.id);
@@ -103,6 +126,10 @@ export default class NotificationTemplateController extends BaseController {
     this.success(r);
   }
 
+  /**
+   * 版本回滚
+   * 将模板内容回滚到指定历史版本，同时备份当前版本
+   */
   async rollback() {
     const { ctx } = this;
     const templateId = Number(ctx.params.id);

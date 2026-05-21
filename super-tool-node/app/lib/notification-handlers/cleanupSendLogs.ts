@@ -1,3 +1,9 @@
+/**
+ * @file 发送日志清理处理器
+ * @description 定时清理过期的 notification_send_logs 记录。
+ *   默认保留 30 天，每次最多删除 50000 条。
+ *   handler key: 'cleanupSendLogs'
+ */
 import { registerScheduleHandler } from '../../service/notification/schedule';
 
 registerScheduleHandler('cleanupSendLogs', async (ctx, params: { retentionDays?: number }) => {

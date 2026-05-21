@@ -1,3 +1,14 @@
+/**
+ * @file 消息发送 Worker
+ * @description BullMQ Worker，消费 notif.send 队列中的发送任务。
+ *   每个 job 包含 messageId 和 channel，Worker 加载消息记录后
+ *   调用 channel service 的 dispatch 方法执行实际发送。
+ *
+ *   并发度通过 config.notification.queue.sendConcurrency 配置（默认 50）。
+ *   失败时由 BullMQ 自动重试（指数退避，最多 3 次）。
+ *
+ * @module queue/workers/send.worker
+ */
 import { Worker, Job } from 'bullmq';
 import { Application } from 'egg';
 

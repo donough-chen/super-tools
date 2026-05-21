@@ -1,3 +1,9 @@
+/**
+ * @file 用户订阅偏好模型 (notification_user_preferences)
+ * @description 稀疏存储用户对通知类型×渠道的订阅设置。
+ *   无记录=默认订阅；用户取消订阅时才插入 is_subscribed=0 的行。
+ *   唯一约束：(user_id, type_id, channel)
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

@@ -1,3 +1,11 @@
+/**
+ * @file 用户消息记录模型 (notification_messages) — 核心大表
+ * @description 存储用户视角的站内信消息实例，预计千万级数据量。
+ *   一条任务发送给 N 个用户 = N 条 messages 记录。
+ *   记录已读/归档状态，支持幂等键防重复。
+ *   关联：belongsTo NotificationType, belongsTo NotificationTask
+ *   无 updatedAt（只增不改，标记已读通过单独字段）
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

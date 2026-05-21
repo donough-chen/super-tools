@@ -1,3 +1,11 @@
+/**
+ * @file 通知模板模型 (notification_templates)
+ * @description 存储各渠道的消息模板，支持 Mustache 变量语法和版本管理。
+ *   (code, channel) 联合唯一标识一个模板。
+ *   状态：0=草稿, 1=已发布, 2=已停用
+ *   关联：belongsTo NotificationType, hasMany NotificationTemplateVersion
+ *   软删除：paranoid=true
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

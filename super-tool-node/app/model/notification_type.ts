@@ -1,3 +1,10 @@
+/**
+ * @file 通知类型模型 (notification_types)
+ * @description 定义系统支持的所有通知类型分层分类体系。
+ *   支持 parent_id 树形结构，预置 24 种系统类型(is_system=1)。
+ *   关联：hasMany NotificationTemplate
+ *   软删除：paranoid=true
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

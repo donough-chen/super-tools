@@ -1,3 +1,10 @@
+/**
+ * @file 频控配置模型 (notification_rate_limit_config)
+ * @description 配置用户/渠道/类型三维度的发送频率限制规则。
+ *   scope: global_user(全局用户级) | channel(渠道级) | type(类型级)
+ *   window: hour | day | week
+ *   规则缓存 5 分钟，修改后清除 Redis 缓存立即生效。
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

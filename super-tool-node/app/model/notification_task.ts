@@ -1,3 +1,10 @@
+/**
+ * @file 发送任务模型 (notification_tasks)
+ * @description 管理通知发送任务的完整生命周期记录。
+ *   支持即时/定时/Cron/RRULE 四种调度模式。
+ *   状态机：pending → queued → running → completed | paused | cancelled | failed
+ *   记录发送统计（total/success/fail/skipped）和执行时间。
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

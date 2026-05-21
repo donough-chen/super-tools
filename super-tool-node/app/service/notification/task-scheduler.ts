@@ -1,13 +1,34 @@
+/**
+ * @file 任务调度服务
+ * @description 管理通知发送任务的调度生命周期，支持四种调度模式：
+ *   - immediate: 立即发送（可配置撤销窗口）
+ *   - scheduled: 定时发送（指定时间点）
+ *   - cron: 周期发送（Cron 表达式）
+ *   - rrule: 复杂周期（iCalendar RRULE 表达式）
+ *
+ * 核心功能：
+ * - createAndSchedule(): 创建任务并注册到 BullMQ 队列
+ * - pause/resume/cancel/undo: 任务生命周期控制
+ * - recoverScheduledTasks(): 服务重启后恢复未完成的调度任务
+ * - scanStuckTasks(): 检测并标记超时卡死的任务
+ *
+ * @module service/notification/task-scheduler
+ */
 import BaseService from '../base';
 import { getSendQueue } from '../../queue/queues';
 import { isValidCron, getNextCronTime } from '../../lib/cronHelper';
 import { isValidRRule, getNextOccurrence } from '../../lib/rruleHelper';
+import task from '@/controller/admin/notification/task';
 
 type SendType = 'immediate' | 'scheduled' | 'cron' | 'rrule';
 type TaskStatus = 'pending' | 'scheduled' | 'running' | 'paused' | 'completed' | 'failed' | 'canceled';
 
 export default class NotificationTaskSchedulerService extends BaseService {
 
+  /**
+   * 创建任务并注册到队列
+   * 根据 sendType 设置初始状态和 nextFireAt，然后调用 _scheduleTask 入队
+   */
   async createAndSchedule(input: {
     name: string; typeId: number; templateCode: string; channels: string[];
     audienceType: string; staticUserIds?: number[]; dynamicRules?: any; variables: Record<string, any>;
@@ -19,6 +40,8 @@ export default class NotificationTaskSchedulerService extends BaseService {
     if (input.sendType === 'rrule' && input.rrule && !isValidRRule(input.rrule)) ctx.throw(400, 'RRULE 格式非法');
     if (input.sendType === 'scheduled' && input.scheduledAt && new Date(input.scheduledAt).getTime() - Date.now() < 30000) ctx.throw(400, '定时时间必须在 30 秒后');
 
+    // 根据调度类型设置初始状态和下次触发时间
+    // immediate + undoWindowSec: 延迟发送（给用户撤销窗口）
     let status: TaskStatus = 'pending';
     let nextFireAt: Date | null = null;
     switch (input.sendType) {
@@ -42,6 +65,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return task;
   }
 
+  /** 暂停任务（仅 running/scheduled 状态可暂停），同时从队列移除 */
   async pause(taskId: number) {
     const { ctx } = this;
     const task = await ctx.model.NotificationTask.findByPk(taskId);
@@ -52,6 +76,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return task;
   }
 
+  /** 恢复已暂停的任务，重新注册到队列 */
   async resume(taskId: number) {
     const { ctx } = this;
     const task = await ctx.model.NotificationTask.findByPk(taskId);
@@ -62,6 +87,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return task;
   }
 
+  /** 取消任务（已完成/已取消的不可再取消） */
   async cancel(taskId: number) {
     const { ctx } = this;
     const task = await ctx.model.NotificationTask.findByPk(taskId);
@@ -72,6 +98,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return task;
   }
 
+  /** 撤销任务（仅限带撤销窗口的即时任务，且在窗口期内） */
   async undo(taskId: number) {
     const { ctx } = this;
     const task = await ctx.model.NotificationTask.findByPk(taskId);
@@ -84,6 +111,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return task;
   }
 
+  /** 服务重启后恢复未完成的 cron/rrule 任务 */
   async recoverScheduledTasks() {
     const tasks = await this.ctx.model.NotificationTask.findAll({ where: { status: ['scheduled', 'running'], scheduleType: ['cron', 'rrule'] } });
     for (const task of tasks) {
@@ -93,6 +121,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return tasks.length;
   }
 
+  /** 检测并标记超时卡死的任务（running 超过 30 分钟） */
   async scanStuckTasks() {
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
     const [affectedCount] = await this.ctx.model.NotificationTask.update(
@@ -103,6 +132,13 @@ export default class NotificationTaskSchedulerService extends BaseService {
     return affectedCount;
   }
 
+  /**
+   * 将任务注册到 BullMQ 队列
+   * - immediate: 延迟 = undoWindowSec（或 0）
+   * - scheduled: 延迟 = scheduledAt - now
+   * - cron: 使用 BullMQ repeat 模式
+   * - rrule: 计算下次触发时间作为延迟（链式调度）
+   */
   private async _scheduleTask(task: any) {
     const t = task.toJSON ? task.toJSON() : task;
     const queue = getSendQueue(this.app);
@@ -114,6 +150,7 @@ export default class NotificationTaskSchedulerService extends BaseService {
     }
   }
 
+  /** 从队列中移除任务（暂停/取消时调用） */
   private async _removeFromQueue(task: any) {
     const t = task.toJSON ? task.toJSON() : task;
     const queue = getSendQueue(this.app);

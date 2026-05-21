@@ -1,3 +1,11 @@
+/**
+ * @file RRULE 表达式工具
+ * @description 提供 iCalendar RRULE 表达式的解析、验证和下次触发时间计算。
+ *   基于 rrule 库，用于任务调度服务中的复杂周期任务。
+ *   支持 FREQ=DAILY/WEEKLY/MONTHLY 等标准 RRULE 语法。
+ *
+ * @module lib/rruleHelper
+ */
 import { RRule } from 'rrule';
 
 /**

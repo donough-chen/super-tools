@@ -1,7 +1,14 @@
+/**
+ * @file 管理端 - 消息记录控制器
+ * @description 查看系统中所有用户的通知消息记录，支持按用户/类型/任务/已读状态筛选。
+ *              详情接口同时返回该消息的所有渠道下发日志(send_logs)。
+ * @module controller/admin/notification/message
+ */
 import BaseController from '../../base';
 
 export default class NotificationMessageController extends BaseController {
 
+  /** 消息列表（分页），支持多维度筛选 */
   async list() {
     const { ctx } = this;
     const { userId, typeId, taskId, isRead, page = 1, pageSize = 20 } = ctx.query;
@@ -21,6 +28,7 @@ export default class NotificationMessageController extends BaseController {
     this.success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
   }
 
+  /** 消息详情，包含关联的渠道下发日志 */
   async detail() {
     const { ctx } = this;
     const id = Number(ctx.params.id);

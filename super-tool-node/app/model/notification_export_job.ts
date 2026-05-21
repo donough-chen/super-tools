@@ -1,3 +1,9 @@
+/**
+ * @file 导出任务模型 (notification_export_jobs)
+ * @description 管理通知数据异步导出任务的状态和文件信息。
+ *   状态：pending → running → completed | failed | expired
+ *   文件默认 7 天过期，由 cleanupExports schedule 自动清理。
+ */
 import { Application } from 'egg';
 
 export default (app: Application) => {

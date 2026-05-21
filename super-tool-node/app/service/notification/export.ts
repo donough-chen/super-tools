@@ -1,3 +1,14 @@
+/**
+ * @file 数据导出服务
+ * @description 管理通知数据的异步导出流程：
+ *   1. create(): 校验行数限制 → 创建任务记录 → 入队异步执行
+ *   2. executeJob(): 加载数据 → 生成 XLSX 文件 → 更新任务状态 → 可选发送邮件通知
+ *   3. getDownloadStream(): 校验状态和过期 → 返回文件流
+ *
+ *   导出文件默认 7 天过期，由 cleanupExports schedule 自动清理。
+ *
+ * @module service/notification/export
+ */
 import { Service } from 'egg';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -12,6 +23,7 @@ export interface CreateExportInput {
 
 export default class NotificationExportService extends Service {
 
+  /** 创建导出任务：校验行数限制 → 创建记录 → 入队异步执行（失败则降级同步执行） */
   async create(input: CreateExportInput) {
     const { ctx, app } = this;
     const exportCfg = (app.config as any).notification.export;
@@ -33,6 +45,7 @@ export default class NotificationExportService extends Service {
     return job;
   }
 
+  /** 执行导出任务：加载数据 → 生成 XLSX → 更新状态 → 可选发送邮件通知 */
   async executeJob(jobId: number) {
     const { ctx, app } = this;
     const exportCfg = (app.config as any).notification.export;
@@ -65,6 +78,7 @@ export default class NotificationExportService extends Service {
     }
   }
 
+  /** 获取导出文件下载流（校验状态、过期、文件存在性） */
   async getDownloadStream(jobId: number) {
     const { ctx } = this;
     const job = await ctx.model.NotificationExportJob.findByPk(jobId);
@@ -84,6 +98,7 @@ export default class NotificationExportService extends Service {
     return { list: rows, total: count };
   }
 
+  /** 统计筛选条件下的消息总数（用于导出前校验行数限制） */
   private async _countRows(filter: any): Promise<number> {
     const { where, params } = this._buildWhere(filter);
     const sql = `SELECT COUNT(*) AS cnt FROM notification_messages m WHERE ${where}`;
@@ -91,6 +106,7 @@ export default class NotificationExportService extends Service {
     return Number(r.cnt ?? 0);
   }
 
+  /** 加载筛选条件下的消息数据（用于导出） */
   private async _loadRows(filter: any): Promise<any[]> {
     const { where, params } = this._buildWhere(filter);
     const sql = `SELECT m.id, t.code AS typeCode, m.user_id AS userId, m.channel, m.title, m.status, m.created_at AS createdAt
@@ -99,6 +115,7 @@ export default class NotificationExportService extends Service {
     return rows;
   }
 
+  /** 构建 SQL WHERE 子句和参数（支持时间范围/类型/渠道/状态筛选） */
   private _buildWhere(filter: any) {
     const clauses: string[] = ['m.created_at BETWEEN ? AND ?'];
     const params: any[] = [filter.from, filter.to];

@@ -1,3 +1,9 @@
+/**
+ * @file 定时调度元数据模型 (notification_schedules)
+ * @description 存储通知系统内部定时任务的配置和执行状态。
+ *   每条记录对应一个 cron 定时任务（如消息清理、会员到期提醒等）。
+ *   handler 字段对应后端注册的处理器函数。
+ */
 import { Application } from 'egg';
 
 export default (app: Application) => {

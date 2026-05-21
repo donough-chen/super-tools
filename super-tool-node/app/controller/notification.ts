@@ -1,13 +1,19 @@
+/**
+ * @file C 端（用户视角）通知 API 控制器
+ * @description 提供用户侧的通知消息管理接口，包括消息列表、未读计数、标记已读、归档、
+ *              通知类型查询和订阅偏好管理。所有接口均需 JWT 鉴权。
+ *              仅展示 channels 包含 in_app 的站内信消息。
+ * @module controller/notification
+ */
 import { Op } from 'sequelize';
 import BaseController from './base';
 
-/**
- * C 端（用户视角）通知 API
- */
 export default class NotificationController extends BaseController {
 
   /**
-   * 消息列表
+   * 消息列表（分页）
+   * 支持按已读状态、通知类型、归档状态筛选
+   * 仅返回 channels 包含 in_app 的站内信消息
    */
   async list() {
     const { ctx } = this;
@@ -39,7 +45,8 @@ export default class NotificationController extends BaseController {
   }
 
   /**
-   * 未读数
+   * 未读消息数量
+   * 用于前端消息铃铛角标展示，仅统计未归档的站内信
    */
   async unreadCount() {
     const { ctx } = this;
@@ -57,6 +64,7 @@ export default class NotificationController extends BaseController {
 
   /**
    * 消息详情
+   * 查看消息详情时自动标记为已读（触发 read_at 回写）
    */
   async detail() {
     const { ctx } = this;
@@ -77,6 +85,7 @@ export default class NotificationController extends BaseController {
 
   /**
    * 批量标记已读
+   * @body ids - 消息ID数组，仅标记属于当前用户且未读的消息
    */
   async markRead() {
     const { ctx } = this;
@@ -94,6 +103,7 @@ export default class NotificationController extends BaseController {
 
   /**
    * 全部标记已读
+   * 将当前用户所有未读、未归档的站内信标记为已读
    */
   async markAllRead() {
     const { ctx } = this;
@@ -113,7 +123,8 @@ export default class NotificationController extends BaseController {
   }
 
   /**
-   * 归档
+   * 归档消息
+   * 归档后消息不在主列表展示，但可通过 archived=1 查询
    */
   async archive() {
     const { ctx } = this;
@@ -128,7 +139,8 @@ export default class NotificationController extends BaseController {
   }
 
   /**
-   * 消息类型列表（仅返回 default_channels 包含 in_app 的类型）
+   * 消息类型列表
+   * 仅返回 defaultChannels 包含 in_app 的启用类型，用于 C 端筛选和偏好设置
    */
   async listTypes() {
     const { ctx } = this;
@@ -152,7 +164,8 @@ export default class NotificationController extends BaseController {
   }
 
   /**
-   * 偏好列表
+   * 用户订阅偏好列表
+   * 返回所有通知类型×渠道的订阅状态（稀疏存储：无记录=默认订阅）
    */
   async listPreferences() {
     const { ctx } = this;
@@ -162,7 +175,8 @@ export default class NotificationController extends BaseController {
   }
 
   /**
-   * 偏好更新
+   * 更新订阅偏好
+   * 用户可取消/恢复对特定类型×渠道的订阅（user_cancelable=0 的类型不允许取消）
    */
   async upsertPreference() {
     const { ctx } = this;

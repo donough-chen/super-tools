@@ -1,3 +1,9 @@
+/**
+ * @file 受众分组模型 (notification_audiences)
+ * @description 定义通知目标用户群体，支持全量/静态/动态三种圈选模式。
+ *   动态规则存储为 JSON，由 audienceRuleCompiler 编译为 SQL 执行。
+ *   软删除：paranoid=true
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

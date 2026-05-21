@@ -1,3 +1,13 @@
+/**
+ * @file BullMQ 队列实例工厂
+ * @description 提供通知系统所有 BullMQ 队列的单例获取和关闭方法。
+ *   - notif.send: 消息发送队列（默认 3 次重试，指数退避 2s 起）
+ *   - notif.export: 数据导出队列（默认 2 次重试，指数退避 5s 起）
+ *
+ *   队列连接使用环境变量 REDIS_HOST/REDIS_PORT/REDIS_PASS 配置。
+ *
+ * @module queue/queues
+ */
 import { Queue, QueueEvents } from 'bullmq';
 import { Application } from 'egg';
 

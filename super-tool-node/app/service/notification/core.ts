@@ -1,23 +1,41 @@
+/**
+ * @file 通知核心发送服务
+ * @description 通知系统的核心发送引擎，负责完整的发送流水线：
+ *   1. 加载并校验通知类型
+ *   2. 检查用户订阅偏好（preference）→ 过滤渠道
+ *   3. 检查静默时段（quiet hours）→ 过滤渠道
+ *   4. 检查频率限制（rate limit）→ 决定是否跳过
+ *   5. 渲染模板 → 创建消息记录 → 入队异步发送
+ *
+ * 提供三种发送入口：
+ * - send(): 单用户发送（经过完整过滤链）
+ * - sendDirect(): 单用户直接发送（跳过偏好/静默/频控检查）
+ * - sendByAudience(): 批量受众发送（逐用户调用 send）
+ *
+ * @module service/notification/core
+ */
 import BaseService from '../base';
 import { getSendQueue } from '../../queue/queues';
 
+/** 单用户发送入参 */
 export interface SendInput {
-  typeCode: string;
-  userId: number;
-  variables: Record<string, any>;
-  channels?: ('in_app' | 'email' | 'sms')[];
-  taskId?: number | null;
-  idempotentKey?: string;
-  extra?: Record<string, any>;
+  typeCode: string;       // 通知类型编码（如 BUSINESS_FEEDBACK_REPLY）
+  userId: number;         // 目标用户ID
+  variables: Record<string, any>;  // 模板渲染变量
+  channels?: ('in_app' | 'email' | 'sms')[];  // 指定渠道（不传则使用类型默认渠道）
+  taskId?: number | null;          // 关联任务ID
+  idempotentKey?: string;          // 幂等键，防止重复发送
+  extra?: Record<string, any>;     // 扩展数据（如跳转链接、图片等）
 }
 
 export interface SendDirectInput extends SendInput {}
 
+/** 批量受众发送入参 */
 export interface SendByAudienceInput {
   typeCode: string;
-  audienceType: 'all' | 'static' | 'dynamic';
-  staticUserIds?: number[];
-  dynamicRules?: any;
+  audienceType: 'all' | 'static' | 'dynamic';  // 受众类型
+  staticUserIds?: number[];   // static 模式下的用户ID列表
+  dynamicRules?: any;         // dynamic 模式下的规则 JSON
   variables: Record<string, any>;
   channels?: ('in_app' | 'email' | 'sms')[];
   taskId?: number | null;
@@ -31,6 +49,11 @@ export interface SendResult {
 
 export default class NotificationCoreService extends BaseService {
 
+  /**
+   * 单用户发送（完整过滤链）
+   * 流程：校验类型 → 偏好过滤 → 静默过滤 → 频控检查 → 分发
+   * 任何环节被过滤都返回 skipped=true 并附带原因
+   */
   async send(input: SendInput): Promise<SendResult> {
     const { ctx } = this;
     const ns = ctx.service.notification as any;
@@ -39,6 +62,7 @@ export default class NotificationCoreService extends BaseService {
     const defaultChannels: string[] = type.defaultChannels || [];
     const requestedChannels = input.channels || defaultChannels;
 
+    // 第一层过滤：用户订阅偏好（稀疏存储，无记录=已订阅）
     const allowedChannels: string[] = [];
     for (const ch of requestedChannels) {
       if (!defaultChannels.includes(ch) && !input.channels) continue;
@@ -51,6 +75,7 @@ export default class NotificationCoreService extends BaseService {
       return { skipped: true, reason: 'no_subscribed_channel', messages: [] };
     }
 
+    // 第二层过滤：静默时段（按类型 policy 和用户配置判断）
     const postQuietChannels: string[] = [];
     for (const ch of allowedChannels) {
       const quietResult = await ns.quietHours.isQuietNow({
@@ -63,6 +88,7 @@ export default class NotificationCoreService extends BaseService {
       return { skipped: true, reason: 'quiet_hours', messages: [] };
     }
 
+    // 第三层过滤：频率限制（Redis 原子计数，超限则整体跳过）
     const rateResult = await ns.rateLimit.isLimited({
       userId: input.userId, typeId: type.id, channel: postQuietChannels[0], priority: type.priority ?? 2,
     });
@@ -78,6 +104,7 @@ export default class NotificationCoreService extends BaseService {
     });
   }
 
+  /** 直接发送（跳过偏好/静默/频控检查），用于测试发送和系统强制通知 */
   async sendDirect(input: SendDirectInput): Promise<SendResult> {
     const type = await this._loadEnabledType(input.typeCode);
     const channels = input.channels?.length ? input.channels : (type.defaultChannels || []);
@@ -87,6 +114,7 @@ export default class NotificationCoreService extends BaseService {
     });
   }
 
+  /** 批量受众发送：解析受众 → 逐用户调用 send()，统计成功/跳过/失败 */
   async sendByAudience(input: SendByAudienceInput) {
     const { ctx } = this;
     const ns = ctx.service.notification as any;
@@ -111,6 +139,7 @@ export default class NotificationCoreService extends BaseService {
     return { totalUsers: userIds.length, totalMessages, skippedCount };
   }
 
+  /** 加载并校验通知类型（必须存在且启用） */
   private async _loadEnabledType(typeCode: string) {
     const { ctx } = this;
     const type = await ctx.model.NotificationType.findOne({ where: { code: typeCode } });
@@ -119,6 +148,11 @@ export default class NotificationCoreService extends BaseService {
     return type;
   }
 
+  /**
+   * 实际分发逻辑：渲染模板 → 创建消息记录 → 入队异步发送
+   * 模板渲染失败时降级使用 variables 中的原始内容
+   * 入队失败时降级为同步发送（保证消息不丢失）
+   */
   private async _dispatchToUser(args: {
     type: any; userId: number; channels: ('in_app' | 'email' | 'sms')[];
     variables: Record<string, any>; taskId: number | null;

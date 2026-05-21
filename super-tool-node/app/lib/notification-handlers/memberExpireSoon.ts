@@ -1,3 +1,9 @@
+/**
+ * @file 会员到期提醒处理器
+ * @description 定时扫描即将到期的会员订阅，发送到期提醒通知。
+ *   支持配置多个提醒窗口（默认 7天/3天/1天前），逐用户发送 MEMBER_EXPIRE_SOON 类型通知。
+ *   handler key: 'memberExpireSoon'
+ */
 import { registerScheduleHandler } from '../../service/notification/schedule';
 
 registerScheduleHandler('memberExpireSoon', async (ctx, params: { days?: number[] }) => {

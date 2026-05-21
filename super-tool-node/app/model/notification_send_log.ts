@@ -1,3 +1,11 @@
+/**
+ * @file 渠道下发日志模型 (notification_send_logs) — 核心大表
+ * @description 记录每个渠道的实际下发动作审计日志，预计千万级数据量。
+ *   一条 message 发到 3 个渠道 = 3 条 send_logs。
+ *   记录完整的发送生命周期：queued → sending → sent → delivered | failed | skipped
+ *   支持重试记录(attempt)、耗时统计(cost_ms)、服务商原始响应。
+ *   保留策略：默认 90 天，由 cleanupSendLogs schedule 自动清理。
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

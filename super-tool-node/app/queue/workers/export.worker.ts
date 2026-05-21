@@ -1,3 +1,13 @@
+/**
+ * @file 数据导出 Worker
+ * @description BullMQ Worker，消费 notif.export 队列中的导出任务。
+ *   每个 job 包含 jobId，Worker 调用 export service 的 executeJob 方法
+ *   执行数据查询、XLSX 生成和可选的邮件通知。
+ *
+ *   并发度通过 config.notification.export.concurrency 配置。
+ *
+ * @module queue/workers/export.worker
+ */
 import { Worker, Job } from 'bullmq';
 import { Application } from 'egg';
 

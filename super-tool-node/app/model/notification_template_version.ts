@@ -1,3 +1,8 @@
+/**
+ * @file 模板版本快照模型 (notification_template_versions)
+ * @description 记录模板每次发布时的完整快照，支持版本对比和回滚。
+ *   使用 published_at 作为 createdAt 时间戳。
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

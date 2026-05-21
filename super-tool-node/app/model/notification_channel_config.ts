@@ -1,3 +1,9 @@
+/**
+ * @file 渠道服务商配置模型 (notification_channel_configs)
+ * @description 配置各发送渠道的服务商参数（SMTP/短信SDK/站内信）。
+ *   同一渠道可配置多个服务商实现主备切换，config 字段中敏感信息 AES 加密。
+ *   支持健康检查状态和成功率监控。
+ */
 import { Application } from 'egg';
 import { DataTypes } from 'sequelize';
 

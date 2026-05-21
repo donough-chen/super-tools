@@ -1,3 +1,13 @@
+/**
+ * @file 通知模板服务
+ * @description 管理模板的渲染、创建草稿、发布版本和版本回滚。
+ *   - renderByCode(): 根据类型编码+渠道查找已发布模板并渲染变量
+ *   - createDraft(): 创建草稿模板（自动递增版本号）
+ *   - publishVersion(): 发布模板（停用旧版本 + 生成快照）
+ *   - rollbackToVersion(): 回滚到历史版本（备份当前 + 恢复目标）
+ *
+ * @module service/notification/template
+ */
 import BaseService from '../base';
 import { renderTemplate } from '../../lib/templateRenderer';
 import type { EscapeMode } from '../../lib/templateRenderer';
@@ -7,6 +17,7 @@ export interface RenderResult { title: string; content: string; templateId: numb
 
 export default class NotificationTemplateService extends BaseService {
 
+  /** 根据类型编码+渠道查找已发布模板并渲染变量，短信渠道不做 HTML 转义 */
   async renderByCode(input: RenderByCodeInput): Promise<RenderResult> {
     const { ctx } = this;
     const type = await ctx.model.NotificationType.findOne({ where: { code: input.typeCode, status: 1 } });
@@ -20,6 +31,7 @@ export default class NotificationTemplateService extends BaseService {
     return { title: titleResult.result, content: contentResult.result, templateId: template.id, templateVersion: template.currentVersion };
   }
 
+  /** 创建草稿模板，自动递增版本号（包含已删除的同 code 模板） */
   async createDraft(input: { typeId: number; code: string; name: string; channel: 'in_app' | 'email' | 'sms'; titleTemplate?: string; contentTemplate: string; extraConfig?: Record<string, any>; sampleVariables?: Record<string, any>; description?: string; operatorId: number }) {
     const { ctx } = this;
     const last = await ctx.model.NotificationTemplate.findOne({ where: { code: input.code, channel: input.channel }, order: [['currentVersion', 'DESC']], paranoid: false });
@@ -33,6 +45,12 @@ export default class NotificationTemplateService extends BaseService {
     });
   }
 
+  /**
+   * 发布模板（事务操作）
+   * 1. 停用同类型同渠道的旧活跃模板（并保存其快照）
+   * 2. 将当前模板状态置为已发布
+   * 3. 生成当前版本的快照记录
+   */
   async publishVersion(input: { templateId: number; operatorId: number; changeNote?: string }) {
     const { ctx } = this;
     const tpl = await ctx.model.NotificationTemplate.findByPk(input.templateId);
@@ -57,6 +75,12 @@ export default class NotificationTemplateService extends BaseService {
     return tpl.reload();
   }
 
+  /**
+   * 回滚到历史版本（事务操作）
+   * 1. 备份当前版本为快照
+   * 2. 用目标版本内容覆盖当前模板，版本号+1
+   * 3. 生成新版本快照（标记为回滚）
+   */
   async rollbackToVersion(input: { templateId: number; versionId: number; operatorId: number }) {
     const { ctx } = this;
     const tpl = await ctx.model.NotificationTemplate.findByPk(input.templateId);
