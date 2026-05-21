@@ -59,6 +59,11 @@ export const PAGE_ROUTES: MicroToolsRoute[] = [
   { path: '/about', component: '@/pages/about', title: '关于我们' },
   { path: '/notifications/detail/:id', component: '@/pages/notifications/detail/[id]', title: '消息详情' },
   { path: '/notifications', component: '@/pages/notifications', title: '消息' },
+
+  // 反馈
+  { path: '/feedback/detail/:id', component: '@/pages/feedback/detail/[id]', title: '反馈详情' },
+  { path: '/feedback/history', component: '@/pages/feedback/history', title: '反馈历史' },
+  { path: '/feedback', component: '@/pages/feedback', title: '意见反馈' },
 ];
 
 /**
