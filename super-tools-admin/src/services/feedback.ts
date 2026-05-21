@@ -88,3 +88,44 @@ export async function updateFeedback(id: number, data: { status: FeedbackStatus 
 export async function deleteFeedback(id: number) {
   return request(`/api/admin/feedbacks/${id}`, { method: 'DELETE' });
 }
+
+// ==================== 统计 / Badge ====================
+
+export interface FeedbackStatsOverview {
+  total: number;
+  pending: number;
+  processing: number;
+  replied: number;
+  closed: number;
+  todayNew: number;
+  /** 平均回复时长（小时，1 位小数） */
+  avgReplyHours: number;
+  byType: {
+    bug: number;
+    suggestion: number;
+    praise: number;
+    other: number;
+  };
+}
+
+export interface FeedbackTrendItem {
+  date: string;       // YYYY-MM-DD
+  submitted: number;
+  replied: number;
+  closed: number;
+}
+
+/** 反馈统计概览（管理端） */
+export async function getFeedbackStatsOverview() {
+  return request('/api/admin/feedbacks/stats/overview');
+}
+
+/** 反馈趋势数据（管理端） */
+export async function getFeedbackStatsTrend(params?: { days?: number }) {
+  return request('/api/admin/feedbacks/stats/trend', { params });
+}
+
+/** 待处理反馈计数（管理端 badge） */
+export async function getFeedbackPendingCount() {
+  return request('/api/admin/feedbacks/pending-count');
+}
