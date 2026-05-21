@@ -364,7 +364,7 @@ export default class FeedbackSnippetService extends Service {
     const recentSet = new Set<number>((recentRows as any[]).map(r => r.snippet_id));
 
     // 评分
-    const scored = candidates.map((c: any) => {
+    const scored: Array<{ snippet: any; score: number }> = candidates.map((c: any) => {
       const typeMatch = matchedCatIds.includes(c.category_id) ? 1 : 0;
 
       let tagHit = 0;
@@ -386,10 +386,10 @@ export default class FeedbackSnippetService extends Service {
     });
 
     scored.sort((a, b) => b.score - a.score);
-    const top = scored.slice(0, 10).filter(s => s.score > 0);
+    const top = scored.slice(0, 10).filter((s) => s.score > 0);
 
     return {
-      list: top.map(s => ({
+      list: top.map((s) => ({
         id: s.snippet.id,
         categoryId: s.snippet.category_id,
         code: s.snippet.code,
