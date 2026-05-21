@@ -113,4 +113,23 @@ export default class AdminFeedbackController extends BaseController {
       throw e;
     }
   }
+
+  /** GET /api/admin/feedbacks/stats/overview — 统计概览 */
+  async statsOverview() {
+    const data = await this.service.feedback.statsOverview();
+    this.success(data);
+  }
+
+  /** GET /api/admin/feedbacks/stats/trend — 趋势数据 */
+  async statsTrend() {
+    const days = this.ctx.query.days ? Number(this.ctx.query.days) : 30;
+    const data = await this.service.feedback.statsTrend(days);
+    this.success(data);
+  }
+
+  /** GET /api/admin/feedbacks/pending-count — 待处理反馈计数（badge 用） */
+  async pendingCount() {
+    const data = await this.service.feedback.pendingCount();
+    this.success(data);
+  }
 }

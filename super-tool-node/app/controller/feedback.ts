@@ -54,4 +54,38 @@ export default class FeedbackController extends BaseController {
     });
     this.created({ id: (fb as any).id });
   }
+
+  /**
+   * GET /api/feedback/mine
+   * - 需登录（router 层挂 auth 中间件）
+   * - 返回当前用户的反馈列表（分页 + 可选状态筛选）
+   */
+  async myList() {
+    const userId = (this.ctx.state as any).user?.id;
+    if (!userId) this.ctx.throw(401, '请先登录');
+
+    const q = this.ctx.query as any;
+    const result = await this.service.feedback.myList(userId, {
+      page: q.page ? Number(q.page) : undefined,
+      pageSize: q.pageSize ? Number(q.pageSize) : undefined,
+      status: q.status !== undefined && q.status !== ''
+        ? Number(q.status) as 0 | 1 | 2 | 3
+        : undefined,
+    });
+    this.success(result);
+  }
+
+  /**
+   * GET /api/feedback/mine/:id
+   * - 需登录
+   * - 仅能查看自己的反馈（service 层校验 userId）
+   */
+  async myDetail() {
+    const userId = (this.ctx.state as any).user?.id;
+    if (!userId) this.ctx.throw(401, '请先登录');
+
+    const id = Number(this.ctx.params.id);
+    const data = await this.service.feedback.myDetail(id, userId);
+    this.success(data);
+  }
 }

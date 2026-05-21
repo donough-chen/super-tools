@@ -101,9 +101,16 @@ export default (app: Application) => {
   // 可登录可不登录（controller 内手动解析 token）；限流 10 req/h/IP
   const userCtrl = controller as any;
   router.post('/api/feedback', app.middleware.rateLimit({ max: 10, window: 3600 }, app), userCtrl.feedback.create);
+  // 用户端：我的反馈（需登录）
+  router.get('/api/feedback/mine', auth, userCtrl.feedback.myList);
+  router.get('/api/feedback/mine/:id', auth, userCtrl.feedback.myDetail);
 
   // ==================== 反馈（管理端） ====================
+  // 注意：精确路径（stats / pending-count）必须放在 :id 之前，否则被 :id 参数吞掉
   router.get('/api/admin/feedbacks', auth, perm('feedback:list'), adminCtrl.feedback.list);
+  router.get('/api/admin/feedbacks/stats/overview', auth, perm('feedback:stats:overview'), adminCtrl.feedback.statsOverview);
+  router.get('/api/admin/feedbacks/stats/trend', auth, perm('feedback:stats:trend'), adminCtrl.feedback.statsTrend);
+  router.get('/api/admin/feedbacks/pending-count', auth, perm('feedback:pending-count'), adminCtrl.feedback.pendingCount);
   router.post('/api/admin/feedbacks/:id/reply', auth, perm('feedback:reply'), adminCtrl.feedback.reply);
   router.put('/api/admin/feedbacks/:id', auth, perm('feedback:update'), adminCtrl.feedback.update);
   router.delete('/api/admin/feedbacks/:id', auth, perm('feedback:delete'), adminCtrl.feedback.destroy);
