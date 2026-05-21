@@ -66,10 +66,10 @@ export async function getFeedback(id: number) {
  * - 后端 service 严格状态机：仅 status=0/1 允许 reply，否则抛 409
  * - 成功后 status 自动变为 2
  */
-export async function replyFeedback(id: number, replyContent: string) {
+export async function replyFeedback(id: number, replyContent: string, snippetId?: number) {
   return request(`/api/admin/feedbacks/${id}/reply`, {
     method: 'POST',
-    data: { replyContent },
+    data: snippetId ? { replyContent, snippetId } : { replyContent },
   });
 }
 

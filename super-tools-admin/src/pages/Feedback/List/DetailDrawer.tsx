@@ -4,6 +4,7 @@ import {
   Select, Space, Popconfirm, message, Empty,
 } from 'antd';
 import AuthButton from '@/components/AuthButton';
+import SnippetPicker from '@/components/SnippetPicker';
 import {
   getFeedback, replyFeedback, updateFeedback, deleteFeedback,
   Feedback, FeedbackStatus,
@@ -27,6 +28,7 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onSuccess }) 
   const [detail, setDetail] = useState<Feedback | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [usedSnippetId, setUsedSnippetId] = useState<number | undefined>(undefined);
   const [form] = Form.useForm();
 
   const refetch = async (id: number) => {
@@ -40,9 +42,11 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onSuccess }) 
   useEffect(() => {
     if (visible && target) {
       form.resetFields();
+      setUsedSnippetId(undefined);
       refetch(target.id);
     } else if (!visible) {
       setDetail(null);
+      setUsedSnippetId(undefined);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, target]);
@@ -52,9 +56,11 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onSuccess }) 
     try {
       const { replyContent } = await form.validateFields();
       setSubmitting(true);
-      const res: any = await replyFeedback(detail.id, replyContent);
+      // 后端 reply 接收可选 snippetId，用于自动记录使用次数
+      const res: any = await replyFeedback(detail.id, replyContent, usedSnippetId);
       if (res?.code === 200) {
         message.success('回复成功');
+        setUsedSnippetId(undefined);
         await refetch(detail.id);
         onSuccess();
       } else {
@@ -65,6 +71,18 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onSuccess }) 
     } finally {
       setSubmitting(false);
     }
+  };
+
+  /** 话术 Picker 选中：写入表单 + 记录 snippetId */
+  const handleSnippetSelected = (content: string, snippetId: number) => {
+    if (snippetId === 0 && content === '') {
+      // 清空操作
+      form.setFieldValue('replyContent', '');
+      setUsedSnippetId(undefined);
+      return;
+    }
+    form.setFieldValue('replyContent', content);
+    setUsedSnippetId(snippetId);
   };
 
   const handleStatus = async (newStatus: FeedbackStatus) => {
@@ -155,8 +173,23 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onSuccess }) 
                   </Descriptions>
                 ) : (detail.status === 0 || detail.status === 1) ? (
                   <Form form={form} layout="vertical">
+                    <AuthButton permCode="feedback:snippet:use">
+                      <SnippetPicker
+                        feedbackId={detail.id}
+                        currentValue={form.getFieldValue('replyContent')}
+                        onSelect={handleSnippetSelected}
+                      />
+                    </AuthButton>
                     <Form.Item
-                      label="回复内容" name="replyContent"
+                      label={
+                        <Space>
+                          <span>回复内容</span>
+                          {usedSnippetId && (
+                            <Tag color="blue">使用话术 #{usedSnippetId}</Tag>
+                          )}
+                        </Space>
+                      }
+                      name="replyContent"
                       rules={[
                         { required: true, message: '请输入回复内容' },
                         { min: 1, max: 2000, message: '1-2000 字符' },
