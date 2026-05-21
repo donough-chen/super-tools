@@ -12,6 +12,8 @@ export default class FeedbackController extends BaseController {
    */
   async create() {
     // 1. 可选 token 解析（宽松模式：JWT 验签通过即接受 userId，不查 session）
+    //    注意：JWT payload 字段为 { id, uuid, username, ... }，参见 service/auth.ts
+    //    取用户 ID 时使用 decoded.id（不是 decoded.userId）
     let userId: number | null = null;
     const auth = this.ctx.get('authorization');
     if (auth) {
@@ -22,7 +24,7 @@ export default class FeedbackController extends BaseController {
             token,
             ((this.app.config as any).jwt as any).secret,
           ) as any;
-          userId = decoded?.userId ?? null;
+          userId = decoded?.id ?? null;
         } catch { /* 无效/过期 token → 按匿名 */ }
       }
     }
