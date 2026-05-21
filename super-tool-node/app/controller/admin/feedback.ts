@@ -29,20 +29,23 @@ export default class AdminFeedbackController extends BaseController {
   /** POST /api/admin/feedbacks/:id/reply */
   async reply() {
     const id = Number(this.ctx.params.id);
-    this.validate({ replyContent: { type: 'string', min: 1, max: 2000 } });
-    const { replyContent } = this.ctx.request.body as any;
+    this.validate({
+      replyContent: { type: 'string', min: 1, max: 2000 },
+      snippetId: { type: 'number', required: false },
+    });
+    const { replyContent, snippetId } = this.ctx.request.body as any;
     const replyUserId = (this.ctx.state as any).user.id;
 
     let beforeData: any = null;
     try { beforeData = await this.service.feedback.detail(id); } catch { /* ignore */ }
 
     try {
-      const updated = await this.service.feedback.reply(id, replyContent, replyUserId);
+      const updated = await this.service.feedback.reply(id, replyContent, replyUserId, snippetId);
       await this.service.audit.log({
         module: 'feedback', action: 'reply',
         bizType: 'feedback', bizId: id,
         beforeData, afterData: updated,
-        description: `回复反馈 #${id}`,
+        description: `回复反馈 #${id}${snippetId ? `（使用话术 #${snippetId}）` : ''}`,
         status: 1,
       });
       this.success(updated, '回复成功');

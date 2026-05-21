@@ -210,6 +210,38 @@ UNION ALL
 SELECT 'feedback:snippet:recommend', '智能推荐', 4, 'feedback', 'admin',
        '/api/admin/feedback/snippets/recommend', 'GET',
        (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 116
+UNION ALL
+SELECT 'feedback:snippet:picker', '话术选择器', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/picker', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 117
+UNION ALL
+SELECT 'feedback:snippet:publish-api', '发布版本', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/:id/publish', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 118
+UNION ALL
+SELECT 'feedback:snippet:disable-api', '停用话术', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/:id/disable', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 119
+UNION ALL
+SELECT 'feedback:snippet:rollback-api', '回滚版本', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/:id/rollback/:versionId', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 120
+UNION ALL
+SELECT 'feedback:snippet:versions', '版本历史', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/:id/versions', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 121
+UNION ALL
+SELECT 'feedback:snippet:detail', '话术详情', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/:id', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 122
+UNION ALL
+SELECT 'feedback:snippet:category:detail', '分类详情', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippet-categories/:id', 'GET',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 123
+UNION ALL
+SELECT 'feedback:snippet:import-api', '导入话术', 4, 'feedback', 'admin',
+       '/api/admin/feedback/snippets/import', 'POST',
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet-page') t), 131
 -- 6.3 统计（1）
 UNION ALL
 SELECT 'feedback:snippet:stats', '话术统计', 4, 'feedback', 'admin',
@@ -231,7 +263,7 @@ SELECT r.id, p.id
 FROM `roles` r CROSS JOIN `permissions` p
 WHERE r.code = 'admin' AND p.module = 'feedback' AND p.code LIKE 'feedback:snippet%';
 
--- 7.2 operator: 除 publish 与 import-export 外都给
+-- 7.2 operator: 除 publish 与 import-export 外都给（包括关联的 API 权限）
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id
 FROM `roles` r CROSS JOIN `permissions` p
@@ -239,7 +271,11 @@ WHERE r.code = 'operator' AND p.module = 'feedback'
   AND p.code LIKE 'feedback:snippet%'
   AND p.code NOT IN (
     'feedback:snippet:publish',
+    'feedback:snippet:publish-api',
+    'feedback:snippet:disable-api',
+    'feedback:snippet:rollback-api',
     'feedback:snippet:import-export',
+    'feedback:snippet:import-api',
     'feedback:snippet:export'
   );
 
@@ -250,8 +286,9 @@ FROM `roles` r CROSS JOIN `permissions` p
 WHERE r.code = 'auditor' AND p.module = 'feedback'
   AND p.code IN (
     'feedback:snippet', 'feedback:snippet-page', 'feedback:snippet-stats-page',
-    'feedback:snippet:view', 'feedback:snippet:stats',
-    'feedback:snippet:category:list', 'feedback:snippet:render'
+    'feedback:snippet:view', 'feedback:snippet:detail', 'feedback:snippet:stats',
+    'feedback:snippet:category:list', 'feedback:snippet:category:detail',
+    'feedback:snippet:render', 'feedback:snippet:versions'
   );
 
 -- ============================================================

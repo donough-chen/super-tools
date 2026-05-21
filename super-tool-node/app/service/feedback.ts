@@ -177,8 +177,9 @@ export default class FeedbackService extends Service {
    * 回复反馈 — 严格状态机 0/1 → 2
    * - 其他状态（2/3）抛 409
    * - 写入 reply_content / reply_user_id / replied_at 三字段
+   * - 可选 snippetId：触发话术使用记录
    */
-  async reply(id: number, replyContent: string, replyUserId: number) {
+  async reply(id: number, replyContent: string, replyUserId: number, snippetId?: number) {
     const fb = await this.ctx.model.Feedback.findByPk(id);
     if (!fb) this.ctx.throw(404, 'feedback not found');
 
@@ -213,6 +214,17 @@ export default class FeedbackService extends Service {
       this.ctx.logger.warn(`[feedback.reply] notification failed: ${e.message}`);
     }
 
+    // 话术使用记录（静默，失败不影响 reply）
+    if (snippetId) {
+      try {
+        await (this.ctx.service as any).feedbackSnippet.recordUsage(
+          snippetId, id, replyUserId, replyContent,
+        );
+      } catch (e: any) {
+        this.ctx.logger.warn(`[feedback.reply] snippet usage record failed: ${e.message}`);
+      }
+    }
+
     return fb;
   }
 
@@ -237,6 +249,13 @@ export default class FeedbackService extends Service {
           `不允许的状态转移：${fromStatus} → ${payload.status}`);
       }
       await fb.update({ status: payload.status });
+
+      // 同步话术使用记录的 feedback_status_after（静默）
+      try {
+        await (this.ctx.service as any).feedbackSnippet.syncFeedbackStatus(id, payload.status);
+      } catch (e: any) {
+        this.ctx.logger.warn(`[feedback.update] sync snippet usage failed: ${e.message}`);
+      }
 
       // 触发通知：状态变更（仅当状态实际改变 & 反馈有归属用户）
       if (fromStatus !== payload.status && (fb as any).userId) {

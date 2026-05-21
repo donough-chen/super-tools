@@ -116,6 +116,39 @@ export default (app: Application) => {
   router.delete('/api/admin/feedbacks/:id', auth, perm('feedback:delete'), adminCtrl.feedback.destroy);
   router.get('/api/admin/feedbacks/:id', auth, perm('feedback:detail'), adminCtrl.feedback.detail);
 
+  // ==================== 反馈话术（管理端） ====================
+  // 注意：精确路径必须放在 :id 之前
+  // 分类
+  router.get('/api/admin/feedback/snippet-categories', auth, perm('feedback:snippet:category:list'), adminCtrl.feedbackSnippetCategory.tree);
+  router.post('/api/admin/feedback/snippet-categories', auth, perm('feedback:snippet:category:create'), adminCtrl.feedbackSnippetCategory.create);
+  router.put('/api/admin/feedback/snippet-categories/:id/role-permissions', auth, perm('feedback:snippet:category:role-perm'), adminCtrl.feedbackSnippetCategory.setRolePermissions);
+  router.get('/api/admin/feedback/snippet-categories/:id/role-permissions', auth, perm('feedback:snippet:category:role-perm'), adminCtrl.feedbackSnippetCategory.getRolePermissions);
+  router.put('/api/admin/feedback/snippet-categories/:id', auth, perm('feedback:snippet:category:update'), adminCtrl.feedbackSnippetCategory.update);
+  router.delete('/api/admin/feedback/snippet-categories/:id', auth, perm('feedback:snippet:category:delete'), adminCtrl.feedbackSnippetCategory.destroy);
+  router.get('/api/admin/feedback/snippet-categories/:id', auth, perm('feedback:snippet:category:detail'), adminCtrl.feedbackSnippetCategory.detail);
+
+  // 话术 - 精确路径优先
+  router.get('/api/admin/feedback/snippets/picker', auth, perm('feedback:snippet:picker'), adminCtrl.feedbackSnippet.picker);
+  router.get('/api/admin/feedback/snippets/recommend', auth, perm('feedback:snippet:recommend'), adminCtrl.feedbackSnippet.recommend);
+  router.get('/api/admin/feedback/snippets/stats/overview', auth, perm('feedback:snippet:stats'), adminCtrl.feedbackSnippet.statsOverview);
+  router.get('/api/admin/feedback/snippets/stats/top', auth, perm('feedback:snippet:stats'), adminCtrl.feedbackSnippet.statsTop);
+  router.get('/api/admin/feedback/snippets/stats/trend', auth, perm('feedback:snippet:stats'), adminCtrl.feedbackSnippet.statsTrend);
+  router.get('/api/admin/feedback/snippets/export', auth, perm('feedback:snippet:export'), adminCtrl.feedbackSnippet.exportAll);
+  router.post('/api/admin/feedback/snippets/import', auth, perm('feedback:snippet:import-api'), adminCtrl.feedbackSnippet.importData);
+  // 话术 - :id 子路径
+  router.post('/api/admin/feedback/snippets/:id/publish', auth, perm('feedback:snippet:publish-api'), adminCtrl.feedbackSnippet.publish);
+  router.post('/api/admin/feedback/snippets/:id/disable', auth, perm('feedback:snippet:disable-api'), adminCtrl.feedbackSnippet.disable);
+  router.post('/api/admin/feedback/snippets/:id/rollback/:versionId', auth, perm('feedback:snippet:rollback-api'), adminCtrl.feedbackSnippet.rollback);
+  router.get('/api/admin/feedback/snippets/:id/versions', auth, perm('feedback:snippet:versions'), adminCtrl.feedbackSnippet.versions);
+  router.post('/api/admin/feedback/snippets/:id/render', auth, perm('feedback:snippet:render'), adminCtrl.feedbackSnippet.render);
+  router.post('/api/admin/feedback/snippets/:id/usage', auth, perm('feedback:snippet:usage'), adminCtrl.feedbackSnippet.usage);
+  // 话术 - CRUD
+  router.get('/api/admin/feedback/snippets', auth, perm('feedback:snippet:view'), adminCtrl.feedbackSnippet.list);
+  router.post('/api/admin/feedback/snippets', auth, perm('feedback:snippet:create'), adminCtrl.feedbackSnippet.create);
+  router.put('/api/admin/feedback/snippets/:id', auth, perm('feedback:snippet:update'), adminCtrl.feedbackSnippet.update);
+  router.delete('/api/admin/feedback/snippets/:id', auth, perm('feedback:snippet:delete'), adminCtrl.feedbackSnippet.destroy);
+  router.get('/api/admin/feedback/snippets/:id', auth, perm('feedback:snippet:detail'), adminCtrl.feedbackSnippet.detail);
+
   // ==================== 数据统计 ====================
   router.get('/api/admin/stats/overview', auth, perm('stats:overview'), adminCtrl.stats.overview);
   router.get('/api/admin/stats/tool-usage', auth, perm('stats:tool-usage'), adminCtrl.stats.toolUsage);
