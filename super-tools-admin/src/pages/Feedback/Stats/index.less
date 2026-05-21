@@ -1,0 +1,28 @@
+.feedback-stats-page {
+  .stat-cards {
+    margin-bottom: 24px;
+  }
+
+  .trend-chart {
+    margin-bottom: 16px;
+  }
+
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+
+    @media (max-width: 992px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .empty-chart {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    color: #999;
+    font-size: 13px;
+  }
+}
