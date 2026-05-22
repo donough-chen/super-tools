@@ -118,12 +118,8 @@ DELETE FROM `permissions`
   WHERE module = 'feedback' AND code LIKE 'feedback:snippet%';
 
 -- ============================================================
--- 三、新增二级目录（type=1）
+-- 三、新增二级目录（type=1）无
 -- ============================================================
-INSERT INTO `permissions`
-  (`code`, `name`, `type`, `module`, `icon`, `platform`, `path`, `method`, `parent_id`, `sort`)
-SELECT 'feedback:snippet', '话术管理', 1, 'feedback', NULL, 'admin', '/feedback/snippets', NULL,
-       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback') t), 30;
 
 -- ============================================================
 -- 四、新增二级菜单（type=2）— 2 个
@@ -131,10 +127,10 @@ SELECT 'feedback:snippet', '话术管理', 1, 'feedback', NULL, 'admin', '/feedb
 INSERT INTO `permissions`
   (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`)
 SELECT 'feedback:snippet-page', '话术列表', 2, 'feedback', 'admin', '/feedback/snippets', NULL,
-       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet') t), 10
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback') t), 10
 UNION ALL
 SELECT 'feedback:snippet-stats-page', '话术统计', 2, 'feedback', 'admin', '/feedback/snippets/stats', NULL,
-       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback:snippet') t), 20;
+       (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'feedback') t), 20;
 
 -- ============================================================
 -- 五、新增按钮权限（type=3）— 5 个
@@ -285,69 +281,71 @@ SELECT r.id, p.id
 FROM `roles` r CROSS JOIN `permissions` p
 WHERE r.code = 'auditor' AND p.module = 'feedback'
   AND p.code IN (
-    'feedback:snippet', 'feedback:snippet-page', 'feedback:snippet-stats-page',
+    'feedback:snippet-page', 'feedback:snippet-stats-page',
     'feedback:snippet:view', 'feedback:snippet:detail', 'feedback:snippet:stats',
     'feedback:snippet:category:list', 'feedback:snippet:category:detail',
     'feedback:snippet:render', 'feedback:snippet:versions'
   );
 
 -- ============================================================
--- 八、Seed 系统预置分类（4 个）
+-- 八、Seed 系统预置话术分类（幂等写法，4个）
 -- ============================================================
-INSERT INTO `feedback_snippet_categories`
+INSERT IGNORE INTO `feedback_snippet_categories`
   (`code`, `name`, `description`, `feedback_type`, `sort_order`, `status`, `is_system`)
-SELECT 'sys-bug',        'Bug 处理',  '处理 bug 类反馈的话术',     'bug',        10, 1, 1
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippet_categories` WHERE code='sys-bug')
-UNION ALL
-SELECT 'sys-suggestion', '功能建议',  '处理功能建议反馈的话术',     'suggestion', 20, 1, 1
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippet_categories` WHERE code='sys-suggestion')
-UNION ALL
-SELECT 'sys-praise',     '表扬感谢',  '处理表扬类反馈的话术',       'praise',     30, 1, 1
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippet_categories` WHERE code='sys-praise')
-UNION ALL
-SELECT 'sys-general',    '通用回复',  '不限反馈类型的通用回复',     NULL,         40, 1, 1
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippet_categories` WHERE code='sys-general');
+VALUES
+  ('sys-bug',        'Bug 处理',  '处理 bug 类反馈的话术',       'bug',        10, 1, 1),
+  ('sys-suggestion', '功能建议',  '处理功能建议反馈的话术',       'suggestion', 20, 1, 1),
+  ('sys-praise',     '表扬感谢',  '处理表扬类反馈的话术',         'praise',     30, 1, 1),
+  ('sys-general',    '通用回复',  '不限反馈类型的通用回复',       NULL,         40, 1, 1);
 
 -- ============================================================
 -- 九、Seed 系统预置话术（每分类 1-2 条样板，created_by=0 表示系统）
 -- ============================================================
-INSERT INTO `feedback_snippets`
+INSERT IGNORE INTO `feedback_snippets`
   (`category_id`, `code`, `title`, `content`, `tags`, `current_version`, `status`, `created_by`)
-SELECT (SELECT id FROM `feedback_snippet_categories` WHERE code='sys-bug'),
-       'sys-bug-confirm', '确认收到 Bug 反馈',
-       '您好 {{userName}}！我们已收到您反馈的问题，技术团队正在排查处理，预计 24 小时内回复。感谢您的耐心。',
-       'bug|确认|处理中', 1, 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippets` WHERE code='sys-bug-confirm')
-UNION ALL
-SELECT (SELECT id FROM `feedback_snippet_categories` WHERE code='sys-bug'),
-       'sys-bug-fixed', 'Bug 已修复',
-       '您好 {{userName}}！您之前反馈的问题已在最新版本中修复，请更新后体验。如仍有问题请再联系我们。',
-       'bug|已修复|更新', 1, 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippets` WHERE code='sys-bug-fixed')
-UNION ALL
-SELECT (SELECT id FROM `feedback_snippet_categories` WHERE code='sys-suggestion'),
-       'sys-suggest-thanks', '建议致谢',
-       '您好 {{userName}}！感谢您提出的建议，我们会评估后纳入产品规划。一旦上线会通过站内信通知您。',
-       '建议|感谢|规划', 1, 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippets` WHERE code='sys-suggest-thanks')
-UNION ALL
-SELECT (SELECT id FROM `feedback_snippet_categories` WHERE code='sys-praise'),
-       'sys-praise-thanks', '表扬致谢',
-       '您好 {{userName}}！感谢您的肯定，这是对我们最大的鼓励！我们会继续努力为您提供更好的服务。',
-       '表扬|感谢', 1, 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippets` WHERE code='sys-praise-thanks')
-UNION ALL
-SELECT (SELECT id FROM `feedback_snippet_categories` WHERE code='sys-general'),
-       'sys-general-received', '通用-已收到',
-       '您好 {{userName}}！您的反馈我们已收到，将尽快处理并回复您。',
-       '通用|已收到', 1, 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippets` WHERE code='sys-general-received')
-UNION ALL
-SELECT (SELECT id FROM `feedback_snippet_categories` WHERE code='sys-general'),
-       'sys-general-closed', '通用-处理完毕',
-       '您好 {{userName}}！您反馈的问题已处理完毕，如有疑问欢迎随时联系我们。',
-       '通用|完成', 1, 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM `feedback_snippets` WHERE code='sys-general-closed');
+VALUES
+  (
+    (SELECT id FROM `feedback_snippet_categories` WHERE code = 'sys-bug'),
+    'sys-bug-confirm',
+    '确认收到 Bug 反馈',
+    '您好 {{userName}}！我们已收到您反馈的问题，技术团队正在排查处理，预计 24 小时内回复。感谢您的耐心。',
+    'bug|确认|处理中', 1, 1, 0
+  ),
+  (
+    (SELECT id FROM `feedback_snippet_categories` WHERE code = 'sys-bug'),
+    'sys-bug-fixed',
+    'Bug 已修复',
+    '您好 {{userName}}！您之前反馈的问题已在最新版本中修复，请更新后体验。如仍有问题请再联系我们。',
+    'bug|已修复|更新', 1, 1, 0
+  ),
+  (
+    (SELECT id FROM `feedback_snippet_categories` WHERE code = 'sys-suggestion'),
+    'sys-suggest-thanks',
+    '建议致谢',
+    '您好 {{userName}}！感谢您提出的建议，我们会评估后纳入产品规划。一旦上线会通过站内信通知您。',
+    '建议|感谢|规划', 1, 1, 0
+  ),
+  (
+    (SELECT id FROM `feedback_snippet_categories` WHERE code = 'sys-praise'),
+    'sys-praise-thanks',
+    '表扬致谢',
+    '您好 {{userName}}！感谢您的肯定，这是对我们最大的鼓励！我们会继续努力为您提供更好的服务。',
+    '表扬|感谢', 1, 1, 0
+  ),
+  (
+    (SELECT id FROM `feedback_snippet_categories` WHERE code = 'sys-general'),
+    'sys-general-received',
+    '通用-已收到',
+    '您好 {{userName}}！您的反馈我们已收到，将尽快处理并回复您。',
+    '通用|已收到', 1, 1, 0
+  ),
+  (
+    (SELECT id FROM `feedback_snippet_categories` WHERE code = 'sys-general'),
+    'sys-general-closed',
+    '通用-处理完毕',
+    '您好 {{userName}}！您反馈的问题已处理完毕，如有疑问欢迎随时联系我们。',
+    '通用|完成', 1, 1, 0
+  );
 
 SET FOREIGN_KEY_CHECKS = 1;
 
