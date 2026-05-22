@@ -37,6 +37,8 @@ export default (app: Application) => {
     sortOrder:    { type: INTEGER,     allowNull: false, defaultValue: 0, field: 'sort_order' },
     status:       { type: TINYINT,     allowNull: false, defaultValue: 1 },
     isSystem:     { type: TINYINT,     allowNull: false, defaultValue: 0, field: 'is_system' },
+    createdAt:    { type: DATE,        allowNull: true,  field: 'created_at' },
+    updatedAt:    { type: DATE,        allowNull: true,  field: 'updated_at' },
     deletedAt:    { type: DATE,        allowNull: true,  field: 'deleted_at' },
   }, {
     tableName: 'feedback_snippet_categories',

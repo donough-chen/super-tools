@@ -45,6 +45,8 @@ export default (app: Application) => {
     description:     { type: STRING(500), allowNull: true },
     createdBy:       { type: BIGINT.UNSIGNED, allowNull: false, field: 'created_by' },
     updatedBy:       { type: BIGINT.UNSIGNED, allowNull: true,  field: 'updated_by' },
+    createdAt:       { type: DATE,        allowNull: true,  field: 'created_at' },
+    updatedAt:       { type: DATE,        allowNull: true,  field: 'updated_at' },
     deletedAt:       { type: DATE,        allowNull: true,  field: 'deleted_at' },
   }, {
     tableName: 'feedback_snippets',
