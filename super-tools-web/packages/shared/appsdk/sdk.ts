@@ -28,7 +28,7 @@ class AppSdk {
     this._instance = this;
 
     const ua = navigator.userAgent;
-    this.isApp = ua.indexOf('GameHelper') > -1;
+    this.isApp = ua.indexOf('CustomBridge') > -1;
     this.isIOS = /(iPhone|iPad|iPod|iTouch|iOS)/i.test(ua);
     this.isAndroid = /Android/i.test(ua);
 
@@ -37,7 +37,7 @@ class AppSdk {
       window.onWebShow = () => this._checkReadyStatus();
       window.addEventListener('load', this._checkReadyStatus.bind(this), false);
       if (document.addEventListener) {
-        document.addEventListener('GameHelperReady', this._checkReadyStatus.bind(this), false);
+        document.addEventListener('CustomBridgeReady', this._checkReadyStatus.bind(this), false);
       }
     }
 
@@ -49,7 +49,7 @@ class AppSdk {
   private _checkReadyStatus() {
     if (this.isReady) return;
     // @ts-ignore
-    if (typeof window.GameHelper !== 'undefined') {
+    if (typeof window.CustomBridge !== 'undefined') {
       this.isReady = true;
       while (this._readinessCallbackPool.length > 0) {
         const cb = this._readinessCallbackPool.pop();
@@ -70,8 +70,8 @@ class AppSdk {
   }
 
   /**
-   * 确保 App 环境就绪后执行函数或调用 GameHelper 接口
-   * @param func 函数或 GameHelper 接口名
+   * 确保 App 环境就绪后执行函数或调用 CustomBridge 接口
+   * @param func 函数或 CustomBridge 接口名
    * @param autoCallback 是否自动 promisify callback 接口
    * @param times 最大重试次数
    */
@@ -88,9 +88,9 @@ class AppSdk {
           const cb = (...cbArgs: any[]) => {
             if (typeof func === 'string') {
               // @ts-ignore
-              const gh = window.GameHelper;
+              const gh = window.CustomBridge;
               if (typeof gh[func] === 'undefined') {
-                reject({ code: 4, message: `Ensure Error: GameHelper.${func} is undefined.` });
+                reject({ code: 4, message: `Ensure Error: CustomBridge.${func} is undefined.` });
                 return;
               }
               // @ts-ignore
@@ -131,12 +131,7 @@ class AppSdk {
    */
   getAppParams(keys: string[] = []): Record<string, any> {
     const commonKeys = [
-      'env', 'gameId', 'gameName', 'cGameId', 'cCurrentGameId', 'subGameId',
-      'userId', 'nickname', 'avatar', 'token', 'uin', 'toUin', 'openid',
-      'toOpenid', 'roleId', 'uniqueRoleId', 'roleJob', 'roleLevel', 'roleName',
-      'areaId', 'areaName', 'serverId', 'serverName', 'accessToken', 'accType',
-      'appOpenid', 'params', 'pf', 'schema_url', 'orderId', 'friendUserId',
-      'cSystem', 'isMini',
+      'env', 'userId', 'nickname', 'avatar', 'token', 'accessToken', 'accType','cSystem', 'isMini',
     ];
 
     const params = this._appParams;

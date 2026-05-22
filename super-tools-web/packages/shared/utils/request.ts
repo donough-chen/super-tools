@@ -64,11 +64,11 @@ const getSigOptions = (url: string, options: any): any => {
 // 请求拦截器：自动注入登录态和签名
 import request from 'umi-request';
 request.interceptors.request.use((url, options) => {
-  const { userId, token, cGameId, cCurrentGameId } = appsdk.getAppParams();
+  const { userId, token } = appsdk.getAppParams();
   const sigParams = options.sig ? { cRand: Date.now(), tghappid: TGHAPPID } : {};
 
   if (options.method?.toLowerCase() === 'post' && options.noToken !== true) {
-    const loginStatus = { userId, token, cGameId, cCurrentGameId, ...sigParams };
+    const loginStatus = { userId, token, ...sigParams };
 
     if (options.data instanceof FormData) {
       for (const [key, val] of Object.entries(loginStatus)) {
