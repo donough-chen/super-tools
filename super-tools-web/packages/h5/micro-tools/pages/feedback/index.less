@@ -4,131 +4,208 @@
   min-height: 100vh;
   background: var(--bg-page);
   padding-top: var(--header-height);
-  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--spacing-xxl) + env(safe-area-inset-bottom));
 
+  // ==================== 表单容器 ====================
   &__form {
-    padding: 24px 32px;
+    padding: var(--spacing-lg) var(--spacing-md) 0;
   }
 
+  // ==================== 卡片区块 ====================
   &__section {
-    background: var(--bg-card, #fff);
-    border-radius: 24px;
-    padding: 32px;
-    margin-bottom: 24px;
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
 
     &-title {
-      font-size: 28px;
-      font-weight: 500;
+      position: relative;
+      font-size: var(--font-size-lg);
+      font-weight: 600;
       color: var(--text-primary);
-      margin-bottom: 24px;
+      line-height: 1.4;
+      margin-bottom: var(--spacing-md);
+      padding-left: 16px;
+
+      // 标题前的色块装饰
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 6px;
+        height: var(--font-size-md);
+        background: var(--primary-color);
+        border-radius: 3px;
+      }
 
       &-required::after {
         content: ' *';
-        color: #ff4d4f;
+        color: var(--text-danger);
+        font-weight: 500;
       }
     }
   }
 
+  // ==================== 类型选择 ====================
   &__type-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: var(--spacing-sm) var(--spacing-sm);
   }
 
   &__type-item {
-    padding: 16px 32px;
-    border-radius: 40px;
-    border: 1px solid var(--border-color, #e8e8e8);
-    font-size: 26px;
+    flex: 0 0 auto;
+    padding: 12px var(--spacing-lg);
+    border-radius: var(--border-radius-round);
+    border: 1px solid var(--border-color);
+    font-size: var(--font-size-md);
+    font-weight: 400;
     color: var(--text-secondary);
-    background: var(--bg-card, #fff);
-    transition: all 0.2s;
+    background: var(--bg-page);
+    transition: all var(--transition-normal);
     cursor: pointer;
+    user-select: none;
+
+    &:active {
+      transform: scale(0.96);
+    }
 
     &--active {
       border-color: var(--primary-color);
       color: var(--primary-color);
-      background: rgba(24, 144, 255, 0.08);
+      background: var(--primary-color-light);
+      font-weight: 500;
+      box-shadow: 0 2px 8px var(--primary-color-shadow);
     }
   }
 
+  // ==================== 多行输入 ====================
   &__textarea {
     width: 100%;
-    min-height: 240px;
-    border: 1px solid var(--border-color, #e8e8e8);
-    border-radius: 16px;
-    padding: 24px;
-    font-size: 28px;
-    line-height: 1.5;
+    min-height: 280px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    font-size: var(--font-size-md);
+    line-height: 1.6;
     color: var(--text-primary);
-    background: var(--bg-input, #f7f8fa);
+    background: var(--bg-page);
     resize: none;
     box-sizing: border-box;
     -webkit-appearance: none;
+    transition: border-color var(--transition-normal),
+                background var(--transition-normal),
+                box-shadow var(--transition-normal);
+    font-family: inherit;
+
+    &::placeholder {
+      color: var(--text-placeholder);
+      font-size: var(--font-size-md);
+    }
 
     &:focus {
       outline: none;
       border-color: var(--primary-color);
-      background: #fff;
+      background: var(--bg-white);
+      box-shadow: 0 0 0 4px var(--primary-color-shadow);
     }
   }
 
   &__count {
     text-align: right;
-    font-size: 24px;
+    font-size: var(--font-size-xs);
     color: var(--text-tertiary);
-    margin-top: 8px;
+    margin-top: var(--spacing-sm);
+    letter-spacing: 0.5px;
   }
 
+  // ==================== 单行输入 ====================
   &__input {
     width: 100%;
-    height: 80px;
-    border: 1px solid var(--border-color, #e8e8e8);
-    border-radius: 16px;
-    padding: 0 24px;
-    font-size: 28px;
+    height: 88px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 0 var(--spacing-md);
+    font-size: var(--font-size-md);
     color: var(--text-primary);
-    background: var(--bg-input, #f7f8fa);
+    background: var(--bg-page);
     box-sizing: border-box;
     -webkit-appearance: none;
+    transition: border-color var(--transition-normal),
+                background var(--transition-normal),
+                box-shadow var(--transition-normal);
+
+    &::placeholder {
+      color: var(--text-placeholder);
+    }
 
     &:focus {
       outline: none;
       border-color: var(--primary-color);
-      background: #fff;
+      background: var(--bg-white);
+      box-shadow: 0 0 0 4px var(--primary-color-shadow);
     }
   }
 
+  // ==================== 提交按钮 ====================
   &__submit {
     width: 100%;
-    height: 88px;
-    border-radius: 44px;
-    background: var(--primary-color);
-    color: #fff;
-    font-size: 32px;
-    font-weight: 500;
+    height: 96px;
+    border-radius: var(--border-radius-round);
+    background: linear-gradient(
+      135deg,
+      var(--primary-color) 0%,
+      var(--primary-color-active) 100%
+    );
+    color: var(--text-white);
+    font-size: var(--font-size-xl);
+    font-weight: 600;
+    letter-spacing: 2px;
     border: none;
-    margin-top: 48px;
+    margin-top: var(--spacing-xl);
     cursor: pointer;
     -webkit-appearance: none;
+    box-shadow: 0 6px 16px var(--primary-color-shadow);
+    transition: transform var(--transition-fast),
+                box-shadow var(--transition-normal),
+                opacity var(--transition-normal);
 
     &:active {
-      opacity: 0.85;
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px var(--primary-color-shadow);
+      opacity: 0.92;
     }
 
     &--disabled {
-      background: var(--border-color, #e8e8e8);
-      color: var(--text-tertiary);
+      background: #d9d9d9;
+      color: var(--text-white);
       cursor: not-allowed;
+      box-shadow: none;
+
+      &:active {
+        transform: none;
+        opacity: 1;
+      }
     }
   }
 
+  // ==================== 历史入口 ====================
   &__history {
     display: block;
     text-align: center;
-    margin-top: 32px;
-    font-size: 26px;
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-sm);
+    font-size: var(--font-size-md);
     color: var(--primary-color);
+    font-weight: 500;
     cursor: pointer;
+    transition: opacity var(--transition-normal);
+
+    &:active {
+      opacity: 0.6;
+    }
   }
 }
