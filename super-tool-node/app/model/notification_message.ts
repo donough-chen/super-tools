@@ -29,6 +29,7 @@ export default (app: Application) => {
     isArchived:       { type: TINYINT, allowNull: false, defaultValue: 0, field: 'is_archived' },
     archivedAt:       { type: DATE, allowNull: true, field: 'archived_at' },
     expireAt:         { type: DATE, allowNull: true, field: 'expire_at' },
+    createdAt:         { type: DATE, allowNull: true, field: 'created_at' },
     idempotentKey:    { type: STRING(128), allowNull: true, field: 'idempotent_key' },
   }, {
     tableName: 'notification_messages',

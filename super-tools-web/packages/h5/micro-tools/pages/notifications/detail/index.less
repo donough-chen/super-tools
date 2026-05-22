@@ -21,13 +21,13 @@
 
   &__header {
     background: var(--bg-card, #fff);
-    padding: 32px var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-lg);
     margin-bottom: 16px;
   }
 
   &__type-tag {
     display: inline-block;
-    font-size: 22px;
+    font-size: var(--font-size-sm);
     color: var(--primary-color);
     font-weight: 500;
     background: rgba(var(--primary-color-rgb), 0.08);
@@ -37,7 +37,7 @@
   }
 
   &__title {
-    font-size: 36px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--text-primary);
     line-height: 1.4;
@@ -48,14 +48,14 @@
     display: flex;
     align-items: center;
     gap: 16px;
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     color: var(--text-tertiary);
   }
 
   &__status {
     padding: 2px 12px;
     border-radius: var(--border-radius-sm, 8px);
-    font-size: 22px;
+    font-size: var(--font-size-sm);
 
     &--read {
       background: rgba(0, 0, 0, 0.04);
@@ -70,13 +70,13 @@
 
   &__body {
     background: var(--bg-card, #fff);
-    padding: 32px var(--spacing-lg);
+    padding: var(--spacing-lg);
     margin-bottom: 16px;
     min-height: 200px;
   }
 
   &__html {
-    font-size: 28px;
+    font-size: var(--font-size-sm);
     color: var(--text-primary);
     line-height: 1.8;
     word-break: break-word;
@@ -99,16 +99,16 @@
   }
 
   &__actions {
-    padding: 24px var(--spacing-lg) 48px;
+    padding: 16px var(--spacing-lg) 32px;
   }
 
   &__btn {
     display: block;
     width: 100%;
-    padding: 24px;
+    padding: 16px;
     border: none;
     border-radius: var(--border-radius-md, 16px);
-    font-size: 28px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     text-align: center;
     cursor: pointer;

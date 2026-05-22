@@ -87,9 +87,6 @@ const NotificationDetailPage: React.FC<Props> = ({ match }) => {
         {!loading && detail && (
           <>
             <div className="page-notif-detail__header">
-              <div className="page-notif-detail__type-tag">
-                {detail.type?.name || '系统通知'}
-              </div>
               <h2 className="page-notif-detail__title">{detail.title}</h2>
               <div className="page-notif-detail__meta">
                 <span>{formatFullTime(detail.createdAt)}</span>
@@ -102,6 +99,9 @@ const NotificationDetailPage: React.FC<Props> = ({ match }) => {
             </div>
 
             <div className="page-notif-detail__body">
+              <div className="page-notif-detail__type-tag">
+                {detail.type?.name || '系统通知'}
+              </div>
               {/* 支持 HTML 内容渲染 */}
               <div
                 className="page-notif-detail__html"
