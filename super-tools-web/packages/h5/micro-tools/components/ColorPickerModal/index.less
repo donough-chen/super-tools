@@ -1,0 +1,238 @@
+@import '~@/assets/variables.less';
+
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) 0 var(--spacing-md);
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  &__section-title {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* 预设颜色：标题行（左标题 + 右当前 hover 色名） */
+  &__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    /* 锁死高度，与胶囊本体高度完全一致，杜绝显隐时父容器高度抖动 */
+    height: 32px;
+  }
+
+  &__hover-name {
+    /* 始终占据布局空间，仅通过 visibility + opacity 控制可见性，防止显隐时抖动 */
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 var(--spacing-sm);
+    box-sizing: border-box;
+    font-size: var(--font-size-xs);
+    color: var(--primary-color);
+    font-weight: 500;
+    background: var(--primary-color-light);
+    border-radius: var(--border-radius-round);
+    line-height: 1;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &--visible {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* ========== 模块 1：当前选择 ========== */
+  &__current {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+    background: var(--bg-page);
+    border-radius: var(--border-radius-md);
+  }
+
+  &__current-ring {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 4px var(--bg-white), 0 0 0 5px var(--border-color);
+  }
+
+  &__current-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  &__current-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+
+  &__current-key {
+    color: var(--text-tertiary);
+    width: 56px;
+    flex-shrink: 0;
+  }
+
+  &__current-val {
+    color: var(--text-primary);
+    font-weight: 500;
+    word-break: break-all;
+  }
+
+  &__current-tag {
+    margin-left: var(--spacing-xs);
+    font-style: normal;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    padding: 2px var(--spacing-xs);
+    background: var(--bg-white);
+    border-radius: var(--border-radius-sm);
+  }
+
+  /* ========== 模块 2：预设颜色 ========== */
+  &__presets {
+    display: grid;
+    /* minmax(0,1fr) 防止 cell 被内容撑大导致整行溢出横向滚动 */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--spacing-sm);
+    justify-items: center;
+    width: 100%;
+  }
+
+  &__preset {
+    width: 100%;
+    max-width: 80px;
+    aspect-ratio: 1 / 1;
+    /* padding 用作外圈宽度的占位，未选中时透明边框，选中时换成 primary 色，
+       这样无论是否选中，按钮总尺寸保持一致，避免跳变 */
+    padding: 3px;
+    border: 2px solid transparent;
+    background: transparent;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+    box-sizing: border-box;
+
+    &:active {
+      transform: scale(0.92);
+    }
+
+    &--active {
+      /* 蓝色外圈紧贴颜色圆环：通过 border + padding 同色组合实现"两层贴合" */
+      border-color: var(--primary-color);
+    }
+  }
+
+  &__preset-ring {
+    /* 让颜色圆环占满整个按钮内容区，与外层 border 紧贴 */
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__preset-check {
+    color: #fff;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  /* ========== 模块 3：RGB 滑块 ========== */
+  &__sliders {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+}
+
+.color-picker-slider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  &__label {
+    width: 36px;
+    flex-shrink: 0;
+    font-size: var(--font-size-md);
+    font-weight: 700;
+    text-align: center;
+
+    &--r { color: #f5222d; }
+    &--g { color: #52c41a; }
+    &--b { color: #1677ff; }
+  }
+
+  &__range {
+    flex: 1;
+    min-width: 0;
+    height: 12px;
+    border-radius: 999px;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    cursor: pointer;
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--primary-color);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+    }
+
+    &::-moz-range-thumb {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--primary-color);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+    }
+  }
+
+  &__value {
+    width: 60px;
+    flex-shrink: 0;
+    text-align: right;
+    font-size: var(--font-size-sm);
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}

@@ -177,6 +177,7 @@ export const useGlobalStore = create<GlobalState & GlobalActions>()(
     setSortType: type => {
       set(state => {
         state.sortType = type;
+        saveSettings(state);
       });
     },
 

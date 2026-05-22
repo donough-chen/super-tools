@@ -17,9 +17,13 @@ import '../utils/authRequest'; // ← 副作用导入：注册请求拦截器（
 import React, { useEffect, useRef, useState } from 'react';
 import { default as SharedLayout } from '../../../shared/layouts';
 import CacheRoute from '../components/KeepAlive/CacheRoute';
-import { useUserStore, useDeviceStore, useNotificationStore } from '../store';
+import { useUserStore, useDeviceStore, useNotificationStore, useGlobalStore } from '../store';
 import { useAuthGuard } from '../hooks/useAuthGuard';
 import { useDeviceInfo } from '../hooks/useDeviceInfo';
+
+// 启动即同步恢复全局偏好（主题色等），避免首屏闪烁
+// 放到模块顶层执行，确保在任何组件首次 mount 之前完成主题色 CSS 变量写入
+useGlobalStore.getState().restoreSettings();
 
 export default ({ children, location, ...restProps }: any) => {
   const initAuth = useUserStore(state => state.initAuth);

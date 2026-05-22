@@ -14,6 +14,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { navigateTo, navigateBack, navigateReplace } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import AppModal from '../../components/AppModal';
+import ColorPickerModal from '../../components/ColorPickerModal';
 import { useGlobalStore, useUserStore } from '../../store';
 import { TOOL_LIST_MODES, FAV_LIST_MODES } from '../../constants';
 import {
@@ -34,7 +35,9 @@ const Row: React.FC<{
   onClick?: () => void;
   arrow?: boolean;
   danger?: boolean;
-}> = ({ label, value, onClick, arrow = true, danger = false }) => (
+  /** 右侧附加渲染（在 value 之前显示），如颜色圆环预览 */
+  rightExtra?: React.ReactNode;
+}> = ({ label, value, onClick, arrow = true, danger = false, rightExtra }) => (
   <button
     type="button"
     className={`settings-row${danger ? ' settings-row--danger' : ''}`}
@@ -43,6 +46,7 @@ const Row: React.FC<{
   >
     <span className="settings-row__label">{label}</span>
     <span className="settings-row__right">
+      {rightExtra}
       {value && <span className="settings-row__value">{value}</span>}
       {arrow && onClick && <span className="settings-row__arrow"></span>}
     </span>
@@ -87,6 +91,9 @@ const SettingsPage: React.FC = () => {
 
   // 退出登录确认
   const [logoutConfirm, setLogoutConfirm] = useState(false);
+
+  // 主题色选择弹窗
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
 
   const bindCount = useMemo(() => {
     if (!bindStatus) return 0;
@@ -242,21 +249,20 @@ const SettingsPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="page-settings__section">
-          <h3 className="page-settings__title">主题色</h3>
-          <div className="page-settings__colors">
-            {['#1677ff', '#52c41a', '#eb2f96', '#fa8c16', '#722ed1', '#13c2c2'].map(color => (
-              <button
-                key={color}
-                type="button"
-                className={`page-settings__color ${themeColor === color ? 'page-settings__color--active' : ''}`}
-                style={{ background: color }}
-                onClick={() => setThemeColor(color)}
-                aria-label={`主题色 ${color}`}
+        {/* 主题色：行样式 + 当前色圆环，点击弹出选择器 */}
+        <div className="settings-group-card">
+          <Row
+            label="主题色"
+            onClick={() => setColorPickerVisible(true)}
+            rightExtra={
+              <span
+                className="settings-row__color-ring"
+                style={{ background: themeColor }}
+                aria-label={`当前主题色 ${themeColor}`}
               />
-            ))}
-          </div>
-        </section>
+            }
+          />
+        </div>
 
         {/* === 退出登录 === */}
         {isLoggedIn && (
@@ -361,6 +367,17 @@ const SettingsPage: React.FC = () => {
         onConfirm={handleLogoutConfirm}
         onCancel={() => setLogoutConfirm(false)}
         onClose={() => setLogoutConfirm(false)}
+      />
+
+      {/* 主题色选择弹窗 */}
+      <ColorPickerModal
+        visible={colorPickerVisible}
+        value={themeColor}
+        onConfirm={hex => {
+          setThemeColor(hex);
+          setColorPickerVisible(false);
+        }}
+        onClose={() => setColorPickerVisible(false)}
       />
     </div>
   );
