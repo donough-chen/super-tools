@@ -57,23 +57,23 @@ export default class FeedbackSnippetCategoryService extends Service {
     const rows = await Model.findAll({
       where,
       order: [
-        ['sort_order', 'ASC'],
+        ['sortOrder', 'ASC'],
         ['id', 'ASC'],
       ],
     });
 
     const flat: CategoryNode[] = rows.map((r: any) => ({
       id: r.id,
-      parentId: r.parent_id,
+      parentId: r.parentId,
       code: r.code,
       name: r.name,
       description: r.description,
-      feedbackType: r.feedback_type,
+      feedbackType: r.feedbackType,
       icon: r.icon,
       color: r.color,
-      sortOrder: r.sort_order,
+      sortOrder: r.sortOrder,
       status: r.status,
-      isSystem: r.is_system,
+      isSystem: r.isSystem,
       children: [],
     }));
 
@@ -103,8 +103,9 @@ export default class FeedbackSnippetCategoryService extends Service {
 
   /**
    * 新建分类
+   * 注：分类表无 created_by/updated_by 字段（审计已由 audit.log 记录），operatorId 仅审计用途。
    */
-  async create(payload: CategoryCreatePayload, operatorId: number) {
+  async create(payload: CategoryCreatePayload, _operatorId: number) {
     const Model = this.ctx.model.FeedbackSnippetCategory as any;
 
     // code 唯一性校验
@@ -118,18 +119,16 @@ export default class FeedbackSnippetCategoryService extends Service {
     }
 
     const row = await Model.create({
-      parent_id: payload.parentId || null,
+      parentId: payload.parentId || null,
       code: payload.code,
       name: payload.name,
       description: payload.description || null,
-      feedback_type: payload.feedbackType || null,
+      feedbackType: payload.feedbackType || null,
       icon: payload.icon || null,
       color: payload.color || null,
-      sort_order: payload.sortOrder ?? 0,
+      sortOrder: payload.sortOrder ?? 0,
       status: payload.status ?? 1,
-      is_system: 0,
-      created_by: operatorId,
-      updated_by: operatorId,
+      isSystem: 0,
     });
     return row;
   }
@@ -137,13 +136,13 @@ export default class FeedbackSnippetCategoryService extends Service {
   /**
    * 编辑分类
    */
-  async update(id: number, payload: CategoryUpdatePayload, operatorId: number) {
+  async update(id: number, payload: CategoryUpdatePayload, _operatorId: number) {
     const Model = this.ctx.model.FeedbackSnippetCategory as any;
     const row = await Model.findByPk(id);
     if (!row) this.ctx.throw(404, '分类不存在');
 
     // 系统预置分类禁止改 code/parent
-    if (row.is_system && payload.parentId !== undefined && payload.parentId !== row.parent_id) {
+    if (row.isSystem && payload.parentId !== undefined && payload.parentId !== row.parentId) {
       this.ctx.throw(422, '系统预置分类禁止修改父分类');
     }
 
@@ -156,14 +155,14 @@ export default class FeedbackSnippetCategoryService extends Service {
       if (isDescendant) this.ctx.throw(422, '不能将子孙节点设为父分类');
     }
 
-    const updates: any = { updated_by: operatorId };
-    if (payload.parentId !== undefined) updates.parent_id = payload.parentId;
+    const updates: any = {};
+    if (payload.parentId !== undefined) updates.parentId = payload.parentId;
     if (payload.name !== undefined) updates.name = payload.name;
     if (payload.description !== undefined) updates.description = payload.description;
-    if (payload.feedbackType !== undefined) updates.feedback_type = payload.feedbackType;
+    if (payload.feedbackType !== undefined) updates.feedbackType = payload.feedbackType;
     if (payload.icon !== undefined) updates.icon = payload.icon;
     if (payload.color !== undefined) updates.color = payload.color;
-    if (payload.sortOrder !== undefined) updates.sort_order = payload.sortOrder;
+    if (payload.sortOrder !== undefined) updates.sortOrder = payload.sortOrder;
     if (payload.status !== undefined) updates.status = payload.status;
 
     await row.update(updates);
@@ -179,14 +178,14 @@ export default class FeedbackSnippetCategoryService extends Service {
 
     const row = await Model.findByPk(id);
     if (!row) this.ctx.throw(404, '分类不存在');
-    if (row.is_system) this.ctx.throw(422, '系统预置分类不可删除');
+    if (row.isSystem) this.ctx.throw(422, '系统预置分类不可删除');
 
     // 子分类校验
-    const childCount = await Model.count({ where: { parent_id: id } });
+    const childCount = await Model.count({ where: { parentId: id } });
     if (childCount > 0) this.ctx.throw(422, '该分类下还有子分类，请先删除子分类');
 
     // 话术校验
-    const snippetCount = await SnippetModel.count({ where: { category_id: id } });
+    const snippetCount = await SnippetModel.count({ where: { categoryId: id } });
     if (snippetCount > 0) this.ctx.throw(422, '该分类下还有话术，请先迁移或删除话术');
 
     await row.destroy();
@@ -224,10 +223,15 @@ export default class FeedbackSnippetCategoryService extends Service {
           this.ctx.throw(422, '存在无效的 roleId');
         }
 
-        const values = roleIds.map(rid => `(${categoryId}, ${rid})`).join(',');
+        // 修复 I3：参数化 INSERT，避免 SQL 拼接
+        const placeholders = roleIds.map(() => '(?, ?)').join(',');
+        const replacements: number[] = [];
+        roleIds.forEach((rid) => {
+          replacements.push(categoryId, rid);
+        });
         await sequelize.query(
-          `INSERT INTO feedback_snippet_role_permissions (category_id, role_id) VALUES ${values}`,
-          { transaction: t },
+          `INSERT INTO feedback_snippet_role_permissions (category_id, role_id) VALUES ${placeholders}`,
+          { replacements, transaction: t },
         );
       }
 
@@ -304,9 +308,9 @@ export default class FeedbackSnippetCategoryService extends Service {
   private async _isDescendant(candidateId: number, nodeId: number): Promise<boolean> {
     const Model = this.ctx.model.FeedbackSnippetCategory as any;
     let current = await Model.findByPk(candidateId);
-    while (current && current.parent_id) {
-      if (current.parent_id === nodeId) return true;
-      current = await Model.findByPk(current.parent_id);
+    while (current && current.parentId) {
+      if (current.parentId === nodeId) return true;
+      current = await Model.findByPk(current.parentId);
     }
     return false;
   }

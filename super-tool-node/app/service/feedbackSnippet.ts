@@ -62,7 +62,7 @@ export default class FeedbackSnippetService extends Service {
 
   async list(query: SnippetListQuery, accessibleCategoryIds?: number[] | null) {
     const where: any = {};
-    if (query.categoryId !== undefined) where.category_id = query.categoryId;
+    if (query.categoryId !== undefined) where.categoryId = query.categoryId;
     if (query.status !== undefined) where.status = query.status;
     if (query.tag) where.tags = { [Op.like]: `%${query.tag}%` };
     if (query.keyword) {
@@ -73,8 +73,8 @@ export default class FeedbackSnippetService extends Service {
       ];
     }
     if (accessibleCategoryIds && accessibleCategoryIds.length > 0) {
-      where.category_id = where.category_id
-        ? where.category_id
+      where.categoryId = where.categoryId
+        ? where.categoryId
         : { [Op.in]: accessibleCategoryIds };
     }
 
@@ -84,7 +84,7 @@ export default class FeedbackSnippetService extends Service {
 
     const { count, rows } = await Model.findAndCountAll({
       where,
-      order: [['updated_at', 'DESC']],
+      order: [['updatedAt', 'DESC']],
       limit: pageSize,
       offset: (page - 1) * pageSize,
     });
@@ -118,18 +118,18 @@ export default class FeedbackSnippetService extends Service {
     if (dup) this.ctx.throw(409, `话术 code "${payload.code}" 已存在`);
 
     return Model.create({
-      category_id: payload.categoryId,
+      categoryId: payload.categoryId,
       code: payload.code,
       title: payload.title,
       content: payload.content,
       tags: payload.tags || null,
-      sample_variables: payload.sampleVariables || null,
-      current_version: 0,
+      sampleVariables: payload.sampleVariables || null,
+      currentVersion: 0,
       status: 0, // 草稿
-      usage_count: 0,
+      usageCount: 0,
       description: payload.description || null,
-      created_by: operatorId,
-      updated_by: operatorId,
+      createdBy: operatorId,
+      updatedBy: operatorId,
     });
   }
 
@@ -154,12 +154,12 @@ export default class FeedbackSnippetService extends Service {
       if (!cat) this.ctx.throw(422, '分类不存在');
     }
 
-    const updates: any = { updated_by: operatorId };
-    if (payload.categoryId !== undefined) updates.category_id = payload.categoryId;
+    const updates: any = { updatedBy: operatorId };
+    if (payload.categoryId !== undefined) updates.categoryId = payload.categoryId;
     if (payload.title !== undefined) updates.title = payload.title;
     if (payload.content !== undefined) updates.content = payload.content;
     if (payload.tags !== undefined) updates.tags = payload.tags;
-    if (payload.sampleVariables !== undefined) updates.sample_variables = payload.sampleVariables;
+    if (payload.sampleVariables !== undefined) updates.sampleVariables = payload.sampleVariables;
     if (payload.description !== undefined) updates.description = payload.description;
 
     await row.update(updates);
@@ -180,38 +180,40 @@ export default class FeedbackSnippetService extends Service {
 
   /**
    * 发布当前内容为新版本（草稿 → 已发布）
+   * 修复 I10：在事务内锁定 row 防并发 publish 撞 (snippet_id, version) 唯一键
    */
   async publish(id: number, changeNote: string | null, operatorId: number) {
     const Model = this.ctx.model.FeedbackSnippet as any;
     const VerModel = this.ctx.model.FeedbackSnippetVersion as any;
     const sequelize = (this.app as any).model;
 
-    const row = await Model.findByPk(id);
-    if (!row) this.ctx.throw(404, '话术不存在');
-    if (!row.title || !row.content || row.content.length < MIN_PUBLISH_LEN) {
-      this.ctx.throw(422, `发布前 title/content 必填，且 content 长度 >= ${MIN_PUBLISH_LEN}`);
-    }
-
     const t = await sequelize.transaction();
     try {
-      const newVersion = (row.current_version || 0) + 1;
+      // SELECT FOR UPDATE 锁定行，防止并发 publish 拿到同样的 currentVersion
+      const row = await Model.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+      if (!row) this.ctx.throw(404, '话术不存在');
+      if (!row.title || !row.content || row.content.length < MIN_PUBLISH_LEN) {
+        this.ctx.throw(422, `发布前 title/content 必填，且 content 长度 >= ${MIN_PUBLISH_LEN}`);
+      }
+
+      const newVersion = (row.currentVersion || 0) + 1;
 
       await VerModel.create({
-        snippet_id: id,
+        snippetId: id,
         version: newVersion,
         title: row.title,
         content: row.content,
         tags: row.tags,
-        sample_variables: row.sample_variables,
-        change_note: changeNote || null,
-        published_by: operatorId,
-        published_at: new Date(),
+        sampleVariables: row.sampleVariables,
+        changeNote: changeNote || null,
+        publishedBy: operatorId,
+        publishedAt: new Date(),
       }, { transaction: t });
 
       await row.update({
-        current_version: newVersion,
+        currentVersion: newVersion,
         status: 1,
-        updated_by: operatorId,
+        updatedBy: operatorId,
       }, { transaction: t });
 
       await t.commit();
@@ -226,48 +228,52 @@ export default class FeedbackSnippetService extends Service {
     const Model = this.ctx.model.FeedbackSnippet as any;
     const row = await Model.findByPk(id);
     if (!row) this.ctx.throw(404, '话术不存在');
-    await row.update({ status: 2, updated_by: operatorId });
+    await row.update({ status: 2, updatedBy: operatorId });
     return { id };
   }
 
   /**
-   * 回滚到指定版本（恢复 title/content/tags/sample_variables，并新增一个版本快照）
+   * 回滚到指定版本（恢复 title/content/tags/sampleVariables，并新增一个版本快照）
+   * 修复 I10：事务内锁定行防并发回滚
    */
   async rollback(id: number, versionId: number, operatorId: number) {
     const Model = this.ctx.model.FeedbackSnippet as any;
     const VerModel = this.ctx.model.FeedbackSnippetVersion as any;
     const sequelize = (this.app as any).model;
 
-    const row = await Model.findByPk(id);
-    if (!row) this.ctx.throw(404, '话术不存在');
-
-    const target = await VerModel.findOne({ where: { id: versionId, snippet_id: id } });
-    if (!target) this.ctx.throw(404, '版本不存在或不属于当前话术');
-
     const t = await sequelize.transaction();
     try {
-      const newVersion = (row.current_version || 0) + 1;
+      const row = await Model.findByPk(id, { transaction: t, lock: t.LOCK.UPDATE });
+      if (!row) this.ctx.throw(404, '话术不存在');
+
+      const target = await VerModel.findOne({
+        where: { id: versionId, snippetId: id },
+        transaction: t,
+      });
+      if (!target) this.ctx.throw(404, '版本不存在或不属于当前话术');
+
+      const newVersion = (row.currentVersion || 0) + 1;
 
       await VerModel.create({
-        snippet_id: id,
+        snippetId: id,
         version: newVersion,
         title: target.title,
         content: target.content,
         tags: target.tags,
-        sample_variables: target.sample_variables,
-        change_note: `回滚到 v${target.version}`,
-        published_by: operatorId,
-        published_at: new Date(),
+        sampleVariables: target.sampleVariables,
+        changeNote: `回滚到 v${target.version}`,
+        publishedBy: operatorId,
+        publishedAt: new Date(),
       }, { transaction: t });
 
       await row.update({
         title: target.title,
         content: target.content,
         tags: target.tags,
-        sample_variables: target.sample_variables,
-        current_version: newVersion,
+        sampleVariables: target.sampleVariables,
+        currentVersion: newVersion,
         status: 1,
-        updated_by: operatorId,
+        updatedBy: operatorId,
       }, { transaction: t });
 
       await t.commit();
@@ -281,7 +287,7 @@ export default class FeedbackSnippetService extends Service {
   async listVersions(id: number) {
     const VerModel = this.ctx.model.FeedbackSnippetVersion as any;
     return VerModel.findAll({
-      where: { snippet_id: id },
+      where: { snippetId: id },
       order: [['version', 'DESC']],
     });
   }
@@ -292,11 +298,13 @@ export default class FeedbackSnippetService extends Service {
 
   /**
    * 渲染话术（注入内置变量 + 自定义变量）
+   * 修复 I7：拒绝渲染已停用话术
    */
   async render(id: number, input: RenderInput) {
     const Model = this.ctx.model.FeedbackSnippet as any;
     const row = await Model.findByPk(id);
     if (!row) this.ctx.throw(404, '话术不存在');
+    if (row.status === 2) this.ctx.throw(422, '该话术已停用，无法使用');
 
     const builtIn = await this._buildBuiltinVariables(input);
     const variables = { ...builtIn, ...(input.variables || {}) };
@@ -319,6 +327,7 @@ export default class FeedbackSnippetService extends Service {
     const FeedbackModel = this.ctx.model.Feedback as any;
     const SnipModel = this.ctx.model.FeedbackSnippet as any;
     const CatModel = this.ctx.model.FeedbackSnippetCategory as any;
+    const LogModel = this.ctx.model.FeedbackSnippetUsageLog as any;
 
     const fb = await FeedbackModel.findByPk(feedbackId);
     if (!fb) this.ctx.throw(404, '反馈不存在');
@@ -332,7 +341,7 @@ export default class FeedbackSnippetService extends Service {
       where: {
         id: { [Op.in]: accessibleCategoryIds },
         status: 1,
-        feedback_type: fb.type,
+        feedbackType: fb.type,
       },
       attributes: ['id'],
     });
@@ -342,30 +351,31 @@ export default class FeedbackSnippetService extends Service {
     const candidates = await SnipModel.findAll({
       where: {
         status: 1,
-        category_id: { [Op.in]: accessibleCategoryIds },
+        categoryId: { [Op.in]: accessibleCategoryIds },
       },
       limit: 100, // 上限，避免大表全量
     });
 
     if (candidates.length === 0) return { list: [] };
 
-    const maxUsage = Math.max(...candidates.map((c: any) => c.usage_count || 0), 1);
+    const maxUsage = Math.max(...candidates.map((c: any) => c.usageCount || 0), 1);
 
     // 简单关键词提取：按中英文标点切，过滤长度<2
     const keywords = this._extractKeywords(fb.content || '');
 
-    // 个人偏好：30天内当前用户用过的 snippet ID
-    const sequelize = (this.app as any).model;
-    const [recentRows] = await sequelize.query(
-      `SELECT DISTINCT snippet_id FROM feedback_snippet_usage_logs
-        WHERE user_id = ? AND created_at >= ?`,
-      { replacements: [currentUserId, moment().subtract(30, 'days').toDate()] },
-    );
-    const recentSet = new Set<number>((recentRows as any[]).map(r => r.snippet_id));
+    // 个人偏好：30天内当前用户用过的 snippet ID（修复 I2：用 Model 替代原生 SQL）
+    const recentLogs = await LogModel.findAll({
+      where: {
+        userId: currentUserId,
+        createdAt: { [Op.gte]: moment().subtract(30, 'days').toDate() },
+      },
+      attributes: ['snippetId'],
+    });
+    const recentSet = new Set<number>(recentLogs.map((r: any) => r.snippetId));
 
     // 评分
     const scored: Array<{ snippet: any; score: number }> = candidates.map((c: any) => {
-      const typeMatch = matchedCatIds.includes(c.category_id) ? 1 : 0;
+      const typeMatch = matchedCatIds.includes(c.categoryId) ? 1 : 0;
 
       let tagHit = 0;
       if (c.tags && keywords.length > 0) {
@@ -378,7 +388,7 @@ export default class FeedbackSnippetService extends Service {
         tagHit = Math.min(hits * 0.5, 1);
       }
 
-      const usageNorm = (c.usage_count || 0) / maxUsage;
+      const usageNorm = (c.usageCount || 0) / maxUsage;
       const personal = recentSet.has(c.id) ? 1 : 0;
 
       const score = 0.4 * typeMatch + 0.4 * tagHit + 0.15 * usageNorm + 0.05 * personal;
@@ -391,12 +401,12 @@ export default class FeedbackSnippetService extends Service {
     return {
       list: top.map((s) => ({
         id: s.snippet.id,
-        categoryId: s.snippet.category_id,
+        categoryId: s.snippet.categoryId,
         code: s.snippet.code,
         title: s.snippet.title,
         content: s.snippet.content,
         tags: s.snippet.tags,
-        usageCount: s.snippet.usage_count,
+        usageCount: s.snippet.usageCount,
         score: Number(s.score.toFixed(3)),
       })),
     };
@@ -404,6 +414,7 @@ export default class FeedbackSnippetService extends Service {
 
   /**
    * 当前用户可见的全部话术（按分类分组）—— picker 接口
+   * 修复 I8：返回时显式映射为 camelCase（前端字段名约定）
    */
   async picker(accessibleCategoryIds: number[]) {
     if (accessibleCategoryIds.length === 0) return { categories: [], snippets: [] };
@@ -413,23 +424,42 @@ export default class FeedbackSnippetService extends Service {
 
     const categories = await CatModel.findAll({
       where: { id: { [Op.in]: accessibleCategoryIds }, status: 1 },
-      order: [['sort_order', 'ASC'], ['id', 'ASC']],
+      order: [['sortOrder', 'ASC'], ['id', 'ASC']],
     });
 
     const snippets = await SnipModel.findAll({
       where: {
         status: 1,
-        category_id: { [Op.in]: accessibleCategoryIds },
+        categoryId: { [Op.in]: accessibleCategoryIds },
       },
-      attributes: ['id', 'category_id', 'code', 'title', 'content', 'tags', 'usage_count'],
-      order: [['usage_count', 'DESC']],
+      attributes: ['id', 'categoryId', 'code', 'title', 'content', 'tags', 'usageCount'],
+      order: [['usageCount', 'DESC']],
     });
 
-    return { categories, snippets };
+    return {
+      categories: categories.map((c: any) => ({
+        id: c.id,
+        parentId: c.parentId,
+        code: c.code,
+        name: c.name,
+        feedbackType: c.feedbackType,
+        sortOrder: c.sortOrder,
+      })),
+      snippets: snippets.map((s: any) => ({
+        id: s.id,
+        categoryId: s.categoryId,
+        code: s.code,
+        title: s.title,
+        content: s.content,
+        tags: s.tags,
+        usageCount: s.usageCount,
+      })),
+    };
   }
 
   /**
    * 记录一次使用
+   * 修复 C1+原子性：用 SQL 自增 usage_count，避免并发覆盖
    */
   async recordUsage(snippetId: number, feedbackId: number, userId: number, finalContent?: string | null) {
     const SnipModel = this.ctx.model.FeedbackSnippet as any;
@@ -442,17 +472,22 @@ export default class FeedbackSnippetService extends Service {
     const t = await sequelize.transaction();
     try {
       await LogModel.create({
-        snippet_id: snippetId,
-        feedback_id: feedbackId,
-        user_id: userId,
-        final_content: finalContent || null,
-        feedback_status_after: 2, // reply 后 feedback.status 必为 2 已回复
+        snippetId,
+        feedbackId,
+        userId,
+        finalContent: finalContent || null,
+        feedbackStatusAfter: 2, // reply 后 feedback.status 必为 2 已回复
       }, { transaction: t });
 
-      await snip.update({
-        usage_count: (snip.usage_count || 0) + 1,
-        last_used_at: new Date(),
-      }, { transaction: t });
+      // 原子自增（避免并发覆盖）
+      await SnipModel.increment(
+        { usageCount: 1 },
+        { where: { id: snippetId }, transaction: t },
+      );
+      await SnipModel.update(
+        { lastUsedAt: new Date() },
+        { where: { id: snippetId }, transaction: t },
+      );
 
       await t.commit();
     } catch (e) {
@@ -465,23 +500,20 @@ export default class FeedbackSnippetService extends Service {
   /**
    * 反馈状态变更回调 — 在 feedback.update() 把 status 改为 3 时调用
    * 把该反馈相关的 usage_logs.feedback_status_after 同步为 3
+   * 修复 I2：用 Model.update 替代原生 SQL
    */
   async syncFeedbackStatus(feedbackId: number, newStatus: number) {
-    const sequelize = (this.app as any).model;
+    const LogModel = this.ctx.model.FeedbackSnippetUsageLog as any;
     if (newStatus === 3) {
-      await sequelize.query(
-        `UPDATE feedback_snippet_usage_logs
-           SET feedback_status_after = 3
-           WHERE feedback_id = ? AND feedback_status_after < 3`,
-        { replacements: [feedbackId] },
+      await LogModel.update(
+        { feedbackStatusAfter: 3 },
+        { where: { feedbackId, feedbackStatusAfter: { [Op.lt]: 3 } } },
       );
     } else if (newStatus < 3) {
       // 回滚（如管理员把反馈从已关闭改回处理中）
-      await sequelize.query(
-        `UPDATE feedback_snippet_usage_logs
-           SET feedback_status_after = 2
-           WHERE feedback_id = ? AND feedback_status_after = 3`,
-        { replacements: [feedbackId] },
+      await LogModel.update(
+        { feedbackStatusAfter: 2 },
+        { where: { feedbackId, feedbackStatusAfter: 3 } },
       );
     }
   }
@@ -603,21 +635,22 @@ export default class FeedbackSnippetService extends Service {
 
     const categories = await CatModel.findAll({
       attributes: [
-        'code', 'name', 'description', 'feedback_type',
-        'icon', 'color', 'sort_order', 'status', 'is_system', 'parent_id',
+        'id', 'parentId', 'code', 'name', 'description', 'feedbackType',
+        'icon', 'color', 'sortOrder', 'status', 'isSystem',
       ],
-      order: [['sort_order', 'ASC']],
+      order: [['sortOrder', 'ASC']],
     });
 
-    // 把 parent_id 转 parent_code 以便迁移
+    // 把 parentId 转 parent_code 以便迁移
     const catIdToCode = new Map<number, string>();
     categories.forEach((c: any) => catIdToCode.set(c.id, c.code));
 
+    // 注：导出策略 — 不带停用 (status=2)，仅导出可用话术（草稿+已发布）
     const snippets = await SnipModel.findAll({
       where: { status: { [Op.in]: [0, 1] } },
       attributes: [
-        'code', 'category_id', 'title', 'content', 'tags',
-        'sample_variables', 'description', 'status',
+        'code', 'categoryId', 'title', 'content', 'tags',
+        'sampleVariables', 'description', 'status',
       ],
       order: [['code', 'ASC']],
     });
@@ -627,23 +660,23 @@ export default class FeedbackSnippetService extends Service {
       exportedAt: new Date().toISOString(),
       categories: categories.map((c: any) => ({
         code: c.code,
-        parentCode: c.parent_id ? catIdToCode.get(c.parent_id) || null : null,
+        parentCode: c.parentId ? catIdToCode.get(c.parentId) || null : null,
         name: c.name,
         description: c.description,
-        feedbackType: c.feedback_type,
+        feedbackType: c.feedbackType,
         icon: c.icon,
         color: c.color,
-        sortOrder: c.sort_order,
+        sortOrder: c.sortOrder,
         status: c.status,
-        isSystem: c.is_system,
+        isSystem: c.isSystem,
       })),
       snippets: snippets.map((s: any) => ({
         code: s.code,
-        categoryCode: catIdToCode.get(s.category_id) || null,
+        categoryCode: catIdToCode.get(s.categoryId) || null,
         title: s.title,
         content: s.content,
         tags: s.tags,
-        sampleVariables: s.sample_variables,
+        sampleVariables: s.sampleVariables,
         description: s.description,
         status: s.status,
       })),
@@ -651,7 +684,7 @@ export default class FeedbackSnippetService extends Service {
   }
 
   /**
-   * 导入（按 code 幂等：已存在则跳过）
+   * 导入（按 code 幂等：已存在则跳过 — paranoid 自动过滤软删数据）
    */
   async importData(data: any, operatorId: number) {
     if (!data || typeof data !== 'object') this.ctx.throw(422, '数据格式错误');
@@ -684,30 +717,28 @@ export default class FeedbackSnippetService extends Service {
         }
         const created = await CatModel.create({
           code: c.code,
-          parent_id: null, // 第二遍补
+          parentId: null, // 第二遍补
           name: c.name || c.code,
           description: c.description || null,
-          feedback_type: c.feedbackType || null,
+          feedbackType: c.feedbackType || null,
           icon: c.icon || null,
           color: c.color || null,
-          sort_order: c.sortOrder ?? 0,
+          sortOrder: c.sortOrder ?? 0,
           status: c.status ?? 1,
-          is_system: 0,
-          created_by: operatorId,
-          updated_by: operatorId,
+          isSystem: 0,
         }, { transaction: t });
         codeToId.set(c.code, created.id);
         categoriesCreated++;
       }
 
-      // 第二遍：补 parent_id
+      // 第二遍：补 parentId
       for (const c of cats) {
         if (c.parentCode && codeToId.has(c.code)) {
           const childId = codeToId.get(c.code)!;
           const parentId = codeToId.get(c.parentCode);
           if (parentId) {
             await CatModel.update(
-              { parent_id: parentId },
+              { parentId },
               { where: { id: childId }, transaction: t },
             );
           }
@@ -732,18 +763,18 @@ export default class FeedbackSnippetService extends Service {
           continue;
         }
         await SnipModel.create({
-          category_id: catId,
+          categoryId: catId,
           code: s.code,
           title: s.title || s.code,
           content: s.content,
           tags: s.tags || null,
-          sample_variables: s.sampleVariables || null,
-          current_version: 0,
+          sampleVariables: s.sampleVariables || null,
+          currentVersion: 0,
           status: 0, // 导入后默认草稿
-          usage_count: 0,
+          usageCount: 0,
           description: s.description || null,
-          created_by: operatorId,
-          updated_by: operatorId,
+          createdBy: operatorId,
+          updatedBy: operatorId,
         }, { transaction: t });
         snippetsCreated++;
       }
@@ -811,8 +842,8 @@ export default class FeedbackSnippetService extends Service {
       if (fb) {
         vars.feedbackId = String(fb.id);
         vars.feedbackType = this._typeText(fb.type);
-        if (fb.user_id) {
-          const user = await (this.ctx.model.User as any).findByPk(fb.user_id, {
+        if (fb.userId) {
+          const user = await (this.ctx.model.User as any).findByPk(fb.userId, {
             attributes: ['username', 'nickname'],
           });
           if (user) vars.userName = user.nickname || user.username || '用户';

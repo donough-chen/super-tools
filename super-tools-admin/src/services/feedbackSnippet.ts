@@ -104,12 +104,12 @@ export interface PickerData {
   categories: SnippetCategory[];
   snippets: Array<{
     id: number;
-    category_id: number;
+    categoryId: number;
     code: string;
     title: string;
     content: string;
     tags: string | null;
-    usage_count: number;
+    usageCount: number;
   }>;
 }
 

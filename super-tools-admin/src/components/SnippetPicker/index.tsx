@@ -68,7 +68,7 @@ const SnippetPicker: React.FC<Props> = ({ feedbackId, currentValue, onSelect, di
     if (!pickerData) return [];
     let list = pickerData.snippets;
     if (activeCatId !== 'all') {
-      list = list.filter((s) => s.category_id === activeCatId);
+      list = list.filter((s) => s.categoryId === activeCatId);
     }
     if (keyword) {
       const k = keyword.toLowerCase();
@@ -245,7 +245,7 @@ const SnippetPicker: React.FC<Props> = ({ feedbackId, currentValue, onSelect, di
                 全部分类 ({pickerData?.snippets.length || 0})
               </div>
               {(pickerData?.categories || []).map((c) => {
-                const count = (pickerData?.snippets || []).filter((s) => s.category_id === c.id).length;
+                const count = (pickerData?.snippets || []).filter((s) => s.categoryId === c.id).length;
                 return (
                   <div
                     key={c.id}
@@ -275,7 +275,7 @@ const SnippetPicker: React.FC<Props> = ({ feedbackId, currentValue, onSelect, di
                     <div className="card-title">
                       {s.title}
                       <span style={{ fontSize: 12, color: '#999', marginLeft: 8 }}>
-                        使用 {s.usage_count}
+                        使用 {s.usageCount}
                       </span>
                     </div>
                     <div className="card-content">{s.content}</div>
