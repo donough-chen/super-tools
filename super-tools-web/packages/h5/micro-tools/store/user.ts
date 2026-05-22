@@ -74,8 +74,8 @@ interface UserActions {
   /** 强制重置（不调用 logout 接口，用于 401 刷新失败后清场） */
   reset: () => void;
   // === 资料 ===
+  /** 获取当前用户完整资料（基础 + 角色 + 扩展），统一接口 /api/users/profile */
   fetchProfile: () => Promise<void>;
-  fetchProfileExtra: () => Promise<void>;
   updateProfile: (dto: UpdateProfileDTO) => Promise<ActionResult>;
   changePassword: (oldPassword: string | undefined, newPassword: string) => Promise<ActionResult>;
   // === 绑定 ===
@@ -140,10 +140,9 @@ export const useUserStore = create<UserState & UserActions>()(
           s.currentSessionId = token.sessionId;
         });
       }
-      // 并行拉取资料，任一失败不影响其他
+      // 并行拉取资料 + 绑定状态，任一失败不影响其他
       await Promise.allSettled([
         get().fetchProfile(),
-        get().fetchProfileExtra(),
         get().fetchBindStatus(),
       ]);
     },
@@ -156,7 +155,6 @@ export const useUserStore = create<UserState & UserActions>()(
           handleLoginSuccess(res.data, set);
           // 后台异步补全资料（不 await，登录立刻返回）
           get().fetchProfile();
-          get().fetchProfileExtra();
           get().fetchBindStatus();
           return { success: true, message: '登录成功' };
         }
@@ -177,7 +175,6 @@ export const useUserStore = create<UserState & UserActions>()(
         if (res?.code === 200 && res.data) {
           handleLoginSuccess(res.data, set);
           get().fetchProfile();
-          get().fetchProfileExtra();
           get().fetchBindStatus();
           return {
             success: true,
@@ -262,21 +259,6 @@ export const useUserStore = create<UserState & UserActions>()(
       try {
         const res: any = await userSvc.getProfile();
         if (res?.code === 200 && res.data) {
-          set(s => {
-            s.userInfo = res.data;
-            s.isLoggedIn = true;
-          });
-        }
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('[useUserStore] fetchProfile failed:', e);
-      }
-    },
-
-    fetchProfileExtra: async () => {
-      try {
-        const res: any = await userSvc.getProfileExtra();
-        if (res?.code === 200 && res.data) {
           const { profile, ...userPart } = res.data;
           set(s => {
             // 合并基础字段（避免覆盖现有 userInfo）
@@ -287,7 +269,7 @@ export const useUserStore = create<UserState & UserActions>()(
         }
       } catch (e) {
         // eslint-disable-next-line no-console
-        console.warn('[useUserStore] fetchProfileExtra failed:', e);
+        console.warn('[useUserStore] fetchProfile failed:', e);
       }
     },
 

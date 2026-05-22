@@ -21,14 +21,14 @@ const DEFAULTS: Required<PrivacySettings> = {
 
 const PrivacyPage: React.FC = () => {
   const profileExtra = useUserStore(s => s.profileExtra);
-  const fetchProfileExtra = useUserStore(s => s.fetchProfileExtra);
+  const fetchProfile = useUserStore(s => s.fetchProfile);
   const updateProfile = useUserStore(s => s.updateProfile);
 
   const [settings, setSettings] = useState<Required<PrivacySettings>>(DEFAULTS);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncedRef = useRef(false);
 
-  useEffect(() => { fetchProfileExtra(); }, [fetchProfileExtra]);
+  useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
   // store → 本地（仅在用户尚未交互时）
   useEffect(() => {

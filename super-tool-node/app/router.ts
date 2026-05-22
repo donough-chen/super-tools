@@ -28,7 +28,6 @@ export default (app: Application) => {
 
   // ==================== 用户（当前用户：自己操作自己，无需权限码） ====================
   router.get('/api/users/profile', auth, controller.user.profile);
-  router.get('/api/users/profile/extra', auth, controller.user.profileExtra);
   router.put('/api/users/profile', auth, controller.user.updateProfile);
   router.put('/api/users/password', auth, controller.user.changePassword);
   router.get('/api/users/addresses', auth, controller.user.listAddresses);

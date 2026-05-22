@@ -346,7 +346,7 @@ describe('E2E Flow Tests', () => {
 
     it('step2: get extended profile', async () => {
       const res = await app.httpRequest()
-        .get('/api/users/profile/extra')
+        .get('/api/users/profile')
         .set('Authorization', `Bearer ${userToken}`);
       assert.ok(res.status < 500, 'should not return 5xx, got ' + res.status);
       if (res.status === 200) {

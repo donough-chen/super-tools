@@ -248,14 +248,8 @@ export default class UserController extends BaseController {
   }
 
 
-  /** GET /api/users/profile — 基础资料 */
+  /** GET /api/users/profile — 当前用户完整资料（基础 + 角色 + 扩展） */
   async profile() {
-    const user = await this.service.user.findById(this.ctx.state.user.id);
-    this.success(user);
-  }
-
-  /** GET /api/users/profile/extra — 完整资料（基础 + 扩展） */
-  async profileExtra() {
     const result = await this.service.user.getProfileExtra(this.ctx.state.user.id);
     this.success(result);
   }

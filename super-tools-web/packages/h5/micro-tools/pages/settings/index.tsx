@@ -44,7 +44,7 @@ const Row: React.FC<{
     <span className="settings-row__label">{label}</span>
     <span className="settings-row__right">
       {value && <span className="settings-row__value">{value}</span>}
-      {arrow && onClick && <span className="settings-row__arrow">›</span>}
+      {arrow && onClick && <span className="settings-row__arrow"></span>}
     </span>
   </button>
 );
@@ -62,7 +62,7 @@ const SettingsPage: React.FC = () => {
   const isLoggedIn = useUserStore(s => s.isLoggedIn);
   const profileExtra = useUserStore(s => s.profileExtra);
   const bindStatus = useUserStore(s => s.bindStatus);
-  const fetchProfileExtra = useUserStore(s => s.fetchProfileExtra);
+  const fetchProfile = useUserStore(s => s.fetchProfile);
   const fetchBindStatus = useUserStore(s => s.fetchBindStatus);
   const updateProfile = useUserStore(s => s.updateProfile);
   const changePassword = useUserStore(s => s.changePassword);
@@ -70,10 +70,10 @@ const SettingsPage: React.FC = () => {
 
   useEffect(() => {
     if (isLoggedIn) {
-      fetchProfileExtra();
+      fetchProfile();
       fetchBindStatus();
     }
-  }, [isLoggedIn, fetchProfileExtra, fetchBindStatus]);
+  }, [isLoggedIn, fetchProfile, fetchBindStatus]);
 
   // 修改密码弹窗
   const [pwdModalVisible, setPwdModalVisible] = useState(false);

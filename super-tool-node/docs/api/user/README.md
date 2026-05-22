@@ -1,14 +1,13 @@
 # 用户模块 (User) API 文档
 
-> 更新于 2026/4/10 15:07:00
-> 包含全平台认证系统新增接口：扩展资料、设备管理
+> 更新于 2026/5/22
+> 包含全平台认证系统接口：当前用户完整资料（含扩展）、设备管理、地址管理
 
 ## 接口列表
 
 | 方法 | 路径 | 认证 | 说明 |
 |------|------|------|------|
-| `GET` | `/api/users/profile` | ✅ | 获取当前用户基础资料 |
-| `GET` | `/api/users/profile/extra` | ✅ | 获取完整资料（基础+扩展） |
+| `GET` | `/api/users/profile` | ✅ | 获取当前用户完整资料（基础 + 角色 + 扩展） |
 | `PUT` | `/api/users/profile` | ✅ | 更新个人资料（基础+扩展） |
 | `PUT` | `/api/users/password` | ✅ | 修改密码 |
 | `GET` | `/api/users/addresses` | ✅ | 获取地址列表 |
@@ -25,13 +24,15 @@
 | `PUT` | `/api/users/:id` | ✅ | 更新用户（管理端） |
 | `DELETE` | `/api/users/:id` | ✅ | 删除用户（管理端） |
 
+> ⚠️ **变更说明（2026-05-22）**：原 `/api/users/profile`（基础）与 `/api/users/profile/extra`（完整）已合并为单一 `/api/users/profile` 接口，统一返回完整资料；`/api/users/profile/extra` 已下线。
+
 ---
 
 ## GET /api/users/profile
 
 **控制器：** `controller.user.profile`
 **认证：** ✅ 需要 Bearer Token
-**说明：** 获取当前登录用户的基础资料信息
+**说明：** 获取当前登录用户的完整资料（基础信息 + 角色 + 扩展 profile）。如扩展信息不存在会自动初始化。
 
 ### 前端调用示例
 
@@ -73,65 +74,6 @@ const { data } = await axios.get(`${BASE_URL}/api/users/profile`, {
     "birthday": null,
     "status": 1,
     "registerSource": "web",
-    "roles": [
-      { "id": 1, "name": "管理员", "code": "admin" }
-    ]
-  }
-}
-```
-
-### 错误码说明
-
-| HTTP 状态码 | code | 说明 |
-|-------------|------|------|
-| 401 | 401 | 未认证或 Token 已失效 |
-| 500 | 500 | 服务器内部错误 |
-
----
-
-## GET /api/users/profile/extra
-
-**控制器：** `controller.user.profileExtra`
-**认证：** ✅ 需要 Bearer Token
-**说明：** 获取用户完整资料（基础信息 + 扩展 profile 信息），如不存在扩展信息会自动创建
-
-### 前端调用示例
-
-```javascript
-// 使用 fetch
-const token = localStorage.getItem('accessToken');
-const response = await fetch(`${BASE_URL}/api/users/profile/extra`, {
-  method: 'GET',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  },
-});
-const data = await response.json();
-```
-
-```javascript
-// 使用 axios
-const { data } = await axios.get(`${BASE_URL}/api/users/profile/extra`, {
-  headers: { Authorization: `Bearer ${token}` },
-});
-```
-
-### 响应示例
-
-```json
-{
-  "code": 200,
-  "message": "success",
-  "data": {
-    "id": 1,
-    "uuid": "550e8400-e29b-41d4-a716-446655440000",
-    "username": "admin",
-    "email": "admin@example.com",
-    "phone": "13800138000",
-    "nickname": "管理员",
-    "avatar": null,
-    "gender": 0,
     "roles": [
       { "id": 1, "name": "管理员", "code": "admin" }
     ],

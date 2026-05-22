@@ -146,33 +146,13 @@ describe('User API /api/users', () => {
       assertSuccess(res.body);
       assert.ok(res.body.data.id);
       assert.ok(res.body.data.username);
+      // 完整资料应包含 profile 扩展字段
+      assert.ok(res.body.data.profile, 'should include profile extra');
     });
 
     it('no token returns 401', async () => {
       const res = await app.httpRequest()
         .get('/api/users/profile')
-        .expect(401);
-      assert.ok(res.body);
-    });
-  });
-
-  describe('GET /api/users/profile/extra', () => {
-    it('get extended profile with valid token', async () => {
-      const res = await app.httpRequest()
-        .get('/api/users/profile/extra')
-        .set('Authorization', `Bearer ${adminToken}`);
-      assert.ok(res.status < 500, 'should not return 5xx, got ' + res.status);
-      if (res.status === 200) {
-        assertSuccess(res.body);
-        assert.ok(res.body.data, 'should return profile data');
-        // 验证扩展字段存在（可能为 null 或对象）
-        assert.ok(res.body.data.id !== undefined, 'should have basic user info');
-      }
-    });
-
-    it('no token returns 401', async () => {
-      const res = await app.httpRequest()
-        .get('/api/users/profile/extra')
         .expect(401);
       assert.ok(res.body);
     });

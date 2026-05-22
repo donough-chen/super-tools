@@ -9,7 +9,7 @@
  *  5) 我的邀请码（一键复制）
  *
  * 数据流：
- *  - 入口：并行 fetchProfileExtra() + fetchMemberInfo()
+ *  - 入口：并行 fetchProfile() + fetchMemberInfo()
  *  - 编辑：本地 useState + dirtyFields Set 跟踪改动
  *  - 保存：右上角按钮（dirty 时高亮），仅提交变更字段
  *  - 离开：dirty > 0 时 AppModal 二次确认
@@ -56,7 +56,7 @@ const ProfilePage: React.FC = () => {
   const location = useLocation();
   const fromRegister = (location as any).query?.from === 'register';
 
-  const { userInfo, profileExtra, fetchProfile, fetchProfileExtra, updateProfile } = useUserStore();
+  const { userInfo, profileExtra, fetchProfile, updateProfile } = useUserStore();
   const { memberInfo, fetchMemberInfo } = useMemberStore();
 
   const [values, setValues] = useState<FormValues>(EMPTY_VALUES);
@@ -75,9 +75,8 @@ const ProfilePage: React.FC = () => {
   // 同步 store → 本地表单（仅当用户尚未做编辑时）
   const syncedRef = useRef(false);
   useEffect(() => {
-    fetchProfileExtra();
-    fetchMemberInfo();
     fetchProfile();
+    fetchMemberInfo();
     // 仅 mount 拉取一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

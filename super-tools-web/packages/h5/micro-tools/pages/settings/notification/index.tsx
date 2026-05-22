@@ -32,7 +32,7 @@ const CHANNEL_LABELS: Record<string, string> = {
 
 const NotificationPage: React.FC = () => {
   const profileExtra = useUserStore(s => s.profileExtra);
-  const fetchProfileExtra = useUserStore(s => s.fetchProfileExtra);
+  const fetchProfile = useUserStore(s => s.fetchProfile);
   const updateProfile = useUserStore(s => s.updateProfile);
 
   const { devices, fetchDevices, updateDevicePush } = useDeviceStore();
@@ -49,9 +49,9 @@ const NotificationPage: React.FC = () => {
   });
 
   useEffect(() => {
-    fetchProfileExtra();
+    fetchProfile();
     fetchDevices();
-  }, [fetchProfileExtra, fetchDevices]);
+  }, [fetchProfile, fetchDevices]);
 
   useEffect(() => {
     if (!profileExtra) return;

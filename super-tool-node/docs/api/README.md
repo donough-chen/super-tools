@@ -29,7 +29,6 @@
 | 方法 | 路径 | 认证 |
 |------|------|------|
 | `GET` | `/api/users/profile` | ✅ |
-| `GET` | `/api/users/profile/extra` | ✅ |
 | `PUT` | `/api/users/profile` | ✅ |
 | `PUT` | `/api/users/password` | ✅ |
 | `GET` | `/api/users/addresses` | ✅ |
