@@ -6,7 +6,7 @@
  * - 上拉加载更多（IntersectionObserver）
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { navigateBack } from '@/utils/navigator';
+import { navigateBack, navigateTo } from '@/utils/navigator';
 import { safeNavigate } from '../../../utils/safeNavigate';
 import { showToast } from '../../../utils/toast';
 import { listMyOrders, cancelOrder, createPayment } from '../../../service/payment';
@@ -131,7 +131,7 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="page-orders">
-      <AppHeader title="我的订单" showBack onBack={() => navigateBack()} />
+      <AppHeader title="我的订单" showBack onBack={() => navigateTo('/member')} />
       <div className="page-orders__tabs">
         {TABS.map((t) => (
           <div

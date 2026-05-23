@@ -10,7 +10,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'umi';
-import { navigateBack } from '@/utils/navigator';
+import { navigateBack, navigateTo } from '@/utils/navigator';
 import { safeNavigate } from '../../../../utils/safeNavigate';
 import { showToast } from '../../../../utils/toast';
 import { getOrder, cancelOrder } from '../../../../service/payment';
@@ -87,7 +87,7 @@ const OrderDetailPage: React.FC = () => {
 
   return (
     <div className="page-order-detail">
-      <AppHeader title="订单详情" showBack onBack={() => navigateBack()} />
+      <AppHeader title="订单详情" showBack onBack={() => navigateTo('/member/orders')} />
       <main className="page-order-detail__content">
         {loading ? (
           <div className="page-order-detail__loading">加载中...</div>

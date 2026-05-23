@@ -17,7 +17,7 @@ export default class AdminFeedbackSnippetController extends BaseController {
       page: q.page ? Number(q.page) : undefined,
       pageSize: q.pageSize ? Number(q.pageSize) : undefined,
       categoryId: q.categoryId ? Number(q.categoryId) : undefined,
-      status: q.status !== undefined && q.status !== '' ? Number(q.status) : undefined,
+      status: q.status !== undefined && q.status !== '' ? Number(q.status) as 0 | 1 | 2 : undefined,
       tag: q.tag,
       keyword: q.keyword,
     }, accessibleIds);

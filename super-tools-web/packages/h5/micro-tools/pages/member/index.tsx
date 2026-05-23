@@ -14,7 +14,7 @@
  *   - scene=4 降级：跨套餐 + newPrice <= remainingValue → 0 元订单立即开通
  */
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { navigateBack } from '@/utils/navigator';
+import { navigateBack, navigateTo } from '@/utils/navigator';
 import { safeNavigate } from '../../utils/safeNavigate';
 import { showToast } from '../../utils/toast';
 import { getMemberInfo, getMemberPlans } from '../../service/member';
@@ -195,7 +195,7 @@ const MemberPage: React.FC = () => {
       <AppHeader
         title="会员"
         showBack
-        onBack={() => navigateBack()}
+        onBack={() => navigateTo('/mine')}
         rightSlot={
           <span
             className="page-member__orders-link"

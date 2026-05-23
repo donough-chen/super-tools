@@ -139,10 +139,55 @@ export default class RefundService extends BaseService {
       }, { transaction: t });
       await (lockedPayment as any).update({ status: 3 }, { transaction: t });
       await (lockedOrder as any).update({ status: 4 }, { transaction: t });
-      await this.ctx.model.UserMember.update(
-        { isPaid: 0, paidExpireAt: now },
-        { where: { userId: orderData.userId }, transaction: t },
-      );
+
+      // 会员状态恢复逻辑：
+      //   - 升级/降级订单（scene 3/4）有 sourcePlanCode → 退款后恢复原套餐 + 折算剩余天数
+      //   - 新购/续费订单（scene 1/2）→ 直接清空会员
+      const orderScene = orderData.scene;
+      const sourcePlanCode = orderData.sourcePlanCode;
+      const sourceRemainingValue = orderData.sourceRemainingValue
+        ? Number(orderData.sourceRemainingValue)
+        : 0;
+
+      if ((orderScene === 3 || orderScene === 4) && sourcePlanCode && sourceRemainingValue > 0) {
+        // 查原套餐信息以折算回剩余天数
+        const sourcePlan = await this.ctx.model.PaidPlan.findOne({
+          where: { code: sourcePlanCode },
+          transaction: t,
+        });
+        if (sourcePlan) {
+          const sourcePlanData = (sourcePlan as any).toJSON();
+          // 折算剩余天数 = (remainingValue / planPrice) * planDurationDays
+          const restoredDays = sourcePlanData.durationDays > 0 && sourcePlanData.price > 0
+            ? Math.ceil((sourceRemainingValue / Number(sourcePlanData.price)) * sourcePlanData.durationDays)
+            : 0;
+          if (restoredDays > 0) {
+            const restoredExpireAt = new Date(now.getTime() + restoredDays * 86400000);
+            await this.ctx.model.UserMember.update(
+              { isPaid: 1, paidPlanCode: sourcePlanCode, paidExpireAt: restoredExpireAt },
+              { where: { userId: orderData.userId }, transaction: t },
+            );
+          } else {
+            // 原套餐无法折算（例如永久套餐价格为 0）→ 清空
+            await this.ctx.model.UserMember.update(
+              { isPaid: 0, paidExpireAt: now },
+              { where: { userId: orderData.userId }, transaction: t },
+            );
+          }
+        } else {
+          // 原套餐已删除 → 降级为无会员
+          await this.ctx.model.UserMember.update(
+            { isPaid: 0, paidExpireAt: now },
+            { where: { userId: orderData.userId }, transaction: t },
+          );
+        }
+      } else {
+        // 新购/续费：直接清空会员
+        await this.ctx.model.UserMember.update(
+          { isPaid: 0, paidExpireAt: now },
+          { where: { userId: orderData.userId }, transaction: t },
+        );
+      }
 
       asyncContext = { order: orderData, refundId, amount };
       result = {
