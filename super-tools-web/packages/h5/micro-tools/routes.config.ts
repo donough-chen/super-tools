@@ -54,6 +54,9 @@ export const PAGE_ROUTES: MicroToolsRoute[] = [
   { path: '/settings', component: '@/pages/settings', title: '设置' },
 
   { path: '/profile', component: '@/pages/profile', title: '个人信息' },
+  { path: '/member/cashier', component: '@/pages/member/cashier', title: '收银台' },
+  { path: '/member/orders/:id', component: '@/pages/member/orders/[id]', title: '订单详情' },
+  { path: '/member/orders', component: '@/pages/member/orders', title: '我的订单' },
   { path: '/member', component: '@/pages/member', title: '会员' },
   { path: '/help', component: '@/pages/help', title: '使用帮助' },
   { path: '/about', component: '@/pages/about', title: '关于我们' },

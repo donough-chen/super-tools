@@ -400,9 +400,27 @@ export default class MemberService extends BaseService {
   }
 
   /**
-   * 开通/续费付费会员（管理员手动或支付回调调用）
+   * 开通/续费付费会员（管理员手动或支付回调调用）— Phase 2 扩 mode
+   *
+   * @param extra.orderId 关联的订单 ID（来自支付回调时传入），用于 PointsLog.bizId 追溯与通知 variables.orderId
+   *                       管理员手动开通时不传，向后兼容。
+   * @param extra.mode    Phase 2 新增。4 种模式：
+   *   - 'new'（默认）：基于"max(curExpireAt, NOW)"叠加 duration（兼容 phase1 行为）
+   *   - 'renew'：同 new（语义化别名）
+   *   - 'upgrade'：必须传 newExpireAt，以"支付成功时刻 + duration"为新到期（spec § 4.7 规则）
+   *   - 'downgrade'：必须传 newExpireAt，剩余价值折算后的天数（来自 priceCalculator）
+   * @param extra.newExpireAt upgrade/downgrade 时必填，作为新到期时间
    */
-  async activatePaidPlan(userId: number, planCode: string) {
+  async activatePaidPlan(
+    userId: number,
+    planCode: string,
+    extra?: {
+      orderId?: number;
+      mode?: 'new' | 'renew' | 'upgrade' | 'downgrade';
+      newExpireAt?: Date;
+    },
+  ) {
+    const mode = extra?.mode || 'new';
     const plan = await this.ctx.model.PaidPlan.findOne({ where: { code: planCode, status: 1 } });
     if (!plan) this.ctx.throw(404, '套餐不存在');
     const planData = (plan as any).toJSON();
@@ -413,12 +431,19 @@ export default class MemberService extends BaseService {
     const now = new Date();
     let expireAt: Date | null = null;
 
-    if (planData.durationDays > 0) {
-      // 如果当前是付费会员且未过期，在原到期时间基础上续期
+    if (mode === 'upgrade' || mode === 'downgrade') {
+      // upgrade / downgrade：使用 caller 计算好的 newExpireAt（来自 priceCalculator）
+      if (!extra?.newExpireAt) {
+        this.ctx.throw(500, `${mode} 模式必须传入 newExpireAt`);
+      }
+      expireAt = extra.newExpireAt;
+    } else if (planData.durationDays > 0) {
+      // new / renew：基于 max(curExpireAt, NOW) + duration（叠加）
       const currentExpire = (member as any).paidExpireAt ? new Date((member as any).paidExpireAt) : null;
       const baseDate = currentExpire && currentExpire > now ? currentExpire : now;
       expireAt = new Date(baseDate.getTime() + planData.durationDays * 86400000);
     }
+    // durationDays === 0 = 永久会员，expireAt 保持 null
 
     await (member as any).update({
       isPaid: 1,
@@ -427,16 +452,17 @@ export default class MemberService extends BaseService {
       paidExpireAt: expireAt,
     });
 
-    // 赠送积分和成长值
+    // 赠送积分和成长值（bizType=order + bizId 优先用订单 ID，便于审计追溯）
+    // 注意：升级/降级也赠送（spec 决策保留），如需调整可加 mode 判断
     if (planData.giftPoints > 0 || planData.giftGrowth > 0) {
       await this.addPoints({
         userId,
         points: planData.giftPoints || 0,
         growthDelta: planData.giftGrowth || 0,
         source: 'paid_gift',
-        bizType: 'subscription',
-        bizId: planCode,
-        remark: `开通${planData.name}赠送`,
+        bizType: extra?.orderId ? 'order' : 'subscription',
+        bizId: extra?.orderId ? String(extra.orderId) : planCode,
+        remark: `${this._modeText(mode)}${planData.name}赠送`,
       });
     }
 
@@ -449,6 +475,8 @@ export default class MemberService extends BaseService {
           planName: planData.name,
           planCode,
           expireAt: expireAt ? expireAt.toISOString().slice(0, 10) : '永久',
+          orderId: extra?.orderId,
+          mode,
         },
       });
     } catch (e: any) {
@@ -458,9 +486,20 @@ export default class MemberService extends BaseService {
     return {
       planCode,
       planName: planData.name,
+      mode,
       startAt: (member as any).paidStartAt || now,
       expireAt,
     };
+  }
+
+  /** 翻译 mode → 中文文案（用于 PointsLog.remark） */
+  private _modeText(mode: 'new' | 'renew' | 'upgrade' | 'downgrade'): string {
+    switch (mode) {
+      case 'renew': return '续费';
+      case 'upgrade': return '升级';
+      case 'downgrade': return '降级';
+      default: return '开通';
+    }
   }
 
   // ==================== 管理端方法 ====================

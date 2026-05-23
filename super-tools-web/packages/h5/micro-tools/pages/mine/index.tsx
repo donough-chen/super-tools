@@ -24,6 +24,7 @@ import './index.less';
 import { resolveIcon } from '../../utils/icon';
 
 const MENU_ITEMS = [
+  { key: 'orders', name: '我的订单', path: '/member/orders', icon: '/assets/icons/crown.png'},
   { key: 'about', name: '关于我们', path: '/about', icon: '/assets/icons/about.png'},
   { key: 'works', name: '更多作品', path: '/about', icon: '/assets/icons/more.png'},
   { key: 'settings', name: '设置', path: '/settings', icon: '/assets/icons/setting.png'},

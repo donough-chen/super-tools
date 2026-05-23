@@ -3,8 +3,11 @@ dist/
 logs/
 run/
 .env
+.env.local
+.commit-msg.tmp
 *.log
 coverage/
 .nyc_output/
 typings/app/
 typings/config/
+jest-*.log

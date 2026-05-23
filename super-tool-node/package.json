@@ -20,6 +20,7 @@
     "db:cli": "node scripts/db-cli.js"
   },
   "dependencies": {
+    "alipay-sdk": "^4.14.0",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.0.0",
     "cron-parser": "^4.0.0",

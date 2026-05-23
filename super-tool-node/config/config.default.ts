@@ -2,8 +2,11 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { EggAppConfig, EggAppInfo, PowerPartial } from 'egg';
 
-// 加载项目根目录的 .env 文件
+// 加载项目根目录的 .env 文件（公开配置）
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
+// 加载 .env.local（密钥文件，不入 git；存在则覆盖 .env 同名变量）
+// Phase 2 用于 alipay 私钥 / 公钥等敏感字段
+dotenv.config({ path: path.resolve(__dirname, '..', '.env.local'), override: true });
 
 export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
   const config: PowerPartial<EggAppConfig> = {} as any;
@@ -257,6 +260,23 @@ export default (appInfo: EggAppInfo): PowerPartial<EggAppConfig> => {
       db: 0,
     },
   };
+
+  // ==================== Alipay 沙箱（Phase 2） ====================
+  // 公开字段（appId/gateway/notifyUrl 等）由 .env 提供
+  // 密钥字段（merchantPrivateKey/publicKey）必须由 .env.local 提供（不入 git）
+  // 沙箱接入指南详见 docs/alipay-sandbox-setup.md
+  (config as any).alipay = {
+    appId: process.env.ALIPAY_APP_ID || '',
+    merchantPrivateKey: process.env.ALIPAY_MERCHANT_PRIVATE_KEY || '',
+    publicKey: process.env.ALIPAY_PUBLIC_KEY || '',
+    gateway: process.env.ALIPAY_GATEWAY || 'https://openapi.alipaydev.com/gateway.do',
+    signType: 'RSA2' as const,
+    notifyUrl: process.env.ALIPAY_NOTIFY_URL || '',
+    returnUrl: process.env.ALIPAY_RETURN_URL || '',
+  };
+
+  // H5 应用 baseUrl（用于 alipayReturn 重定向到订单详情页）
+  (config as any).h5BaseUrl = process.env.H5_BASE_URL || 'http://localhost:8000';
 
   return config;
 };

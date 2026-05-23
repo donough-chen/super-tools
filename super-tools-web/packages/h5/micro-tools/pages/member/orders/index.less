@@ -1,0 +1,121 @@
+@import '~@/assets/variables.less';
+
+.page-orders {
+  min-height: 100vh;
+  background: var(--bg-page);
+  padding-top: var(--header-height);
+
+  &__tabs {
+    display: flex;
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--border-color-light);
+    position: sticky;
+    top: var(--header-height);
+    z-index: 10;
+  }
+
+  &__tab {
+    flex: 1;
+    text-align: center;
+    padding: var(--spacing-md) 0;
+    color: var(--text-secondary);
+    font-size: var(--font-size-md);
+    cursor: pointer;
+
+    &--active {
+      color: var(--primary-color);
+      border-bottom: 2px solid var(--primary-color);
+      font-weight: 600;
+    }
+  }
+
+  &__content {
+    padding: var(--spacing-md);
+  }
+
+  &__card {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    cursor: pointer;
+  }
+
+  &__card-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+  }
+
+  &__no {
+    font-family: monospace;
+  }
+
+  &__status {
+    font-weight: 600;
+  }
+
+  &__card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: var(--spacing-sm) 0;
+  }
+
+  &__plan {
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+  }
+
+  &__amount {
+    color: var(--primary-color);
+    font-size: var(--font-size-lg);
+    font-weight: bold;
+  }
+
+  &__card-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+  }
+
+  &__actions {
+    display: inline-flex;
+    gap: 8px;
+  }
+
+  &__btn {
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+
+    &--primary {
+      background: var(--primary-color);
+      color: var(--text-white);
+    }
+
+    &--ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 80px 0;
+    color: var(--text-tertiary);
+  }
+
+  &__sentinel {
+    text-align: center;
+    padding: var(--spacing-md) 0;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+  }
+}

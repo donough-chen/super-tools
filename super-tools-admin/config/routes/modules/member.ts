@@ -33,6 +33,11 @@ const memberRoutes = [
         component: '@/pages/Member/Users',
         wrappers: ['@/components/AuthWrapper'],
       },
+      {
+        path: '/member/orders',
+        component: '@/pages/Member/Orders',
+        wrappers: ['@/components/AuthWrapper'],
+      },
     ],
   },
 ];

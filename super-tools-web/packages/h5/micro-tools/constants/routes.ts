@@ -29,6 +29,9 @@ export const KNOWN_ROUTES: readonly string[] = Array.from(
  */
 export const EXTRA_ROUTE_PREFIXES: readonly string[] = [
   // '/tools/',
+  '/member/orders/',         // /member/orders/:id 订单详情
+  '/notifications/detail/',  // /notifications/detail/:id 消息详情
+  '/feedback/detail/',       // /feedback/detail/:id 反馈详情
 ];
 
 /** 兼容旧名保留导出（对外语义不变） */

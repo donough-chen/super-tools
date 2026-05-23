@@ -204,6 +204,26 @@ export default (app: Application) => {
   router.post('/api/member/daily-sign', auth, controller.member.dailySign);
   router.post('/api/member/become-member', auth, controller.member.becomeMember);
 
+  // ==================== 订单（C 端） ====================
+  router.post('/api/orders/preview', auth, (controller as any).order.preview);
+  router.post('/api/orders', auth, (controller as any).order.create);
+  router.get('/api/orders', auth, (controller as any).order.list);
+  router.get('/api/orders/:id', auth, (controller as any).order.detail);
+  router.post('/api/orders/:id/cancel', auth, (controller as any).order.cancel);
+
+  // ==================== 支付（C 端） ====================
+  // 公开（无需 auth）
+  router.get('/api/payments/providers', (controller as any).payment.listProviders);
+  router.post('/api/payments', auth, (controller as any).payment.create);
+  router.get('/api/payments/:paymentNo/status', auth, (controller as any).payment.status);
+  // Mock 内部回调（不挂 auth；生产环境应配置内部 IP 白名单或 hmac 校验）
+  router.post('/api/payments/mock/notify', (controller as any).payment.mockNotify);
+  // 真实微信回调（占位，本 MVP 不实装）
+  router.post('/api/payments/wechat/notify', (controller as any).payment.wechatNotify);
+  // Alipay 异步通知 + 同步跳转（公开，alipay 网关直接调）
+  router.post('/api/payments/alipay/notify', (controller as any).payment.alipayNotify);
+  router.get('/api/payments/alipay/return', (controller as any).payment.alipayReturn);
+
   // ==================== 会员管理（管理端） ====================
   // 权限码定义见 database/007_add_member_module.sql；矩阵见 docs/architecture/RBAC.md § member
   router.get('/api/admin/member/levels', auth, perm('member:level:list'), controller.admin.member.levels);
@@ -217,6 +237,19 @@ export default (app: Application) => {
   router.post('/api/admin/member/users/:id/activate-plan', auth, perm('member:plan:activate'), controller.admin.member.activatePlan);
   router.get('/api/admin/member/stats', auth, perm('member:stats:view'), controller.admin.member.stats);
   router.get('/api/admin/member/points-logs', auth, perm('member:points:log:view'), controller.admin.member.pointsLogs);
+
+  // 订单管理（精确路径 /stats 必须在 /:id 之前；权限码定义见 database/022_add_order_module.sql）
+  router.get('/api/admin/member/orders/stats', auth, perm('member:order:stats'), (controller.admin as any).order.stats);
+  router.get('/api/admin/member/orders', auth, perm('member:order:list'), (controller.admin as any).order.list);
+  router.get('/api/admin/member/orders/:id', auth, perm('member:order:detail'), (controller.admin as any).order.detail);
+
+  // 退款管理（Phase 2 — 权限码定义见 database/024_add_phase2_refund_upgrade.sql）
+  router.post('/api/admin/member/orders/:id/refund', auth, perm('member:refund:create'), (controller.admin as any).refund.create);
+  router.get('/api/admin/member/refunds', auth, perm('member:order:list'), (controller.admin as any).refund.list);
+  router.get('/api/admin/member/refunds/:id', auth, perm('member:order:detail'), (controller.admin as any).refund.detail);
+
+  // 开发期调度触发（Phase 2 — 仅 admin 可用，super_admin 默认拥有）
+  router.post('/api/admin/dev/trigger-schedule', auth, perm('system:dev:trigger-schedule'), (controller.admin as any).scheduleTrigger.trigger);
 
   // ==================== 工具（H5 端） ====================
   router.get('/api/tools/home', controller.tool.home);
