@@ -9,6 +9,19 @@ export default class AppBootHook {
   }
 
   async didReady() {
+    // 服务就绪后预热地区缓存，避免首次请求慢
+    try {
+      // 通过 createAnonymousContext 创建匿名上下文调用 service
+      const ctx = this.app.createAnonymousContext()
+      // 预热树形数据缓存
+      await ctx.service.region.getAll()
+      // 预热扁平化 Map 缓存（触发 flatMap 构建并写入 Redis）
+      await ctx.service.region.getById('100000') // 触发 flatMap 构建
+      this.app.logger.info('✅ 地区数据缓存预热完成')
+    } catch (err) {
+      this.app.logger.error('❌ 地区数据缓存预热失败', err)
+    }
+
     // unittest 环境不启动队列 worker
     if (this.app.config.env !== 'unittest') {
       try {

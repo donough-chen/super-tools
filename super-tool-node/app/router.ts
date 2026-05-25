@@ -365,6 +365,15 @@ export default (app: Application) => {
   router.get('/api/notifications/:id', auth, controller.notification.detail);
   router.get('/api/notifications', auth, controller.notification.list);
 
+  // 地区相关（注意顺序：精确路由在前，动态路由在后）
+  router.get('/api/region/all',                controller.region.getAll)
+  router.get('/api/region/provinces',          controller.region.getProvinces)
+  router.get('/api/region/search',             controller.region.search)
+  router.get('/api/region/children/:parentId', controller.region.getChildren)
+  router.get('/api/region/path/:id',           controller.region.getPath)
+  router.get('/api/region/:id',                controller.region.getById)
+  router.post('/api/region/refresh-cache',     controller.region.refreshCache)
+
   // ==================== Socket.IO 路由（通知命名空间） ====================
   const io = (app as any).io;
   if (io) {
