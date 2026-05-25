@@ -11,3 +11,4 @@ export * from './device';
 export * from './tool';
 export * from './favorite';
 export * from './payment';
+export * from './region';

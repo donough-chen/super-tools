@@ -19,7 +19,10 @@ import { useLocation } from 'umi';
 import { navigateTo, navigateBack } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import AppModal from '../../components/AppModal';
+import Picker from '@/components/Picker';
+import RegionPicker, { RegionPickerNode } from '@/components/RegionPicker';
 import { useUserStore, useMemberStore } from '../../store';
+import { getAllRegions } from '../../service/region';
 import {
   GENDER_OPTIONS,
   LANGUAGE_OPTIONS,
@@ -71,12 +74,28 @@ const ProfilePage: React.FC = () => {
   const [optionModal, setOptionModal] = useState<null | { key: 'language' | 'timezone' }>(null);
   // 性别选择弹窗
   const [genderModalVisible, setGenderModalVisible] = useState(false);
+  // Picker 弹窗内的临时值（滑动期间不写入表单 dirty，确认后才提交）
+  const [genderPickerValue, setGenderPickerValue] = useState<{ gender: number }>({ gender: 0 });
+  const [optionPickerValue, setOptionPickerValue] = useState<{ value: string }>({ value: '' });
+  // 省市区选择弹窗
+  const [regionModalVisible, setRegionModalVisible] = useState(false);
+  const [regionTree, setRegionTree] = useState<RegionPickerNode[]>([]);
+  // 弹窗内临时态：{ id, label } —— 滑动期间暂存，确认后才回写表单
+  const [regionPickerValue, setRegionPickerValue] = useState<{ id: string; label: string }>({ id: '', label: '' });
 
   // 同步 store → 本地表单（仅当用户尚未做编辑时）
   const syncedRef = useRef(false);
   useEffect(() => {
     fetchProfile();
     fetchMemberInfo();
+    // 拉取省市区树（数据请求在页面层完成，组件不发请求）
+    getAllRegions()
+      .then(res => {
+        if (res?.code === 0 && Array.isArray(res.data)) {
+          setRegionTree(res.data as RegionPickerNode[]);
+        }
+      })
+      .catch(() => { /* 静默失败：弹窗内会显示"加载中..." */ });
     // 仅 mount 拉取一次
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -168,6 +187,23 @@ const ProfilePage: React.FC = () => {
     return optionModal.key === 'language' ? LANGUAGE_OPTIONS : TIMEZONE_OPTIONS;
   }, [optionModal]);
 
+  // ==== 地区显示：根据当前 regionCode 反查完整路径文本 ====
+  const regionDisplay = useMemo(() => {
+    const code = values.regionCode;
+    if (!code) return '';
+    if (regionTree.length === 0) return code; // 数据未到，先展示编码
+    for (const p of regionTree) {
+      if (p.id === code) return p.fullname;
+      for (const c of p.cids || []) {
+        if (c.id === code) return `${p.fullname} ${c.fullname}`;
+        for (const d of (c.cids || [])) {
+          if (d.id === code) return `${p.fullname} ${c.fullname} ${d.fullname}`;
+        }
+      }
+    }
+    return code;
+  }, [values.regionCode, regionTree]);
+
   const memberLabel = memberInfo?.level?.name || '加载中...';
   const memberPoints = memberInfo?.points ?? 0;
   const memberProgress = memberInfo?.nextLevel?.progress ?? 0;
@@ -243,7 +279,10 @@ const ProfilePage: React.FC = () => {
           <button
             type="button"
             className="profile-row profile-row--clickable"
-            onClick={() => setGenderModalVisible(true)}
+            onClick={() => {
+              setGenderPickerValue({ gender: values.gender });
+              setGenderModalVisible(true);
+            }}
           >
             <span className="profile-row__label">性别</span>
             <span className="profile-row__value">
@@ -292,22 +331,28 @@ const ProfilePage: React.FC = () => {
             />
           </label>
 
-          <label className="profile-row">
+          <button
+            type="button"
+            className="profile-row profile-row--clickable"
+            onClick={() => {
+              setRegionPickerValue({ id: values.regionCode, label: regionDisplay });
+              setRegionModalVisible(true);
+            }}
+          >
             <span className="profile-row__label">所在地区</span>
-            <input
-              className="profile-row__input"
-              type="text"
-              maxLength={20}
-              placeholder="如：广东深圳"
-              value={values.regionCode}
-              onChange={e => setField('regionCode', e.target.value)}
-            />
-          </label>
+            <span className="profile-row__value">
+              {regionDisplay || '请选择'}
+              <span className="profile-row__arrow">›</span>
+            </span>
+          </button>
 
           <button
             type="button"
             className="profile-row profile-row--clickable"
-            onClick={() => setOptionModal({ key: 'language' })}
+            onClick={() => {
+              setOptionPickerValue({ value: values.language });
+              setOptionModal({ key: 'language' });
+            }}
           >
             <span className="profile-row__label">语言</span>
             <span className="profile-row__value">
@@ -319,7 +364,10 @@ const ProfilePage: React.FC = () => {
           <button
             type="button"
             className="profile-row profile-row--clickable"
-            onClick={() => setOptionModal({ key: 'timezone' })}
+            onClick={() => {
+              setOptionPickerValue({ value: values.timezone });
+              setOptionModal({ key: 'timezone' });
+            }}
           >
             <span className="profile-row__label">时区</span>
             <span className="profile-row__value">
@@ -425,22 +473,73 @@ const ProfilePage: React.FC = () => {
         title="选择性别"
         contentType="text"
         content={
-          <div className="profile-options">
-            {GENDER_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                className={`profile-options__item ${values.gender === opt.value ? 'profile-options__item--active' : ''}`}
-                onClick={() => { setField('gender', opt.value); setGenderModalVisible(false); }}
-              >{opt.label}</button>
-            ))}
+          <div className="profile-picker">
+            <Picker
+              value={genderPickerValue}
+              onChange={(v) => setGenderPickerValue({ gender: Number(v.gender) })}
+              height={216}
+              itemHeight={44}
+              wheelMode="natural"
+            >
+              <Picker.Column name="gender">
+                {GENDER_OPTIONS.map(opt => (
+                  <Picker.Item key={opt.value} value={opt.value}>
+                    {({ selected }) => (
+                      <span className={`profile-picker__text ${selected ? 'profile-picker__text--active' : ''}`}>
+                        {opt.label}
+                      </span>
+                    )}
+                  </Picker.Item>
+                ))}
+              </Picker.Column>
+            </Picker>
           </div>
         }
         showClose
-        confirmText=""
+        confirmText="确定"
         cancelText="取消"
+        onConfirm={() => {
+          setField('gender', genderPickerValue.gender as 0 | 1 | 2);
+          setGenderModalVisible(false);
+        }}
         onCancel={() => setGenderModalVisible(false)}
         onClose={() => setGenderModalVisible(false)}
+      />
+
+      {/* 省市区选择弹窗 */}
+      <AppModal
+        visible={regionModalVisible}
+        title="选择所在地区"
+        contentType="text"
+        content={
+          <div className="profile-picker profile-picker--region">
+            <RegionPicker
+              tree={regionTree}
+              value={regionPickerValue.id || values.regionCode}
+              height={240}
+              itemHeight={44}
+              searchable
+              searchPlaceholder="搜索省/市/区，支持拼音"
+              onChange={(id, path) => {
+                const label = [path.province?.fullname, path.city?.fullname, path.district?.fullname]
+                  .filter(Boolean)
+                  .join(' ');
+                setRegionPickerValue({ id, label });
+              }}
+            />
+          </div>
+        }
+        showClose
+        confirmText="确定"
+        cancelText="取消"
+        onConfirm={() => {
+          if (regionPickerValue.id) {
+            setField('regionCode', regionPickerValue.id);
+          }
+          setRegionModalVisible(false);
+        }}
+        onCancel={() => setRegionModalVisible(false)}
+        onClose={() => setRegionModalVisible(false)}
       />
 
       {/* 语言/时区选择弹窗 */}
@@ -449,28 +548,36 @@ const ProfilePage: React.FC = () => {
         title={optionModal?.key === 'language' ? '选择语言' : '选择时区'}
         contentType="text"
         content={
-          <div className="profile-options">
-            {optionsForModal.map(opt => {
-              const current = optionModal?.key === 'language' ? values.language : values.timezone;
-              const active = current === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className={`profile-options__item ${active ? 'profile-options__item--active' : ''}`}
-                  onClick={() => {
-                    if (optionModal?.key === 'language') setField('language', opt.value);
-                    else setField('timezone', opt.value);
-                    setOptionModal(null);
-                  }}
-                >{opt.label}</button>
-              );
-            })}
+          <div className="profile-picker">
+            <Picker
+              value={optionPickerValue}
+              onChange={(v) => setOptionPickerValue({ value: String(v.value) })}
+              height={216}
+              itemHeight={44}
+              wheelMode="natural"
+            >
+              <Picker.Column name="value">
+                {optionsForModal.map(opt => (
+                  <Picker.Item key={opt.value} value={opt.value}>
+                    {({ selected }) => (
+                      <span className={`profile-picker__text ${selected ? 'profile-picker__text--active' : ''}`}>
+                        {opt.label}
+                      </span>
+                    )}
+                  </Picker.Item>
+                ))}
+              </Picker.Column>
+            </Picker>
           </div>
         }
         showClose
-        confirmText=""
+        confirmText="确定"
         cancelText="取消"
+        onConfirm={() => {
+          if (optionModal?.key === 'language') setField('language', optionPickerValue.value);
+          else if (optionModal?.key === 'timezone') setField('timezone', optionPickerValue.value);
+          setOptionModal(null);
+        }}
         onCancel={() => setOptionModal(null)}
         onClose={() => setOptionModal(null)}
       />

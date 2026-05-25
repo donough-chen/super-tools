@@ -37,10 +37,14 @@
       background: var(--primary-color);
       color: var(--text-white);
 
-      &:active { opacity: 0.85; }
+      &:active {
+        opacity: 0.85;
+      }
     }
 
-    &:disabled { cursor: not-allowed; }
+    &:disabled {
+      cursor: not-allowed;
+    }
   }
 }
 
@@ -102,9 +106,13 @@
     cursor: pointer;
     transition: transform var(--transition-fast);
 
-    &:active { transform: scale(0.98); }
+    &:active {
+      transform: scale(0.98);
+    }
 
-    .profile-card__title { color: var(--text-white); }
+    .profile-card__title {
+      color: var(--text-white);
+    }
   }
 
   /* 邀请码卡片 */
@@ -131,7 +139,9 @@
   text-align: left;
   min-width: 0;
 
-  &:first-of-type { border-top: none; }
+  &:first-of-type {
+    border-top: none;
+  }
 
   &__label {
     flex-shrink: 0;
@@ -225,7 +235,9 @@
   &--clickable {
     cursor: pointer;
 
-    &:active { background: rgba(0, 0, 0, 0.02); }
+    &:active {
+      background: rgba(0, 0, 0, 0.02);
+    }
   }
 
   &--column {
@@ -328,9 +340,14 @@
       background: var(--primary-color-light);
     }
 
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
 
-    &:not(:disabled):active { opacity: 0.7; }
+    &:not(:disabled):active {
+      opacity: 0.7;
+    }
   }
 }
 
@@ -364,6 +381,33 @@
 
     &:not(.profile-options__item--active):active {
       background: var(--bg-page);
+    }
+  }
+}
+
+/* ==================== Picker 弹窗（性别/语言/时区滚轮筛选） ==================== */
+.profile-picker {
+  padding: var(--spacing-md) 0 var(--spacing-sm);
+
+  &__text {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+    transition:
+      color var(--transition-fast),
+      font-size var(--transition-fast),
+      font-weight var(--transition-fast);
+    padding: 0 var(--spacing-md);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--active {
+      color: var(--primary-color);
+      font-size: var(--font-size-lg);
+      font-weight: 600;
     }
   }
 }
