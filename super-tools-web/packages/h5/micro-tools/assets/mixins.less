@@ -1,0 +1,36 @@
+/**
+ * 公共 LESS Mixins
+ *
+ * 与 variables.less（CSS 变量 / 设计 token）职责区分：
+ *   - variables.less：浏览器运行时可读的 CSS 变量
+ *   - mixins.less：编译期 LESS mixin，仅在被 include 处展开，不污染全局 CSS
+ *
+ * 使用方式：
+ *   @import '~@/assets/mixins.less';
+ *   .your-content { .tabbar-safe-bottom(); }
+ */
+
+@import './variables.less';
+
+/**
+ * .tabbar-safe-bottom()
+ *
+ * 让"内容容器"在底部为 fixed 定位的 AppTabBar 预留安全空间，避免：
+ *   1. 列表/内容最后一项被 TabBar 遮挡
+ *   2. 内容刚好接近一屏时（如「我的」页）页面看似无法滚动的问题
+ *
+ * 计算依据：
+ *   - --tabbar-height        : 100px，TabBar 自身高度
+ *   - --spacing-lg           :  24px，视觉呼吸 + 兼容 float 模式额外 16px 偏移
+ *   - --safe-area-bottom     : iOS 全面屏底部安全区（env(safe-area-inset-bottom)）
+ *
+ * 适用场景：
+ *   - 一级 TabBar 页面（home / favorites / featured / sites / mine）的内容容器
+ *
+ * 注意：
+ *   - 仅作用于"内容容器"层而非根容器，避免破坏背景色 / padding-top 等根级布局约束
+ *   - 若页面在某些状态下不渲染 TabBar（如 favorites 搜索模式），调用方可按需通过条件类切换
+ */
+.tabbar-safe-bottom() {
+  padding-bottom: calc(var(--tabbar-height) + var(--spacing-lg) + var(--safe-area-bottom));
+}

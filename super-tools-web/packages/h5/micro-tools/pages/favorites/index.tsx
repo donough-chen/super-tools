@@ -257,7 +257,9 @@ const FavoritesPage: React.FC = () => {
     <div className="page-favorites">
       <AppHeader {...headerProps} />
 
-      <main className="page-favorites__content">
+      <main
+        className={`page-favorites__content${searchMode ? ' page-favorites__content--search' : ''}`}
+      >
         {loading ? (
           <div className="page-favorites__loading">加载中...</div>
         ) : filteredList.length === 0 ? (

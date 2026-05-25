@@ -1,5 +1,6 @@
 @import '~@/assets/variables.less';
 @import '~@/assets/iconfont.less';
+@import '~@/assets/mixins.less';
 
 .page-home {
   min-height: 100vh;
@@ -9,6 +10,7 @@
 
   &__content {
     padding: var(--spacing-md);
+    .tabbar-safe-bottom();
   }
 
   /* 搜索框 */

@@ -1,4 +1,5 @@
 @import '~@/assets/variables.less';
+@import '~@/assets/mixins.less';
 
 .page-sites {
   min-height: 100vh;
@@ -8,6 +9,7 @@
     padding: var(--spacing-md);
     will-change: transform, opacity;
     overflow-x: hidden;
+    .tabbar-safe-bottom();
 
     /* ---- 滑动切换过渡动画 ---- */
     &--slide-left {

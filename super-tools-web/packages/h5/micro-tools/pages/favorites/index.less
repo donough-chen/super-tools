@@ -1,5 +1,6 @@
 @import '~@/assets/variables.less';
 @import '~@/assets/iconfont.less';
+@import '~@/assets/mixins.less';
 
 .page-favorites {
   min-height: 100vh;
@@ -9,6 +10,12 @@
 
   &__content {
     padding: var(--spacing-md);
+    .tabbar-safe-bottom();
+
+    /* 搜索模式下不渲染 AppTabBar，无需为其预留底部安全空间，恢复常规留白 */
+    &--search {
+      padding-bottom: var(--spacing-md);
+    }
   }
 
   /* ==================== 工具列表 ==================== */
