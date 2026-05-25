@@ -358,57 +358,91 @@
     gap: 12px;
   }
 
-  /* ==================== 工具图标 - iconfont ==================== */
-  &__tool-iconfont {
+  /* ==================== 工具图标 - 外层白底容器 ==================== */
+  &__tool-icon-wrap {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    font-size: var(--font-size-md);
     flex-shrink: 0;
-    line-height: 1;
-    background: var(--primary-color);
+    background: var(--bg-white, #ffffff);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
   }
 
-  /* grid 模式下图标：圆形，更大 */
-  &__tool-list--grid &__tool-iconfont {
+  /* ==================== 工具图标 - 内部图标本体 ==================== */
+  &__tool-iconfont {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 70%;
+    height: 70%;
+    font-size: var(--font-size-md);
+    line-height: 1;
+  }
+
+  /* 仅对色块占位（<i>）渲染主题底色，<img> 走 HexColorIcon 染色，需保持透明背景 */
+  i&__tool-iconfont {
+    background: var(--primary-color);
+    border-radius: 50%;
+  }
+
+  /* 真正的图片图标：保持原图形态，背景透明，由 HexColorIcon 染色（mask 路径为 <span>、fallback 路径为 <img>） */
+  img&__tool-iconfont,
+  span&__tool-iconfont {
+    background: transparent;
+    object-fit: contain;
+  }
+
+  /* grid 模式下图标容器：圆形，更大 */
+  &__tool-list--grid &__tool-icon-wrap {
     width: 64px;
     height: 64px;
-    font-size: var(--font-size-xxl);
     border-radius: 50%;
     margin-bottom: var(--spacing-xs);
   }
 
-  /* card 模式下图标：圆角方形，更大 */
-  &__tool-list--card &__tool-iconfont {
+  /* card 模式下图标容器：圆角方形，更大 */
+  &__tool-list--card &__tool-icon-wrap {
     width: 64px;
     height: 64px;
-    font-size: var(--font-size-xxl);
     border-radius: var(--border-radius-md);
     margin-bottom: var(--spacing-xs);
   }
 
-  /* flow 模式下图标：圆形 */
-  &__tool-list--flow &__tool-iconfont {
+  /* flow 模式下图标容器：圆形 */
+  &__tool-list--flow &__tool-icon-wrap {
     border-radius: 50%;
   }
 
-  /* double 模式下图标：圆形 */
-  &__tool-list--double &__tool-iconfont {
+  /* double 模式下图标容器：圆形 */
+  &__tool-list--double &__tool-icon-wrap {
     width: 48px;
     height: 48px;
-    font-size: var(--font-size-md);
     border-radius: 50%;
   }
 
-  /* single 模式下图标：圆形 */
-  &__tool-list--single &__tool-iconfont {
+  /* single 模式下图标容器：圆形 */
+  &__tool-list--single &__tool-icon-wrap {
     width: 48px;
     height: 48px;
-    font-size: var(--font-size-md);
     border-radius: 50%;
+  }
+
+  /* card 模式：内部图标改成圆角方形以贴合容器 */
+  &__tool-list--card &__tool-iconfont {
+    font-size: var(--font-size-xxl);
+  }
+
+  &__tool-list--card i&__tool-iconfont {
+    border-radius: var(--border-radius-sm);
+  }
+
+  /* grid 模式：放大字体 */
+  &__tool-list--grid &__tool-iconfont {
+    font-size: var(--font-size-xxl);
   }
 
   /* ==================== 图片图标：降级兼容 ==================== */

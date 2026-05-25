@@ -9,19 +9,24 @@ import { resolveIcon } from '../../utils/icon';
  *
  * 这样可以避免 store 中的 activeTabBarKey 与 location.pathname 不一致
  * （例如：从 featured → 二级页 → /404 → 返回首页 后，原方案 active 仍然停留在 featured）
+ *
+ * 图标渲染：
+ *   - inactive：保持原样使用 <img> 渲染 item.icon（原始多色/灰度图）
+ *   - active：使用 HexColorIcon 对 item.icon 进行 themeColor 染色，省去单独的 activeIcon 资源
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import React, { FC, useMemo } from 'react';
 import classnames from 'classnames';
 import { useLocation } from 'umi';
 import { safeNavigate } from '../../utils/safeNavigate';
+import { useGlobalStore } from '../../store';
+import HexColorIcon from '../HexColorIcon';
 import './AppTabBar.less';
 
 export interface TabBarItem {
   key: string;
   name: string;
   icon: string;
-  activeIcon: string;
 }
 
 export interface AppTabBarProps {
@@ -59,6 +64,7 @@ function deriveActiveKey(pathname: string, items: TabBarItem[]): string {
 
 const AppTabBar: FC<AppTabBarProps> = ({ mode, activeKey, items, onChange }) => {
   const { pathname } = useLocation();
+  const themeColor = useGlobalStore(s => s.themeColor);
 
   const derivedKey = useMemo(() => deriveActiveKey(pathname, items), [pathname, items]);
   const finalActiveKey = activeKey ?? derivedKey;
@@ -79,22 +85,35 @@ const AppTabBar: FC<AppTabBarProps> = ({ mode, activeKey, items, onChange }) => 
         'app-tabbar--flat': mode === 'flat',
       })}
     >
-      {items.map(item => (
-        <button
-          key={item.key}
-          className={classnames('app-tabbar__item', {
-            'app-tabbar__item--active': finalActiveKey === item.key,
-          })}
-          onClick={() => handleClick(item.key)}
-        >
-          <img
-            className="app-tabbar__icon"
-            src={resolveIcon(finalActiveKey === item.key ? item.activeIcon : item.icon)}
-            alt={item.name}
-          />
-          <span className="app-tabbar__label">{item.name}</span>
-        </button>
-      ))}
+      {items.map(item => {
+        const isActive = finalActiveKey === item.key;
+        const iconSrc = resolveIcon(item.icon);
+        return (
+          <button
+            key={item.key}
+            className={classnames('app-tabbar__item', {
+              'app-tabbar__item--active': isActive,
+            })}
+            onClick={() => handleClick(item.key)}
+          >
+            {isActive ? (
+              <HexColorIcon
+                className="app-tabbar__icon"
+                src={iconSrc}
+                color={themeColor}
+                alt={item.name}
+              />
+            ) : (
+              <img
+                className="app-tabbar__icon"
+                src={iconSrc}
+                alt={item.name}
+              />
+            )}
+            <span className="app-tabbar__label">{item.name}</span>
+          </button>
+        );
+      })}
     </nav>
   );
 };

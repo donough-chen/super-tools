@@ -23,7 +23,7 @@ import {
   findOptionLabel,
 } from '../../constants/options';
 import { showToast } from '../../utils/toast';
-import type { ToolListMode, FavListMode, TabBarMode } from '../../store/global';
+import type { ToolListMode, FavListMode, TabBarMode, ThemeColorMode } from '../../store/global';
 import './index.less';
 
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
@@ -60,6 +60,7 @@ const SettingsPage: React.FC = () => {
     toolListMode, setToolListMode,
     favListMode, setFavListMode,
     themeColor, setThemeColor,
+    themeColorMode, setThemeColorMode,
   } = useGlobalStore();
 
   // 鉴权 / 资料
@@ -249,20 +250,37 @@ const SettingsPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 主题色：行样式 + 当前色圆环，点击弹出选择器 */}
-        <div className="settings-group-card">
-          <Row
-            label="主题色"
-            onClick={() => setColorPickerVisible(true)}
-            rightExtra={
-              <span
-                className="settings-row__color-ring"
-                style={{ background: themeColor }}
-                aria-label={`当前主题色 ${themeColor}`}
-              />
-            }
-          />
-        </div>
+        {/* 主题色模式选择 */}
+        <section className="page-settings__section">
+          <h3 className="page-settings__title">主题色模式</h3>
+          <div className="page-settings__options">
+            {(['official', 'unified'] as ThemeColorMode[]).map(mode => (
+              <button
+                key={mode}
+                type="button"
+                className={`page-settings__option ${themeColorMode === mode ? 'page-settings__option--active' : ''}`}
+                onClick={() => setThemeColorMode(mode)}
+              >{mode === 'official' ? '官方多彩模式' : '统一单色模式'}</button>
+            ))}
+          </div>
+        </section>
+
+        {/* 主题色：行样式 + 当前色圆环，点击弹出选择器（仅统一单色模式下显示） */}
+        {themeColorMode === 'unified' && (
+          <div className="settings-group-card">
+            <Row
+              label="主题色"
+              onClick={() => setColorPickerVisible(true)}
+              rightExtra={
+                <span
+                  className="settings-row__color-ring"
+                  style={{ background: themeColor }}
+                  aria-label={`当前主题色 ${themeColor}`}
+                />
+              }
+            />
+          </div>
+        )}
 
         {/* === 退出登录 === */}
         {isLoggedIn && (

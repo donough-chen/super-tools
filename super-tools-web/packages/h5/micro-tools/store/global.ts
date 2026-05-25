@@ -19,6 +19,9 @@ export type TabBarMode = 'float' | 'flat';
 /** 排序方式 */
 export type SortType = 'most_used' | 'most_fav' | 'newest';
 
+/** 主题色模式：official 官方多彩 / unified 统一单色 */
+export type ThemeColorMode = 'official' | 'unified';
+
 // ==================== 主题色派生工具 ====================
 
 /** hex 颜色 → {r,g,b}（支持 #RGB / #RRGGBB 两种格式） */
@@ -88,6 +91,8 @@ interface GlobalState {
   favListMode: FavListMode;
   /** 主题色 */
   themeColor: string;
+  /** 主题色模式：official 官方多彩 / unified 统一单色 */
+  themeColorMode: ThemeColorMode;
   /** 网站排序方式 */
   sortType: SortType;
   /** 当前底部导航激活项 */
@@ -101,6 +106,7 @@ interface GlobalActions {
   setToolListMode: (mode: ToolListMode) => void;
   setFavListMode: (mode: FavListMode) => void;
   setThemeColor: (color: string) => void;
+  setThemeColorMode: (mode: ThemeColorMode) => void;
   setSortType: (type: SortType) => void;
   setActiveTabBarKey: (key: string) => void;
   setSearchBoxVisible: (visible: boolean) => void;
@@ -135,6 +141,7 @@ const initialState: GlobalState = {
   toolListMode: 'grid',
   favListMode: 'double',
   themeColor: '#1677ff',
+  themeColorMode: 'official',
   sortType: 'most_used',
   activeTabBarKey: 'home',
   isSearchBoxVisible: true,
@@ -174,6 +181,13 @@ export const useGlobalStore = create<GlobalState & GlobalActions>()(
       });
     },
 
+    setThemeColorMode: mode => {
+      set(state => {
+        state.themeColorMode = mode;
+        saveSettings(state);
+      });
+    },
+
     setSortType: type => {
       set(state => {
         state.sortType = type;
@@ -200,6 +214,7 @@ export const useGlobalStore = create<GlobalState & GlobalActions>()(
         if (saved.toolListMode) state.toolListMode = saved.toolListMode;
         if (saved.favListMode) state.favListMode = saved.favListMode;
         if (saved.sortType) state.sortType = saved.sortType;
+        if (saved.themeColorMode) state.themeColorMode = saved.themeColorMode;
         if (saved.themeColor) {
           state.themeColor = saved.themeColor;
           applyThemeColorVariables(saved.themeColor);

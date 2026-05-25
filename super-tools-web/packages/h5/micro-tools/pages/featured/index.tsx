@@ -17,6 +17,7 @@ import { TAB_BAR_ITEMS } from '../../constants';
 import { useSwipe } from '../../hooks/useSwipe';
 import type { Tool } from '../../types/tool';
 import { resolveIcon } from '../../utils/icon';
+import HexColorIcon from '../../components/HexColorIcon';
 import './index.less';
 
 const TABS = [
@@ -25,7 +26,7 @@ const TABS = [
 ];
 
 const FeaturedPage: React.FC = () => {
-  const { tabBarMode } = useGlobalStore();
+  const { tabBarMode, themeColorMode, themeColor } = useGlobalStore();
   const [activeIndex, setActiveIndex] = useState(0);
   const [list, setList] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(false);
@@ -132,24 +133,37 @@ const FeaturedPage: React.FC = () => {
           <div className="page-featured__empty">暂无{TABS[activeIndex].name}</div>
         ) : (
           <div className="page-featured__list">
-            {list.map(tool => (
-              <div
-                key={tool.code}
-                className="page-featured__item"
-                onClick={() => handleToolClick(tool)}
-              >
-                <img
-                  className="page-featured__icon"
-                  src={resolveIcon(tool.icon) || 'https://via.placeholder.com/80'}
-                  alt={tool.name}
-                  style={{ backgroundColor: tool.color || 'transparent' }}
-                />
-                <span className="page-featured__name">{tool.name}</span>
-                {tool.description && (
-                  <span className="page-featured__subtitle">{tool.description}</span>
-                )}
-              </div>
-            ))}
+            {list.map(tool => {
+              const iconUrl = resolveIcon(tool.icon);
+              const iconColor = themeColorMode === 'unified' ? themeColor : tool.color;
+              return (
+                <div
+                  key={tool.code}
+                  className="page-featured__item"
+                  onClick={() => handleToolClick(tool)}
+                >
+                  {iconUrl ? (
+                    <HexColorIcon
+                      className="page-featured__icon"
+                      src={iconUrl}
+                      color={iconColor}
+                      alt={tool.name}
+                    />
+                  ) : (
+                    <img
+                      className="page-featured__icon"
+                      src="https://via.placeholder.com/80"
+                      alt={tool.name}
+                      style={{ backgroundColor: tool.color || 'transparent' }}
+                    />
+                  )}
+                  <span className="page-featured__name">{tool.name}</span>
+                  {tool.description && (
+                    <span className="page-featured__subtitle">{tool.description}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </main>

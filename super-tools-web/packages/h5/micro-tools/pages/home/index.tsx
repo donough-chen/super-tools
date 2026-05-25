@@ -28,6 +28,7 @@ import { TAB_BAR_ITEMS } from '../../constants';
 import { useSwipe } from '../../hooks/useSwipe';
 import type { Tool } from '../../types/tool';
 import { resolveIcon } from '../../utils/icon';
+import HexColorIcon from '../../components/HexColorIcon';
 import './index.less';
 
 /** 图标颜色主题配色映射（保留原始主题色逻辑作为后端 color 字段的兜底） */
@@ -79,17 +80,30 @@ function mapToolToView(tool: Tool): ToolViewItem {
   };
 }
 
-/** 渲染工具图标：优先使用 resolved icon 图片，降级到颜色占位 */
-function renderToolIcon(tool: ToolViewItem) {
+/** 渲染工具图标：外层白底容器 + 内部主题色染色图标，提升层次感 */
+function renderToolIcon(tool: ToolViewItem, themeColorMode: 'official' | 'unified', unifiedColor: string) {
   const theme = colorToTheme(tool.color);
   if (tool.iconResolved) {
-    return <img className="page-home__tool-iconfont iconfont" src={tool.iconResolved} alt={tool.name} />;
+    // 官方多彩模式：使用接口返回的 color；统一单色模式：使用用户选择的主题色
+    const iconColor = themeColorMode === 'unified' ? unifiedColor : tool.color;
+    return (
+      <span className="page-home__tool-icon-wrap">
+        <HexColorIcon
+          className="page-home__tool-iconfont iconfont"
+          src={tool.iconResolved}
+          color={iconColor}
+          alt={tool.name}
+        />
+      </span>
+    );
   }
   return (
-    <i
-      className="page-home__tool-iconfont iconfont"
-      style={{ background: theme.bg, color: theme.color }}
-    />
+    <span className="page-home__tool-icon-wrap">
+      <i
+        className="page-home__tool-iconfont iconfont"
+        style={{ background: theme.bg, color: theme.color }}
+      />
+    </span>
   );
 }
 
@@ -105,6 +119,8 @@ interface ToolItemProps {
   favorited: boolean;
   isPopupOpen: boolean;
   toolListMode: ToolListMode;
+  themeColorMode: 'official' | 'unified';
+  unifiedColor: string;
   onLongPress: (toolCode: string) => void;
   onItemClick: (tool: Tool) => void;
   onClosePopup: () => void;
@@ -116,6 +132,8 @@ const ToolItem: React.FC<ToolItemProps> = React.memo(({
   favorited,
   isPopupOpen,
   toolListMode,
+  themeColorMode,
+  unifiedColor,
   onLongPress,
   onItemClick,
   onClosePopup,
@@ -134,7 +152,7 @@ const ToolItem: React.FC<ToolItemProps> = React.memo(({
       className={`page-home__tool-item${isPopupOpen ? ' page-home__tool-item--active' : ''}`}
       {...longPressBind}
     >
-      {renderToolIcon(tool)}
+      {renderToolIcon(tool, themeColorMode, unifiedColor)}
       {(toolListMode === 'double' || toolListMode === 'single') ? (
         <>
           <div className="page-home__tool-info">
@@ -172,7 +190,7 @@ const HomePage: React.FC = () => {
     loading,
     fetchHomeData,
   } = useHomeStore();
-  const { toolListMode, tabBarMode, isSearchBoxVisible, setSearchBoxVisible } = useGlobalStore();
+  const { toolListMode, tabBarMode, isSearchBoxVisible, setSearchBoxVisible, themeColorMode, themeColor } = useGlobalStore();
   const favoritesCodes = useFavoritesStore(s => s.codes);
   const fetchFavoriteCodes = useFavoritesStore(s => s.fetchCodes);
   const addFavorite = useFavoritesStore(s => s.addFavorite);
@@ -415,6 +433,8 @@ const HomePage: React.FC = () => {
                           favorited={favorited}
                           isPopupOpen={popupToolCode === tool.id}
                           toolListMode={toolListMode}
+                          themeColorMode={themeColorMode}
+                          unifiedColor={themeColor}
                           onLongPress={handleLongPressTool}
                           onItemClick={handleItemClick}
                           onClosePopup={handleClosePopup}

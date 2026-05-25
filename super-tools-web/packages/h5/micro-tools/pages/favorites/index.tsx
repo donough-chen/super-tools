@@ -28,6 +28,7 @@ import ToolActionPopup from '../../components/ToolActionPopup';
 import type { ToolActionItem } from '../../components/ToolActionPopup';
 import { TAB_BAR_ITEMS } from '../../constants';
 import { resolveIcon } from '../../utils/icon';
+import HexColorIcon from '../../components/HexColorIcon';
 import type { Favorite } from '../../types/favorite';
 import './index.less';
 
@@ -44,18 +45,30 @@ function colorToTheme(hex?: string): { bg: string; color: string } {
   return { bg: `rgba(${r}, ${g}, ${b}, 0.12)`, color: hex };
 }
 
-/** 渲染工具图标：优先 iconResolved，降级到色块占位 */
-function renderFavIcon(fav: Favorite) {
+/** 渲染工具图标：外层白底容器 + 内部主题色染色图标，提升层次感 */
+function renderFavIcon(fav: Favorite, themeColorMode: 'official' | 'unified', unifiedColor: string) {
   const theme = colorToTheme(fav.tool.color);
   const iconUrl = resolveIcon(fav.tool.icon);
   if (iconUrl) {
-    return <img className="page-favorites__tool-iconfont iconfont" src={iconUrl} alt={fav.tool.name} />;
+    const iconColor = themeColorMode === 'unified' ? unifiedColor : fav.tool.color;
+    return (
+      <span className="page-favorites__tool-icon-wrap">
+        <HexColorIcon
+          className="page-favorites__tool-iconfont iconfont"
+          src={iconUrl}
+          color={iconColor}
+          alt={fav.tool.name}
+        />
+      </span>
+    );
   }
   return (
-    <i
-      className="page-favorites__tool-iconfont iconfont"
-      style={{ background: theme.bg, color: theme.color }}
-    />
+    <span className="page-favorites__tool-icon-wrap">
+      <i
+        className="page-favorites__tool-iconfont iconfont"
+        style={{ background: theme.bg, color: theme.color }}
+      />
+    </span>
   );
 }
 
@@ -69,6 +82,8 @@ function renderFavIcon(fav: Favorite) {
 interface FavoriteItemProps {
   fav: Favorite;
   isPopupOpen: boolean;
+  themeColorMode: 'official' | 'unified';
+  unifiedColor: string;
   onLongPress: (toolCode: string) => void;
   onItemClick: (tool: Favorite['tool']) => void;
   onClosePopup: () => void;
@@ -78,6 +93,8 @@ interface FavoriteItemProps {
 const FavoriteItem: React.FC<FavoriteItemProps> = React.memo(({
   fav,
   isPopupOpen,
+  themeColorMode,
+  unifiedColor,
   onLongPress,
   onItemClick,
   onClosePopup,
@@ -96,7 +113,7 @@ const FavoriteItem: React.FC<FavoriteItemProps> = React.memo(({
       className={`page-favorites__item${isPopupOpen ? ' page-favorites__item--active' : ''}`}
       {...longPressBind}
     >
-      {renderFavIcon(fav)}
+      {renderFavIcon(fav, themeColorMode, unifiedColor)}
       <div className="page-favorites__tool-info">
         <span className="page-favorites__tool-name">{fav.tool.name}</span>
         {fav.tool.description && (
@@ -122,7 +139,7 @@ const FavoritesPage: React.FC = () => {
   const fetchList = useFavoritesStore(s => s.fetchList);
   const removeFavorite = useFavoritesStore(s => s.removeFavorite);
   const isLoggedIn = useUserStore(s => s.isLoggedIn);
-  const { favListMode, tabBarMode } = useGlobalStore();
+  const { favListMode, tabBarMode, themeColorMode, themeColor } = useGlobalStore();
 
   const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
 
@@ -254,6 +271,8 @@ const FavoritesPage: React.FC = () => {
                 key={fav.toolCode}
                 fav={fav}
                 isPopupOpen={popupToolCode === fav.toolCode}
+                themeColorMode={themeColorMode}
+                unifiedColor={themeColor}
                 onLongPress={handleLongPress}
                 onItemClick={handleItemClick}
                 onClosePopup={handleClosePopup}
