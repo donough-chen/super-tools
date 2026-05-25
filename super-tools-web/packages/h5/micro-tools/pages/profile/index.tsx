@@ -21,6 +21,7 @@ import AppHeader from '../../components/AppHeader';
 import AppModal from '../../components/AppModal';
 import Picker from '@/components/Picker';
 import RegionPicker, { RegionPickerNode } from '@/components/RegionPicker';
+import DatePicker from '@/components/DatePicker';
 import { useUserStore, useMemberStore } from '../../store';
 import { getAllRegions } from '../../service/region';
 import {
@@ -74,9 +75,13 @@ const ProfilePage: React.FC = () => {
   const [optionModal, setOptionModal] = useState<null | { key: 'language' | 'timezone' }>(null);
   // 性别选择弹窗
   const [genderModalVisible, setGenderModalVisible] = useState(false);
+  // 生日选择弹窗
+  const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
   // Picker 弹窗内的临时值（滑动期间不写入表单 dirty，确认后才提交）
   const [genderPickerValue, setGenderPickerValue] = useState<{ gender: number }>({ gender: 0 });
   const [optionPickerValue, setOptionPickerValue] = useState<{ value: string }>({ value: '' });
+  // 生日弹窗临时值（'YYYY-MM-DD'）
+  const [birthdayPickerValue, setBirthdayPickerValue] = useState<string>('');
   // 省市区选择弹窗
   const [regionModalVisible, setRegionModalVisible] = useState(false);
   const [regionTree, setRegionTree] = useState<RegionPickerNode[]>([]);
@@ -291,16 +296,21 @@ const ProfilePage: React.FC = () => {
             </span>
           </button>
 
-          <label className="profile-row">
+          <button
+            type="button"
+            className="profile-row profile-row--clickable"
+            onClick={() => {
+              const today = new Date().toISOString().slice(0, 10);
+              setBirthdayPickerValue(values.birthday || today);
+              setBirthdayModalVisible(true);
+            }}
+          >
             <span className="profile-row__label">生日</span>
-            <input
-              className="profile-row__input profile-row__input--date"
-              type="date"
-              value={values.birthday}
-              max={new Date().toISOString().slice(0, 10)}
-              onChange={e => setField('birthday', e.target.value)}
-            />
-          </label>
+            <span className="profile-row__value">
+              {values.birthday || '请选择'}
+              <span className="profile-row__arrow">›</span>
+            </span>
+          </button>
         </section>
 
         {/* 卡片 3：个人介绍 */}
@@ -504,6 +514,36 @@ const ProfilePage: React.FC = () => {
         }}
         onCancel={() => setGenderModalVisible(false)}
         onClose={() => setGenderModalVisible(false)}
+      />
+
+      {/* 生日选择弹窗 */}
+      <AppModal
+        visible={birthdayModalVisible}
+        title="选择生日"
+        contentType="text"
+        content={
+          <div className="profile-picker">
+            <DatePicker
+              value={birthdayPickerValue || new Date().toISOString().slice(0, 10)}
+              minDate="1900-01-01"
+              maxDate={new Date().toISOString().slice(0, 10)}
+              height={240}
+              itemHeight={44}
+              onChange={(v) => setBirthdayPickerValue(v)}
+            />
+          </div>
+        }
+        showClose
+        confirmText="确定"
+        cancelText="取消"
+        onConfirm={() => {
+          if (birthdayPickerValue) {
+            setField('birthday', birthdayPickerValue);
+          }
+          setBirthdayModalVisible(false);
+        }}
+        onCancel={() => setBirthdayModalVisible(false)}
+        onClose={() => setBirthdayModalVisible(false)}
       />
 
       {/* 省市区选择弹窗 */}
