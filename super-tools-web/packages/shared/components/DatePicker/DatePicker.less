@@ -1,0 +1,32 @@
+/**
+ * DatePicker 默认样式
+ * 与 Picker / RegionPicker 保持一致：默认行灰、选中行高亮加大
+ * 颜色取自 H5 的 CSS 变量；变量缺失时回退到默认色
+ */
+.date-picker {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  &__text {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    font-size: var(--font-size-md, 28px);
+    color: var(--text-secondary, #666);
+    transition:
+      color 0.2s,
+      font-size 0.2s,
+      font-weight 0.2s;
+    padding: 0 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--active {
+      color: var(--primary-color, #1677ff);
+      font-size: var(--font-size-lg, 30px);
+      font-weight: 600;
+    }
+  }
+}
