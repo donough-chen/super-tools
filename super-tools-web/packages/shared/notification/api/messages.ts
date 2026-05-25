@@ -4,6 +4,8 @@ import type { NotificationMessage, PaginatedResult } from '../types/domain';
 export interface ListMessagesParams {
   isRead?: 0 | 1;
   typeId?: number;
+  /** 按通知大分类过滤（与 notification_types.category 一致）：system/business/marketing */
+  category?: 'system' | 'business' | 'marketing';
   archived?: 0 | 1;
   page?: number;
   pageSize?: number;

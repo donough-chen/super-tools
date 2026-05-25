@@ -12,8 +12,14 @@ export default class NotificationController extends BaseController {
 
   /**
    * 消息列表（分页）
-   * 支持按已读状态、通知类型、归档状态筛选
+   * 支持按已读状态、通知类型、通知分类(category)、归档状态筛选
    * 仅返回 channels 包含 in_app 的站内信消息
+   *
+   * category 取值（与 notification_types.category 一致）：
+   *   - system    系统通知（安全/验证码相关）
+   *   - business  业务通知（会员/反馈相关）
+   *   - marketing 营销通知（活动/推荐相关）
+   * 当 category 与 typeId 同时传入时，typeId 优先（更精确）。
    */
   async list() {
     const { ctx } = this;
@@ -21,8 +27,8 @@ export default class NotificationController extends BaseController {
     const userId = user?.id;
     if (!userId) ctx.throw(401, '未授权');
 
-    const { isRead, typeId, archived = '0', page = 1, pageSize = 20 } = ctx.query;
-    const where: any = { 
+    const { isRead, typeId, category, archived = '0', page = 1, pageSize = 20 } = ctx.query;
+    const where: any = {
       userId,
       channels: { [Op.like]: '%in_app%' }
     };
@@ -34,12 +40,29 @@ export default class NotificationController extends BaseController {
       where.isArchived = 0;
     }
 
+    // 关联 notification_types，仅在需要按 category 过滤时使用 INNER JOIN + where
+    // 没传 category 时保持 LEFT OUTER JOIN（required:false）以兼容历史脏数据
+    const typeInclude: any = {
+      model: ctx.model.NotificationType,
+      as: 'type',
+      attributes: ['id', 'code', 'name', 'icon', 'color', 'category'],
+      required: false,
+    };
+    // 仅在未指定 typeId 且指定了 category 时启用按 category 过滤
+    if (!typeId && typeof category === 'string' && category) {
+      typeInclude.where = { category };
+      typeInclude.required = true;
+    }
+
     const { rows, count } = await ctx.model.NotificationMessage.findAndCountAll({
       where,
-      include: [{ model: ctx.model.NotificationType, as: 'type', attributes: ['id', 'code', 'name', 'icon', 'color'] }],
+      include: [typeInclude],
       offset: (Number(page) - 1) * Number(pageSize),
       limit: Number(pageSize),
       order: [['created_at', 'DESC']],
+      // 有 include + where 时 Sequelize 默认会变成子查询导致 LIMIT 异常，显式关闭
+      subQuery: false,
+      distinct: true,
     });
     this.success({ list: rows, total: count, page: Number(page), pageSize: Number(pageSize) });
   }

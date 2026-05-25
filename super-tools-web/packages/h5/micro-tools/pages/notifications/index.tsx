@@ -2,8 +2,9 @@
  * 消息中心 /notifications
  *
  * 功能：
- * - 顶部 AppTabs（multiple 模式）按消息类型切换，类型从后端获取（仅含 in_app 渠道）
- * - 使用 notification SDK 分页拉取消息列表
+ * - 顶部 AppTabs（multiple 模式）按消息分类切换，分类前端硬编码（system/business/marketing），
+ *   对应后端 notification_types.category 字段，避免动态拉取大量子类型造成 Tab 过多
+ * - 使用 notification SDK 分页拉取消息列表（接口接受 category 过滤参数）
  * - Socket 实时插入新消息（第一页）
  * - 点击消息标记已读后跳转详情页
  * - 全部已读
@@ -16,12 +17,30 @@ import AppHeader from '../../components/AppHeader';
 import AppTabs from '../../components/AppTabs';
 import type { TabItem } from '../../components/AppTabs';
 import { notificationSdk, useNotificationStore } from '../../store';
-import type { NotificationMessage, NotificationType } from '../../../../shared/notification';
+import type { NotificationMessage } from '../../../../shared/notification';
 import { resolveIcon } from '../../utils/icon';
 import './index.less';
 
 const PAGE_SIZE = 20;
-const TAB_ALL = 'all';
+
+// ==================== 分类 Tabs（前端硬编码） ====================
+// 与 notification_types.category 字段一一对应，避免动态拉取大量子类型造成 Tab 过多
+// 详见后端表 018_add_notification_system.sql / model/notification_type.ts
+type CategoryKey = 'all' | 'system' | 'business' | 'marketing';
+
+interface CategoryTab {
+  /** Tab 唯一 key（同时作为接口 category 参数；'all' 表示不过滤） */
+  key: CategoryKey;
+  /** Tab 展示名 */
+  name: string;
+}
+
+const CATEGORY_TABS: CategoryTab[] = [
+  { key: 'all',       name: '全部' },
+  { key: 'system',    name: '系统通知' },
+  { key: 'business',  name: '业务通知' },
+  { key: 'marketing', name: '活动通知' },
+];
 
 // ==================== 左滑操作按钮宽度 ====================
 // 未读时：标记已读 + 删除 = 2 个按钮；已读时：仅删除 = 1 个按钮
@@ -205,9 +224,8 @@ const SwipeableItem: React.FC<SwipeableItemProps> = ({
 // ==================== 主页面 ====================
 
 const NotificationsPage: React.FC = () => {
-  // ---- 类型 Tab ----
-  const [types, setTypes] = useState<NotificationType[]>([]);
-  const [tabs, setTabs] = useState<TabItem[]>([{ key: TAB_ALL, name: '全部' }]);
+  // ---- 分类 Tab（前端硬编码，避免请求过多子类型） ----
+  const tabs: TabItem[] = CATEGORY_TABS.map(t => ({ key: t.key, name: t.name }));
   const [activeTabIndex, setActiveTabIndex] = useState(0);
 
   // ---- 消息列表 ----
@@ -223,41 +241,34 @@ const NotificationsPage: React.FC = () => {
   // ---- 左滑状态：当前展开的 item id ----
   const [openId, setOpenId] = useState<number | null>(null);
 
-  /** 当前选中的 typeId（undefined = 全部） */
-  const activeTypeId = activeTabIndex === 0 ? undefined : types[activeTabIndex - 1]?.id;
-
-  // ---- 拉取类型列表 ----
-  useEffect(() => {
-    notificationSdk.types.list()
-      .then((data) => {
-        setTypes(data);
-        setTabs([
-          { key: TAB_ALL, name: '全部' },
-          ...data.map(t => ({ key: String(t.id), name: t.name })),
-        ]);
-      })
-      .catch(() => {});
-  }, []);
+  /** 当前选中的 category（undefined = 全部，不传后端过滤参数） */
+  const activeCategory: Exclude<CategoryKey, 'all'> | undefined = (() => {
+    const key = CATEGORY_TABS[activeTabIndex]?.key;
+    return key && key !== 'all' ? key : undefined;
+  })();
 
   // ---- 拉取消息列表 ----
-  const fetchPage = useCallback(async (p: number, typeId: number | undefined, append = false) => {
-    setLoading(true);
-    try {
-      const res = await notificationSdk.messages.list({
-        page: p,
-        pageSize: PAGE_SIZE,
-        ...(typeId !== undefined ? { typeId } : {}),
-      });
-      const newList = res.list || [];
-      setList(prev => append ? [...prev, ...newList] : newList);
-      setTotal(res.total || 0);
-      setHasMore(newList.length >= PAGE_SIZE);
-    } catch {
-      // 静默
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const fetchPage = useCallback(
+    async (p: number, category: Exclude<CategoryKey, 'all'> | undefined, append = false) => {
+      setLoading(true);
+      try {
+        const res = await notificationSdk.messages.list({
+          page: p,
+          pageSize: PAGE_SIZE,
+          ...(category ? { category } : {}),
+        });
+        const newList = res.list || [];
+        setList(prev => append ? [...prev, ...newList] : newList);
+        setTotal(res.total || 0);
+        setHasMore(newList.length >= PAGE_SIZE);
+      } catch {
+        // 静默
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   // Tab 切换时重置并重新拉取
   useEffect(() => {
@@ -265,27 +276,34 @@ const NotificationsPage: React.FC = () => {
     setList([]);
     setHasMore(true);
     setOpenId(null);
-    fetchPage(1, activeTypeId);
-  }, [activeTabIndex, activeTypeId, fetchPage]);
+    fetchPage(1, activeCategory);
+  }, [activeTabIndex, activeCategory, fetchPage]);
 
   // Socket 实时新消息
+  // socket 推送 payload 不带 type.category（见 in-app.adapter.ts），
+  // 故无法在前端精确判定是否属于当前分类。策略：
+  //   - 当前 tab 是“全部”：直接顶部插入
+  //   - 当前 tab 是某分类：触发一次首页刷新兜底，避免错插到非匹配分类
   useEffect(() => {
     const onNew = (payload: any) => {
-      const msg = payload as NotificationMessage;
-      if (activeTypeId === undefined || msg.typeId === activeTypeId) {
+      if (!activeCategory) {
+        const msg = payload as NotificationMessage;
         setList(prev => [msg, ...prev].slice(0, PAGE_SIZE));
         setTotal(t => t + 1);
+      } else {
+        // 兜底刷新当前分类首页
+        fetchPage(1, activeCategory);
       }
     };
     notificationSdk.socket.on('notification:new', onNew);
     return () => { notificationSdk.socket.off('notification:new', onNew); };
-  }, [activeTypeId]);
+  }, [activeCategory, fetchPage]);
 
   const loadMore = () => {
     if (!hasMore || loading) return;
     const next = page + 1;
     setPage(next);
-    fetchPage(next, activeTypeId, true);
+    fetchPage(next, activeCategory, true);
   };
 
   const handleTabChange = (index: number) => {
@@ -297,7 +315,7 @@ const NotificationsPage: React.FC = () => {
     try {
       await notificationSdk.messages.markAllRead();
       setPage(1);
-      await fetchPage(1, activeTypeId);
+      await fetchPage(1, activeCategory);
       refreshUnread();
     } catch {}
   };
@@ -334,7 +352,7 @@ const NotificationsPage: React.FC = () => {
       if (!item.isRead) refreshUnread();
     } catch {
       // 失败时重新拉取
-      fetchPage(1, activeTypeId);
+      fetchPage(1, activeCategory);
     }
   };
 
@@ -350,7 +368,8 @@ const NotificationsPage: React.FC = () => {
     return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
-  const hasTabs = tabs.length > 1;
+  // 分类 Tabs 始终≥2 项（全部 + 3 大分类），故必显示
+  const hasTabs = true;
 
   return (
     <div
