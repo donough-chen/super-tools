@@ -196,60 +196,16 @@ export default class MemberService extends BaseService {
   }
 
   /**
-   * 每日签到
+   * 每日签到（v2：代理调用 SignService，保留对外 API 兼容）
+   * 详见 app/service/sign.ts
    */
   async dailySign(userId: number) {
-    const today = new Date().toISOString().slice(0, 10);
-    const signKey = `member:sign:${userId}:${today}`;
-
-    // 检查是否已签到（Redis 防重复）
-    try {
-      const signed = await this.app.redis.get(signKey);
-      if (signed) this.ctx.throw(400, '今日已签到');
-    } catch (err: any) {
-      if (err.status === 400) throw err;
-      // Redis 不可用时查数据库
-      const { Op } = require('sequelize');
-      const todayStart = new Date(today + 'T00:00:00');
-      const todayEnd = new Date(today + 'T23:59:59');
-      const existing = await this.ctx.model.PointsLog.findOne({
-        where: { userId, source: 'daily_login', createdAt: { [Op.between]: [todayStart, todayEnd] } },
-      });
-      if (existing) this.ctx.throw(400, '今日已签到');
-    }
-
-    // 获取该用户的等级权益，确定签到奖励积分
-    const member = await this.ctx.model.UserMember.findOne({
-      where: { userId },
-      include: [{ model: this.ctx.model.MemberLevel, as: 'level' }],
-    });
-    if (!member) this.ctx.throw(404, '会员记录不存在');
-    const memberData = (member as any).toJSON();
-    const benefits: LevelBenefits = memberData.level?.benefits || {};
-    const signPoints = benefits.daily_sign_points || 1;
-    const signGrowth = 1;
-
-    // 增加积分（事务内完成升级检测）
-    const result = await this.addPoints({
-      userId,
-      points: signPoints,
-      growthDelta: signGrowth,
-      source: 'daily_login',
-      remark: `每日签到奖励（${memberData.level?.name || ''}）`,
-    });
-
-    // 标记已签到
-    try {
-      const secondsRemaining = Math.max(1, Math.floor((new Date(today + 'T23:59:59').getTime() - Date.now()) / 1000));
-      await this.app.redis.setex(signKey, secondsRemaining, '1');
-    } catch { /* ignore */ }
-
+    const r = await (this.ctx.service as any).sign.dailySign(userId);
     return {
-      pointsEarned: signPoints,
-      growthEarned: signGrowth,
-      currentPoints: result.currentPoints,
-      currentGrowth: result.currentGrowth,
-      isLevelUp: result.isLevelUp,
+      pointsEarned: r.points,
+      growthEarned: 0,
+      streak: r.streak,
+      signDate: r.signDate,
     };
   }
 
