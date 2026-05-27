@@ -15,12 +15,16 @@ export interface UserMemberAttributes {
   paidStartAt?: Date;
   paidExpireAt?: Date;
   levelExpireAt?: Date;
+  // 签到字段（v2 新增）
+  signStreak: number;
+  lastSignDate?: string;
+  totalSignDays: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
 export default (app: Application) => {
-  const { STRING, INTEGER, BIGINT, TINYINT, DECIMAL, DATE } = DataTypes;
+  const { STRING, INTEGER, BIGINT, TINYINT, DECIMAL, DATE, DATEONLY } = DataTypes;
 
   const UserMember = app.model.define('UserMember', {
     id: { type: BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -36,6 +40,10 @@ export default (app: Application) => {
     paidStartAt: { type: DATE, allowNull: true, field: 'paid_start_at' },
     paidExpireAt: { type: DATE, allowNull: true, field: 'paid_expire_at' },
     levelExpireAt: { type: DATE, allowNull: true, field: 'level_expire_at' },
+    // 签到字段（v2 新增）
+    signStreak: { type: INTEGER.UNSIGNED, defaultValue: 0, field: 'sign_streak' },
+    lastSignDate: { type: DATEONLY, allowNull: true, field: 'last_sign_date' },
+    totalSignDays: { type: INTEGER.UNSIGNED, defaultValue: 0, field: 'total_sign_days' },
   }, {
     tableName: 'user_members',
     timestamps: true,

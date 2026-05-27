@@ -13,11 +13,17 @@ export interface PointsLogAttributes {
   bizId?: string;
   remark?: string;
   expireAt?: Date;
+  // FIFO 融合字段（v2 新增，仅 type=1 时有意义）
+  pointsRemaining: number;        // 剩余可用积分
+  status: number;                 // 1可用 2已耗尽 3已过期 4已退款回收
+  sourceLevelId?: number;         // 获得时的等级ID（用于过期时长计算）
+  sourceEvent?: string;           // 来源事件 code
+  growthMultiplier: number;       // 获得时应用的等级积分倍率
   createdAt?: Date;
 }
 
 export default (app: Application) => {
-  const { STRING, INTEGER, BIGINT, TINYINT, DATE } = DataTypes;
+  const { STRING, INTEGER, BIGINT, TINYINT, DATE, DECIMAL } = DataTypes;
 
   const PointsLog = app.model.define('PointsLog', {
     id: { type: BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -31,6 +37,12 @@ export default (app: Application) => {
     bizId: { type: STRING(64), allowNull: true, field: 'biz_id' },
     remark: { type: STRING(200), allowNull: true },
     expireAt: { type: DATE, allowNull: true, field: 'expire_at' },
+    // FIFO 融合字段（v2 新增）
+    pointsRemaining: { type: INTEGER.UNSIGNED, defaultValue: 0, field: 'points_remaining' },
+    status: { type: TINYINT.UNSIGNED, defaultValue: 1 },
+    sourceLevelId: { type: INTEGER.UNSIGNED, allowNull: true, field: 'source_level_id' },
+    sourceEvent: { type: STRING(50), allowNull: true, field: 'source_event' },
+    growthMultiplier: { type: DECIMAL(4, 2), defaultValue: 1.00, field: 'growth_multiplier' },
   }, {
     tableName: 'points_logs',
     timestamps: true,
