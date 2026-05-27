@@ -50,6 +50,9 @@ export default (app: Application) => {
     refundStatus: { type: ENUM('none', 'requested', 'approved', 'rejected', 'refunded'), defaultValue: 'none', field: 'refund_status' },
     refundReason: { type: STRING(200), allowNull: true, field: 'refund_reason' },
     refundedAt: { type: DATE, allowNull: true, field: 'refunded_at' },
+    // 显式声明 timestamp 字段以支持 where 子句引用
+    createdAt: { type: DATE, field: 'created_at' },
+    updatedAt: { type: DATE, field: 'updated_at' },
   }, {
     tableName: 'points_mall_orders',
     timestamps: true,
