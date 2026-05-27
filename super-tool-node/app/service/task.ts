@@ -1,4 +1,5 @@
 import BaseService from './base';
+import { localTodayStr } from '../lib/dateUtil';
 
 /**
  * 周期键计算（本地时区）
@@ -7,6 +8,9 @@ import BaseService from './base';
  *  - weekly: 'YYYY-Www'（ISO 周）
  *  - monthly: 'YYYY-MM'
  *  - yearly: 'YYYY'
+ *
+ *  TODO(A2 后续)：当前仍用 server 时区的 d.getFullYear/Month/Date；
+ *               UTC server 上半夜会跨日错位。建议后续替换为 dateUtil 的本地时区版本。
  */
 function cycleKey(cycle: string, d: Date = new Date()): string {
   const y = d.getFullYear();
@@ -25,15 +29,6 @@ function cycleKey(cycle: string, d: Date = new Date()): string {
     case 'yearly': return `${y}`;
     default: return 'once';
   }
-}
-
-/** 取本地时区的 today（YYYY-MM-DD），与 SignService 一致 */
-function localTodayStr(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
 }
 
 /**

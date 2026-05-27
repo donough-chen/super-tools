@@ -1,25 +1,21 @@
 import BaseService from './base';
+import { localTodayStr } from '../lib/dateUtil';
 
 /**
  * 积分过期 + 升级延长有效期
  *  设计依据: docs/superpowers/plans/2026-05-26-积分成长体系MVP实施计划-v2.md §Task 10
  *           docs/analysis/积分与成长体系深度评估报告.md §5.4 提醒触达 / §4.4 升级延长
+ *           docs/superpowers/plans/2026-05-27-积分成长体系后端优化-A基础设施实施计划.md Task A2
  *
  *  核心方法：
  *    - processExpiredBatches() —— 扫描 expire_at<=NOW 的批次清零（FIFO 状态置 3）
  *    - extendExpireOnUpgrade() —— 升级时把存量批次 expire_at = GREATEST(原值, NOW+新等级有效期)
  *    - sendExpireReminders()  —— T-30 / T-7 / T-0 多渠道提醒（PointsExpiryNotice 唯一索引保幂等）
  *    - getStats()             —— 管理端过期统计（即将过期 + 本月已过期）
+ *
+ *  日期统一走 lib/dateUtil（强制 Asia/Shanghai，与 server 时区无关）。
  */
 export default class PointsExpireService extends BaseService {
-  /** 取本地时区"今天"日期串（YYYY-MM-DD） */
-  private localTodayStr(d: Date = new Date()): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
-  }
-
   /**
    * 每日定时调用：清零已过期的批次
    *  - 分批扫描（每次 500 条）防大事务
@@ -125,7 +121,7 @@ export default class PointsExpireService extends BaseService {
         await (this.ctx.service.notification as any).core.send({
           typeCode: 'BUSINESS_POINTS_EXPIRED',
           userId: uid,
-          variables: { date: this.localTodayStr() },
+          variables: { date: localTodayStr() },
         });
       } catch { /* ignore */ }
     }
@@ -188,13 +184,13 @@ export default class PointsExpireService extends BaseService {
     let sent = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = this.localTodayStr(today);
+      const todayStr = localTodayStr(today);
 
     for (const stage of stages) {
       const targetDay = new Date(today.getTime() + stage.days * 86_400_000);
       const dayStart = new Date(targetDay); dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(targetDay); dayEnd.setHours(23, 59, 59, 999);
-      const expireDateStr = this.localTodayStr(dayStart);
+      const expireDateStr = localTodayStr(dayStart);
 
       // 按用户聚合：当日到期的总积分
       const groups: any[] = await (this.ctx.model.PointsLog as any).findAll({

@@ -1,9 +1,11 @@
 import BaseService from './base';
+import { localTodayStr } from '../lib/dateUtil';
 
 /**
  * 积分对账服务
  *  设计依据: docs/superpowers/plans/2026-05-26-积分成长体系MVP实施计划-v2.md §Task 12
  *           docs/analysis/积分与成长体系深度评估报告.md §5.5 对账机制
+ *           docs/superpowers/plans/2026-05-27-积分成长体系后端优化-A基础设施实施计划.md Task A2
  *
  *  两层对账：
  *    1. 日终全量快照（每日 23:55）：记录每个用户的"实际余额（user_members.points）
@@ -13,23 +15,16 @@ import BaseService from './base';
  *  注意：
  *    - 本系统因 user_members.points 是 UNSIGNED，钳到 0 时会与流水累计值产生预期差异；
  *      对账时把"理论值钳到 0"再比较（diff = actual - max(0, theoretical)）
+ *    - 日期统一走 lib/dateUtil（强制 Asia/Shanghai）
  */
 export default class PointsReconcileService extends BaseService {
-  /** 取本地时区"今天"（YYYY-MM-DD） */
-  private localTodayStr(d: Date = new Date()): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
-  }
-
   /**
    * 日终全量快照（每日 23:55 触发）
    *   分批 1000 用户，逐个查 SUM(points) 作为理论余额，与 user_members.points 对比
    */
   async takeDailySnapshot(): Promise<{ users: number; anomalies: number }> {
     const { fn, col } = require('sequelize');
-    const todayStr = this.localTodayStr();
+    const todayStr = localTodayStr();
 
     let offset = 0;
     let users = 0;
@@ -155,7 +150,7 @@ export default class PointsReconcileService extends BaseService {
     page?: number;
     pageSize?: number;
   }) {
-    const date = query.date || this.localTodayStr();
+    const date = query.date || localTodayStr();
     const where: any = { snapshotDate: date };
     if (query.onlyAnomaly) where.isAnomaly = 1;
     const page = query.page || 1;
