@@ -375,19 +375,21 @@ UPDATE `system_configs` SET `value` = '0' WHERE `group` = 'member' AND `key` = '
 
 -- ============================================================
 -- 权限码（管理端）
+-- 注意: type=4 表示 API 类型（permissions.type 是 TINYINT，1=目录,2=菜单,3=按钮,4=API）
+--       早期版本错写成字符串 'api'，已由 026_fix_points_permissions_type.sql 修复并回写本文件
 -- ============================================================
 INSERT IGNORE INTO `permissions` (`name`,`code`,`type`,`module`,`path`,`method`,`sort`,`status`) VALUES
-('任务列表',     'points:task:list',      'api','points','/api/admin/points/tasks',       'GET',    1,1),
-('任务创建',     'points:task:create',    'api','points','/api/admin/points/tasks',       'POST',   2,1),
-('任务更新',     'points:task:update',    'api','points','/api/admin/points/tasks/:id',   'PUT',    3,1),
-('任务删除',     'points:task:delete',    'api','points','/api/admin/points/tasks/:id',   'DELETE', 4,1),
-('商城商品列表', 'points:mall:list',      'api','points','/api/admin/points/mall/items',  'GET',    5,1),
-('商城商品管理', 'points:mall:manage',    'api','points','/api/admin/points/mall/items',  'POST',   6,1),
-('商城订单列表', 'points:mall:orders',    'api','points','/api/admin/points/mall/orders', 'GET',    7,1),
-('商城订单退款', 'points:mall:refund',    'api','points','/api/admin/points/mall/orders/:id/refund','POST',8,1),
-('过期统计',     'points:expire:stats',   'api','points','/api/admin/points/expire/stats','GET',    9,1),
-('对账查询',     'points:reconcile:view', 'api','points','/api/admin/points/reconcile',   'GET',   10,1),
-('运维触发',     'points:ops:trigger',    'api','points','/api/admin/points/ops/trigger', 'POST',  11,1);
+('任务列表',     'points:task:list',      4,'points','/api/admin/points/tasks',       'GET',    1,1),
+('任务创建',     'points:task:create',    4,'points','/api/admin/points/tasks',       'POST',   2,1),
+('任务更新',     'points:task:update',    4,'points','/api/admin/points/tasks/:id',   'PUT',    3,1),
+('任务删除',     'points:task:delete',    4,'points','/api/admin/points/tasks/:id',   'DELETE', 4,1),
+('商城商品列表', 'points:mall:list',      4,'points','/api/admin/points/mall/items',  'GET',    5,1),
+('商城商品管理', 'points:mall:manage',    4,'points','/api/admin/points/mall/items',  'POST',   6,1),
+('商城订单列表', 'points:mall:orders',    4,'points','/api/admin/points/mall/orders', 'GET',    7,1),
+('商城订单退款', 'points:mall:refund',    4,'points','/api/admin/points/mall/orders/:id/refund','POST',8,1),
+('过期统计',     'points:expire:stats',   4,'points','/api/admin/points/expire/stats','GET',    9,1),
+('对账查询',     'points:reconcile:view', 4,'points','/api/admin/points/reconcile',   'GET',   10,1),
+('运维触发',     'points:ops:trigger',    4,'points','/api/admin/points/ops/trigger', 'POST',  11,1);
 
 -- super_admin 默认拥有 points 模块全部权限
 INSERT IGNORE INTO `role_permissions` (`role_id`,`permission_id`)
