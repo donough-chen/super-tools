@@ -1,5 +1,6 @@
 import BaseService from './base';
 import { localTodayStr, prevDayStr } from '../lib/dateUtil';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 /**
  * 签到服务
@@ -85,8 +86,8 @@ export default class SignService extends BaseService {
 
       // 触发领域事件（T7 完成后任务系统监听 sign_streak 派发里程碑奖励）
       try {
-        await (this.ctx.service as any).event.emit('sign', { userId, streak: newStreak });
-        await (this.ctx.service as any).event.emit('sign_streak', { userId, streak: newStreak });
+        await (this.ctx.service as any).event.emit(EVENT_CODES.SIGN, { userId, streak: newStreak });
+        await (this.ctx.service as any).event.emit(EVENT_CODES.SIGN_STREAK, { userId, streak: newStreak });
       } catch (e: any) {
         this.ctx.logger.warn(`[sign] event emit failed: ${e.message}`);
       }

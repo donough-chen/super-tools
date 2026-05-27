@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcryptjs';
 import BaseService, { PaginationOptions, PaginationResult } from './base';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 export default class AuthService extends BaseService {
 
@@ -63,7 +64,7 @@ export default class AuthService extends BaseService {
 
     // ========== 积分体系 v2 — 每日登录事件埋点（Task 18）==========
     try {
-      await (this.service as any).event.emit('daily_login', {
+      await (this.service as any).event.emit(EVENT_CODES.DAILY_LOGIN, {
         userId: userData.id,
         login_date: new Date().toISOString().slice(0, 10),
       });
@@ -185,7 +186,7 @@ export default class AuthService extends BaseService {
 
     // ========== 积分体系 v2 — 每日登录事件埋点（Task 18）==========
     try {
-      await (this.service as any).event.emit('daily_login', {
+      await (this.service as any).event.emit(EVENT_CODES.DAILY_LOGIN, {
         userId: userData.id,
         login_date: new Date().toISOString().slice(0, 10),
       });
@@ -307,7 +308,7 @@ export default class AuthService extends BaseService {
 
     // ========== 积分体系 v2 — 每日登录事件埋点（Task 18）==========
     try {
-      await (this.service as any).event.emit('daily_login', {
+      await (this.service as any).event.emit(EVENT_CODES.DAILY_LOGIN, {
         userId: userData.id,
         login_date: new Date().toISOString().slice(0, 10),
       });

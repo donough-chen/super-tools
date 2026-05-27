@@ -1,4 +1,5 @@
 import BaseService, { PaginationResult, PaginationOptions } from './base';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 // ==================== 类型定义 ====================
 
@@ -189,7 +190,7 @@ export default class ToolService extends BaseService {
     if (t.requiredLevelCode === 'free' && t.requirePaid === 0) {
       // ========== 积分体系 v2 — 工具使用事件埋点（Task 18）==========
       try {
-        await (this.ctx.service as any).event.emit('tool_used', { userId, tool_code: t.code });
+        await (this.ctx.service as any).event.emit(EVENT_CODES.TOOL_USED, { userId, tool_code: t.code });
       } catch (e: any) {
         this.ctx.logger.warn(`[tool.checkAccess] points-v2 event failed: ${e.message}`);
       }
@@ -242,7 +243,7 @@ export default class ToolService extends BaseService {
 
     // ========== 积分体系 v2 — 工具使用事件埋点（Task 18）==========
     try {
-      await (this.ctx.service as any).event.emit('tool_used', { userId, tool_code: t.code });
+      await (this.ctx.service as any).event.emit(EVENT_CODES.TOOL_USED, { userId, tool_code: t.code });
     } catch (e: any) {
       this.ctx.logger.warn(`[tool.checkAccess] points-v2 event failed: ${e.message}`);
     }
