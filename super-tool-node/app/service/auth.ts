@@ -61,6 +61,16 @@ export default class AuthService extends BaseService {
     // 6. 写登录日志
     await this.writeLoginLog({ userId: userData.id, username, clientId, platform: loginPlatform, loginType: 'password', status: 1 });
 
+    // ========== 积分体系 v2 — 每日登录事件埋点（Task 18）==========
+    try {
+      await (this.service as any).event.emit('daily_login', {
+        userId: userData.id,
+        login_date: new Date().toISOString().slice(0, 10),
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[auth.login] points-v2 event failed: ${e.message}`);
+    }
+
     return tokens;
   }
 
@@ -173,6 +183,16 @@ export default class AuthService extends BaseService {
       clientId, platform: loginPlatform, loginType: `wechat_${platform}`, status: 1,
     });
 
+    // ========== 积分体系 v2 — 每日登录事件埋点（Task 18）==========
+    try {
+      await (this.service as any).event.emit('daily_login', {
+        userId: userData.id,
+        login_date: new Date().toISOString().slice(0, 10),
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[auth.wechatLogin] points-v2 event failed: ${e.message}`);
+    }
+
     return { ...tokens, isNewUser: !oauthRecord };
   }
 
@@ -284,6 +304,16 @@ export default class AuthService extends BaseService {
       userId: userData.id, username: phone, clientId,
       platform: loginPlatform, loginType: 'phone', status: 1,
     });
+
+    // ========== 积分体系 v2 — 每日登录事件埋点（Task 18）==========
+    try {
+      await (this.service as any).event.emit('daily_login', {
+        userId: userData.id,
+        login_date: new Date().toISOString().slice(0, 10),
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[auth.phoneLogin] points-v2 event failed: ${e.message}`);
+    }
 
     return { ...tokens, isNewUser };
   }

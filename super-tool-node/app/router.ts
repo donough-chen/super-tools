@@ -374,6 +374,48 @@ export default (app: Application) => {
   router.get('/api/region/:id',                controller.region.getById)
   router.post('/api/region/refresh-cache',     controller.region.refreshCache)
 
+  // ==================== 积分体系（C 端，用户自用） ====================
+  // 设计依据: docs/superpowers/plans/2026-05-26-积分成长体系MVP实施计划-v2.md §Task 17
+  //          docs/analysis/积分与成长体系深度评估报告.md §8.2 限流规则
+  //
+  // 写入类路由（claim / exchange / sign）挂 rateLimit + Idempotency-Key 中间件
+  // 读取类路由仅 auth，不强制幂等
+  const idem = (app.middleware as any).idempotency({ ttlHours: 24 }, app);
+  const rl = (max: number, windowSec: number) =>
+    (app.middleware as any).rateLimit({ max, window: windowSec }, app);
+
+  // 签到（业务上 user_signs 唯一索引强制 1/天，rateLimit 兜底防爆刷）
+  router.post('/api/sign', auth, rl(10, 60), idem, (controller as any).sign.create);
+  router.get('/api/sign/status', auth, (controller as any).sign.status);
+
+  // 任务中心
+  router.get('/api/tasks', auth, (controller as any).task.index);
+  router.post('/api/tasks/:code/claim', auth, rl(10, 60), idem, (controller as any).task.claim);
+
+  // 积分商城
+  router.get('/api/points-mall/items', auth, (controller as any).pointsMall.items);
+  router.post('/api/points-mall/exchange', auth, rl(5, 60), idem, (controller as any).pointsMall.exchange);
+  router.get('/api/points-mall/orders', auth, (controller as any).pointsMall.orders);
+
+  // ==================== 积分体系（管理端） ====================
+  // 任务管理
+  router.get('/api/admin/points/tasks', auth, perm('points:task:list'), (controller.admin as any).task.list);
+  router.post('/api/admin/points/tasks', auth, perm('points:task:create'), (controller.admin as any).task.create);
+  router.put('/api/admin/points/tasks/:id', auth, perm('points:task:update'), (controller.admin as any).task.update);
+  router.delete('/api/admin/points/tasks/:id', auth, perm('points:task:delete'), (controller.admin as any).task.destroy);
+
+  // 商城商品 + 订单管理
+  router.get('/api/admin/points/mall/items', auth, perm('points:mall:list'), (controller.admin as any).pointsMall.items);
+  router.post('/api/admin/points/mall/items', auth, perm('points:mall:manage'), (controller.admin as any).pointsMall.createItem);
+  router.put('/api/admin/points/mall/items/:id', auth, perm('points:mall:manage'), (controller.admin as any).pointsMall.updateItem);
+  router.get('/api/admin/points/mall/orders', auth, perm('points:mall:orders'), (controller.admin as any).pointsMall.orders);
+  router.post('/api/admin/points/mall/orders/:id/refund', auth, perm('points:mall:refund'), (controller.admin as any).pointsMall.refundOrder);
+
+  // 运维：过期统计 / 对账查询 / 手工触发定时任务
+  router.get('/api/admin/points/expire/stats', auth, perm('points:expire:stats'), (controller.admin as any).pointsOps.expireStats);
+  router.get('/api/admin/points/reconcile', auth, perm('points:reconcile:view'), (controller.admin as any).pointsOps.reconcile);
+  router.post('/api/admin/points/ops/trigger', auth, perm('points:ops:trigger'), (controller.admin as any).pointsOps.trigger);
+
   // ==================== Socket.IO 路由（通知命名空间） ====================
   const io = (app as any).io;
   if (io) {

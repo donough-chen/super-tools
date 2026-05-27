@@ -187,6 +187,12 @@ export default class ToolService extends BaseService {
 
     // 免费工具快速通道
     if (t.requiredLevelCode === 'free' && t.requirePaid === 0) {
+      // ========== 积分体系 v2 — 工具使用事件埋点（Task 18）==========
+      try {
+        await (this.ctx.service as any).event.emit('tool_used', { userId, tool_code: t.code });
+      } catch (e: any) {
+        this.ctx.logger.warn(`[tool.checkAccess] points-v2 event failed: ${e.message}`);
+      }
       return { allowed: true, tool: { code: t.code, name: t.name, path: t.path } };
     }
 
@@ -232,6 +238,13 @@ export default class ToolService extends BaseService {
           current: { levelCode: currentLevelCode, isPaid: true },
         };
       }
+    }
+
+    // ========== 积分体系 v2 — 工具使用事件埋点（Task 18）==========
+    try {
+      await (this.ctx.service as any).event.emit('tool_used', { userId, tool_code: t.code });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[tool.checkAccess] points-v2 event failed: ${e.message}`);
     }
 
     return { allowed: true, tool: { code: t.code, name: t.name, path: t.path } };

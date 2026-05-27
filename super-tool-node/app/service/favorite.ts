@@ -66,6 +66,16 @@ export default class FavoriteService extends BaseService {
       favoritedAt: new Date(),
     } as any);
 
+    // ========== 积分体系 v2 — 收藏事件埋点（Task 18）==========
+    try {
+      await (this.ctx.service as any).event.emit('tool_favorited', {
+        userId,
+        tool_code: tool.code,
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[favorite.addFavorite] points-v2 event failed: ${e.message}`);
+    }
+
     return {
       id: (fav as any).id,
       toolId: tool.id,

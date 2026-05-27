@@ -31,6 +31,15 @@ interface AddPointsParams {
   bizType?: string;
   bizId?: string;
   remark?: string;
+  // ============ v2 新增（向后兼容，未传时按旧行为处理）============
+  /** 仅“消费类”积分获得场景置 true：order_paid / consume_milestone / first_consume；签到/任务/邀请不叠加倍率 */
+  applyMultiplier?: boolean;
+  /** 来源事件 code（用于 points_logs.source_event 与 EventService.emit） */
+  event?: string;
+  /** 升级礼包专用：成长值不计入升级累计（避免连锁升级） */
+  skipGrowth?: boolean;
+  /** 外部事务（嵌套调用时由调用方传入，不开新事务） */
+  transaction?: any;
 }
 
 export default class MemberService extends BaseService {
@@ -187,70 +196,40 @@ export default class MemberService extends BaseService {
   }
 
   /**
-   * 每日签到
+   * 每日签到（v2：代理调用 SignService，保留对外 API 兼容）
+   * 详见 app/service/sign.ts
    */
   async dailySign(userId: number) {
-    const today = new Date().toISOString().slice(0, 10);
-    const signKey = `member:sign:${userId}:${today}`;
-
-    // 检查是否已签到（Redis 防重复）
-    try {
-      const signed = await this.app.redis.get(signKey);
-      if (signed) this.ctx.throw(400, '今日已签到');
-    } catch (err: any) {
-      if (err.status === 400) throw err;
-      // Redis 不可用时查数据库
-      const { Op } = require('sequelize');
-      const todayStart = new Date(today + 'T00:00:00');
-      const todayEnd = new Date(today + 'T23:59:59');
-      const existing = await this.ctx.model.PointsLog.findOne({
-        where: { userId, source: 'daily_login', createdAt: { [Op.between]: [todayStart, todayEnd] } },
-      });
-      if (existing) this.ctx.throw(400, '今日已签到');
-    }
-
-    // 获取该用户的等级权益，确定签到奖励积分
-    const member = await this.ctx.model.UserMember.findOne({
-      where: { userId },
-      include: [{ model: this.ctx.model.MemberLevel, as: 'level' }],
-    });
-    if (!member) this.ctx.throw(404, '会员记录不存在');
-    const memberData = (member as any).toJSON();
-    const benefits: LevelBenefits = memberData.level?.benefits || {};
-    const signPoints = benefits.daily_sign_points || 1;
-    const signGrowth = 1;
-
-    // 增加积分（事务内完成升级检测）
-    const result = await this.addPoints({
-      userId,
-      points: signPoints,
-      growthDelta: signGrowth,
-      source: 'daily_login',
-      remark: `每日签到奖励（${memberData.level?.name || ''}）`,
-    });
-
-    // 标记已签到
-    try {
-      const secondsRemaining = Math.max(1, Math.floor((new Date(today + 'T23:59:59').getTime() - Date.now()) / 1000));
-      await this.app.redis.setex(signKey, secondsRemaining, '1');
-    } catch { /* ignore */ }
-
+    const r = await (this.ctx.service as any).sign.dailySign(userId);
     return {
-      pointsEarned: signPoints,
-      growthEarned: signGrowth,
-      currentPoints: result.currentPoints,
-      currentGrowth: result.currentGrowth,
-      isLevelUp: result.isLevelUp,
+      pointsEarned: r.points,
+      growthEarned: 0,
+      streak: r.streak,
+      signDate: r.signDate,
     };
   }
 
   /**
    * 增加积分 + 成长值（核心方法，事务+行级锁）
+   *
+   * v2 改造（依据 docs/superpowers/plans/2026-05-26-积分成长体系MVP实施计划-v2.md §Task 4）：
+   *   1. 调 PointsRule 取等级规则；options.applyMultiplier=true 时叠加积分倍率
+   *   2. 写 points_logs 时一并写 FIFO 字段（pointsRemaining/status/sourceLevelId/sourceEvent/growthMultiplier）
+   *   3. options.skipGrowth=true 时成长值不计入升级累计（升级礼包用）
+   *   4. options.transaction 支持事务嵌套（不开新事务）
+   *   5. 事务提交后软调 EventService.emit('points_earned', ...) —— T5 完成后自动生效
    */
   async addPoints(params: AddPointsParams) {
-    const { userId, points, growthDelta, source, type = 1, bizType, bizId, remark } = params;
+    const {
+      userId, points, growthDelta, source, type, bizType, bizId, remark,
+      applyMultiplier, event, skipGrowth, transaction: outerTx,
+    } = params;
 
-    const result = await this.ctx.model.transaction(async (t: any) => {
+    const ownTx = !outerTx;
+    const t: any = outerTx || await (this.ctx.model as any).transaction();
+
+    let result: any;
+    try {
       // 行级锁防并发
       const member = await this.ctx.model.UserMember.findOne({
         where: { userId },
@@ -258,45 +237,93 @@ export default class MemberService extends BaseService {
         transaction: t,
       });
       if (!member) this.ctx.throw(404, '会员记录不存在');
-      const m = (member as any);
+      const m: any = member;
 
-      const newPoints = m.points + points;
-      const newTotalPoints = m.totalPoints + (points > 0 ? points : 0);
-      const newGrowthValue = m.growthValue + (growthDelta > 0 ? growthDelta : 0);
+      // 1) 应用等级倍率（仅消费场景且 points>0）
+      const rule = await this.ctx.service.pointsRule.getLevelRule(m.levelId);
+      const realPoints = (applyMultiplier && points > 0)
+        ? this.ctx.service.pointsRule.applyMultiplier(points, rule, { applyMultiplier: true })
+        : points;
 
-      await m.update({
-        points: newPoints,
+      // 2) 计算余额变化
+      const newBalance = m.points + realPoints;
+      const newTotalPoints = m.totalPoints + (realPoints > 0 ? realPoints : 0);
+      const realGrowth = skipGrowth ? 0 : Math.max(0, growthDelta);
+      const newGrowthValue = m.growthValue + realGrowth;
+
+      const updateData: any = {
+        points: Math.max(0, newBalance),
         totalPoints: newTotalPoints,
-        growthValue: newGrowthValue,
+      };
+      if (realGrowth > 0) updateData.growthValue = newGrowthValue;
+      await m.update(updateData, { transaction: t });
+
+      // 3) 写 FIFO 流水
+      const inferredType = type ?? (realPoints > 0 ? 1 : (realPoints < 0 ? 2 : 4));
+      const expireAt = realPoints > 0 ? this.ctx.service.pointsRule.calcExpireAt(rule) : null;
+      const log: any = await this.ctx.model.PointsLog.create({
+        userId,
+        type: inferredType,
+        source,
+        points: realPoints,
+        balance: Math.max(0, newBalance),
+        growthDelta: skipGrowth ? 0 : (growthDelta || 0),
+        bizType,
+        bizId,
+        remark,
+        expireAt,
+        // v2 FIFO 字段
+        pointsRemaining: realPoints > 0 ? realPoints : 0,
+        status: realPoints > 0 ? 1 : 2,
+        sourceLevelId: m.levelId,
+        sourceEvent: event || source,
+        growthMultiplier: rule.pointsMultiplier,
       }, { transaction: t });
 
-      // 写入积分流水
-      await this.ctx.model.PointsLog.create({
-        userId, type, source, points,
-        balance: newPoints,
-        growthDelta,
-        bizType, bizId, remark,
-      }, { transaction: t });
+      // 4) 等级升级判断（skipGrowth 时不参与）
+      let levelUpResult: any = { upgraded: false };
+      if (!skipGrowth) {
+        levelUpResult = await this.checkAndUpgrade(userId, newGrowthValue, t);
+      }
 
-      // 检查等级升级
-      const levelUpResult = await this.checkAndUpgrade(userId, newGrowthValue, t);
-
-      return {
-        currentPoints: newPoints,
+      result = {
+        logId: log.id,
+        realPoints,                              // v2 新增：实际写入积分（含倍率）
+        currentPoints: Math.max(0, newBalance),
         currentGrowth: newGrowthValue,
         isLevelUp: levelUpResult.upgraded,
         newLevel: levelUpResult.newLevel,
       };
-    });
 
-    // 事务成功后异步触发积分变动通知（不阻塞主流程）
+      if (ownTx) await t.commit();
+    } catch (err) {
+      if (ownTx) await t.rollback();
+      throw err;
+    }
+
+    // 5) 触发领域事件（T5 EventService 完成后自动生效；未完成时静默）
+    if (result.realPoints > 0) {
+      try {
+        const eventSvc = (this.ctx.service as any).event;
+        if (eventSvc && typeof eventSvc.emit === 'function') {
+          await eventSvc.emit('points_earned', {
+            userId, points: result.realPoints, source,
+            event: event || source,
+          });
+        }
+      } catch (e: any) {
+        this.ctx.logger.warn(`[member.addPoints] event emit failed: ${e.message}`);
+      }
+    }
+
+    // 6) 异步触发积分变动通知（不阻塞主流程，保留原有行为）
     try {
       await (this.ctx.service.notification as any).core.send({
         typeCode: 'BUSINESS_POINTS_CHANGE',
         userId,
         variables: {
-          changeType: points >= 0 ? '增加' : '扣减',
-          points: Math.abs(points),
+          changeType: result.realPoints >= 0 ? '增加' : '扣减',
+          points: Math.abs(result.realPoints),
           balance: result.currentPoints,
           remark: remark || source,
         },
@@ -309,29 +336,214 @@ export default class MemberService extends BaseService {
   }
 
   /**
-   * 消耗积分
+   * 消耗积分（v2 改造：真正的 FIFO 按批次扣减）
+   *
+   * v2 改造（依据 plan §Task 4 Step 2）：
+   *   - 不再调 addPoints；直接锁批次（status=1 AND points_remaining>0）按 expire_at ASC, id ASC 扣
+   *   - 扣完一批 status→2；写一条 type=2 的负向流水记录消耗
+   *   - 不触发升级、不发倍率、不动 growth_value
+   *
+   * @param options.allowNegative 是否允许负余额（仅退款场景置 true）
+   * @param options.transaction   外部事务
+   * @param options.event         来源事件 code（用于 source_event 字段）
    */
-  async consumePoints(userId: number, amount: number, source: string, bizType?: string, bizId?: string, remark?: string) {
+  async consumePoints(
+    userId: number,
+    amount: number,
+    source: string,
+    bizType?: string,
+    bizId?: string,
+    remark?: string,
+    options: { allowNegative?: boolean; transaction?: any; event?: string } = {},
+  ) {
     if (amount <= 0) this.ctx.throw(400, '消耗积分必须为正数');
 
-    const member = await this.ctx.model.UserMember.findOne({ where: { userId } });
-    if (!member) this.ctx.throw(404, '会员记录不存在');
-    if ((member as any).points < amount) this.ctx.throw(400, '积分余额不足');
+    const ownTx = !options.transaction;
+    const t: any = options.transaction || await (this.ctx.model as any).transaction();
+    const { Op } = require('sequelize');
 
-    return this.addPoints({
-      userId,
-      points: -amount,
-      growthDelta: 0,
-      source,
-      type: 2,
-      bizType,
-      bizId,
-      remark: remark || `消耗积分 ${amount}`,
-    });
+    try {
+      const member = await this.ctx.model.UserMember.findOne({
+        where: { userId },
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+      if (!member) this.ctx.throw(404, '会员记录不存在');
+      const m: any = member;
+
+      if (!options.allowNegative && m.points < amount) {
+        this.ctx.throw(400, '积分余额不足');
+      }
+
+      // FIFO 扣减：按到期最早 + id 升序锁批次
+      let remaining = amount;
+      const batches = await this.ctx.model.PointsLog.findAll({
+        where: {
+          userId,
+          status: 1,
+          pointsRemaining: { [Op.gt]: 0 },
+        },
+        order: [
+          ['expire_at', 'ASC'],
+          ['id', 'ASC'],
+        ],
+        lock: t.LOCK.UPDATE,
+        transaction: t,
+      });
+      for (const b of batches) {
+        if (remaining <= 0) break;
+        const bb: any = b;
+        const deduct = Math.min(remaining, bb.pointsRemaining);
+        const newRemaining = bb.pointsRemaining - deduct;
+        await bb.update(
+          {
+            pointsRemaining: newRemaining,
+            status: newRemaining === 0 ? 2 : 1,
+          },
+          { transaction: t },
+        );
+        remaining -= deduct;
+      }
+      // 注：若 allowNegative 且批次扣不够（退款场景），剩余 remaining 视为透支不再扣批次
+
+      const newBalance = m.points - amount;
+      // user_members.points 是 UNSIGNED 不能存负值；允许负余额场景下仅钱到 0，
+      // “透支”部分由 points_logs 流水作为唯一事实源心备（评估报告 §5 单一事实源）
+      const balanceForMember = Math.max(0, newBalance);
+      const balanceForLog = options.allowNegative ? newBalance : balanceForMember;
+      await m.update(
+        { points: balanceForMember },
+        { transaction: t },
+      );
+
+      const log: any = await this.ctx.model.PointsLog.create(
+        {
+          userId,
+          type: 2,
+          source,
+          points: -amount,
+          // points_logs.balance 也是 UNSIGNED → 钳到 0；理论值由 points 字段重建
+          balance: balanceForMember,          growthDelta: 0,
+          bizType,
+          bizId,
+          remark: remark || `消耗积分 ${amount}`,
+          pointsRemaining: 0,
+          status: 2,
+          sourceLevelId: m.levelId,
+          sourceEvent: options.event || source,
+          growthMultiplier: 1.0,
+        },
+        { transaction: t },
+      );
+
+      if (ownTx) await t.commit();
+
+      return {
+        logId: log.id,
+        currentPoints: options.allowNegative ? newBalance : Math.max(0, newBalance),
+        currentGrowth: m.growthValue,
+        isLevelUp: false,
+      };
+    } catch (err) {
+      if (ownTx) await t.rollback();
+      throw err;
+    }
   }
 
   /**
-   * 等级升级检查（修复设计文档中 level vs levelId 比较的 bug）
+   * 退款回扣积分（v2 新增，依据 plan §Task 4 Step 4 + 评估报告 §5.2）
+   *
+   * 规则：
+   *   - 不扣成长值（growth_delta=0）
+   *   - 允许负余额（系统配置 allow_negative_balance_for_refund=true）
+   *   - 优先扣回"原批次"的 points_remaining；扣完则置 status=4（已退款回收）
+   *   - 剩下的（已被消耗部分）直接扣会员余额
+   */
+  async refundPoints(
+    userId: number,
+    originalLogId: number,
+    refundAmount: number,
+    options: { remark?: string; transaction?: any } = {},
+  ) {
+    if (refundAmount <= 0) this.ctx.throw(400, '退款积分必须为正数');
+
+    const ownTx = !options.transaction;
+    const t: any = options.transaction || await (this.ctx.model as any).transaction();
+
+    try {
+      const original: any = await this.ctx.model.PointsLog.findByPk(originalLogId, {
+        lock: t.LOCK.UPDATE, transaction: t,
+      });
+      if (!original) this.ctx.throw(404, '原积分流水不存在');
+      if (original.userId !== userId) this.ctx.throw(403, '原流水不属于该用户');
+
+      const member: any = await this.ctx.model.UserMember.findOne({
+        where: { userId }, lock: t.LOCK.UPDATE, transaction: t,
+      });
+      if (!member) this.ctx.throw(404, '会员记录不存在');
+
+      let toRecover = refundAmount;
+      // 优先从原批次扣回（仅当原批次还有可用余额）
+      if (original.status === 1 && original.pointsRemaining > 0) {
+        const recoverFromBatch = Math.min(toRecover, original.pointsRemaining);
+        const newBatchRemaining = original.pointsRemaining - recoverFromBatch;
+        await original.update(
+          {
+            pointsRemaining: newBatchRemaining,
+            status: newBatchRemaining === 0 ? 4 : 1,    // 4=已退款回收
+          },
+          { transaction: t },
+        );
+        toRecover -= recoverFromBatch;
+      }
+
+      // 余下的直接扣会员余额（允许负余额）
+      // 注意：user_members.points 是 UNSIGNED，不能存负值。
+      //       实际负值记录于 points_logs.balance 中，有负余额可由流水重建。
+      const newBalance = member.points - refundAmount;
+      const balanceForMember = Math.max(0, newBalance);
+      await member.update({ points: balanceForMember }, { transaction: t });
+
+      // points_logs.balance 也是 UNSIGNED → 钳到 0；
+      // 理论欠款额度 = -refundAmount（由 points 字段保留）
+      const log: any = await this.ctx.model.PointsLog.create(
+        {
+          userId,
+          type: 2,
+          source: 'refund',
+          points: -refundAmount,
+          balance: balanceForMember,
+          growthDelta: 0,                            // 不扣成长值
+          bizType: 'refund',
+          bizId: String(originalLogId),
+          remark: options.remark || `退款扣回原批次 #${originalLogId}（理论余额 ${newBalance}）`,
+          pointsRemaining: 0,
+          status: 2,
+          sourceLevelId: member.levelId,
+          sourceEvent: 'refund',
+          growthMultiplier: original.growthMultiplier || 1.0,
+        },
+        { transaction: t },
+      );
+
+      if (ownTx) await t.commit();
+      // 返回值中的 balance 是"理论余额"（含负值），方便上层判断
+      return { logId: log.id, balance: newBalance };    } catch (err) {
+      if (ownTx) await t.rollback();
+      throw err;
+    }
+  }
+
+  /**
+   * 等级升级检查（v2 改造：升级礼包 + 延长有效期 + 升级事件）
+   *
+   * 改造（依据 plan §Task 4 Step 3）：
+   *   1. 升级时发升级礼包（skipGrowth=true 防连锁升级）
+   *   2. 软调 pointsExpire.extendExpireOnUpgrade —— T10 完成后自动延长存量积分有效期
+   *   3. emit 'level_up' 领域事件 —— T5 完成后自动生效
+   *   4. 触发 BUSINESS_LEVEL_UP 站内信通知
+   *
+   * 保留向后兼容签名：第 2 参数 currentGrowth（外层调用方已传），用于绕开再次查询。
    */
   async checkAndUpgrade(userId: number, currentGrowth: number, transaction?: any) {
     const levels = await this.ctx.model.MemberLevel.findAll({
@@ -350,32 +562,115 @@ export default class MemberService extends BaseService {
     const memberData = (member as any).toJSON();
     const currentLevelValue = memberData.level?.level ?? 0;
 
-    if ((targetLevel as any).level > currentLevelValue) {
-      const tl = (targetLevel as any);
-      await (member as any).update({
-        levelId: tl.id,
-        levelCode: tl.code,
-      }, { ...(transaction ? { transaction } : {}) });
-
-      return { upgraded: true, newLevel: { id: tl.id, name: tl.name, code: tl.code, level: tl.level } };
+    if ((targetLevel as any).level <= currentLevelValue) {
+      return { upgraded: false };
     }
 
-    return { upgraded: false };
+    const tl: any = targetLevel;
+    const oldLevelId = memberData.levelId;
+    await (member as any).update(
+      { levelId: tl.id, levelCode: tl.code },
+      { ...(transaction ? { transaction } : {}) },
+    );
+
+    // === v2 新增：升级礼包 + 延长积分有效期 + 升级事件 ===
+    let giftPoints = 0;
+    try {
+      const newRule = await this.ctx.service.pointsRule.getLevelRule(tl.id);
+      giftPoints = newRule.upgradeGiftPoints;
+
+      // 1) 发升级礼包（skipGrowth=true 防连锁升级）
+      if (giftPoints > 0) {
+        await this.addPoints({
+          userId,
+          points: giftPoints,
+          growthDelta: 0,
+          source: 'level_upgrade_gift',
+          event: 'level_upgrade_gift',
+          skipGrowth: true,
+          remark: `升级到 ${tl.name} 赠送积分`,
+          transaction,
+        });
+      }
+
+      // 2) 延长存量积分有效期（T10 PointsExpireService 完成后自动生效）
+      const expireSvc = (this.ctx.service as any).pointsExpire;
+      if (expireSvc && typeof expireSvc.extendExpireOnUpgrade === 'function') {
+        await expireSvc.extendExpireOnUpgrade(userId, newRule, transaction);
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[member.checkAndUpgrade] gift/extend failed: ${e.message}`);
+    }
+
+    // 3) emit 'level_up' 领域事件（T5 EventService 完成后自动生效）
+    try {
+      const eventSvc = (this.ctx.service as any).event;
+      if (eventSvc && typeof eventSvc.emit === 'function') {
+        await eventSvc.emit('level_up', {
+          userId, oldLevelId, newLevelId: tl.id, newLevelCode: tl.code,
+        });
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[member.checkAndUpgrade] event emit failed: ${e.message}`);
+    }
+
+    // 4) 站内信通知（保留原逻辑，type code 改为 BUSINESS_LEVEL_UP，025 已加 type）
+    try {
+      await (this.ctx.service.notification as any).core.send({
+        typeCode: 'BUSINESS_LEVEL_UP',
+        userId,
+        variables: { levelName: tl.name, giftPoints },
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[member.checkAndUpgrade] notification failed: ${e.message}`);
+    }
+
+    return {
+      upgraded: true,
+      newLevel: { id: tl.id, name: tl.name, code: tl.code, level: tl.level },
+      giftPoints,
+    };
   }
 
   /**
-   * 注册时初始化会员记录
+   * 注册时初始化会员记录（v2：FIFO 字段写入 + 读 system_configs）
+   *
+   * 决策：
+   *   - 注册赠送积分/成长值改为读 system_configs（user 回复 A' 把 register_gift_growth 调为 0）
+   *   - 写 points_logs 时写 v2 FIFO 字段（pointsRemaining/status/sourceLevelId/sourceEvent/growthMultiplier/expireAt）
    */
   async initMember(userId: number) {
     const existing = await this.ctx.model.UserMember.findOne({ where: { userId } });
     if (existing) return;
 
-    const giftPoints = 10;
-    const giftGrowth = 10;
+    // 读取注册赠送配置（兜底默认 10/0）
+    let giftPoints = 10;
+    let giftGrowth = 0;
+    try {
+      const rows: any[] = await this.app.model.query(
+        "SELECT `key`, `value` FROM `system_configs` WHERE `group`='member' AND `key` IN ('register_gift_points','register_gift_growth')",
+        { type: (this.app.model as any).QueryTypes.SELECT },
+      );
+      for (const c of rows) {
+        if (c.key === 'register_gift_points') giftPoints = Number(c.value) || 0;
+        if (c.key === 'register_gift_growth') giftGrowth = Number(c.value) || 0;
+      }
+    } catch { /* system_configs 不可用时使用默认 */ }
 
-    // 获取 free 等级 ID
+    // 获取 free 等级
     const freeLevel = await this.ctx.model.MemberLevel.findOne({ where: { code: 'free' } });
     const freeLevelId = freeLevel ? (freeLevel as any).id : 1;
+
+    // 计算积分有效期（按 free 等级规则）
+    let expireAt: Date | null = null;
+    let multiplier = 1.0;
+    try {
+      const rule = await this.ctx.service.pointsRule.getLevelRule(freeLevelId);
+      multiplier = rule.pointsMultiplier;
+      if (giftPoints > 0) expireAt = this.ctx.service.pointsRule.calcExpireAt(rule);
+    } catch { /* 默认 365 天 */
+      if (giftPoints > 0) expireAt = new Date(Date.now() + 365 * 86_400_000);
+    }
 
     await this.ctx.model.transaction(async (t: any) => {
       await this.ctx.model.UserMember.create({
@@ -387,15 +682,24 @@ export default class MemberService extends BaseService {
         points: giftPoints,
       }, { transaction: t });
 
-      await this.ctx.model.PointsLog.create({
-        userId,
-        type: 1,
-        source: 'register',
-        points: giftPoints,
-        balance: giftPoints,
-        growthDelta: giftGrowth,
-        remark: '新用户注册赠送',
-      }, { transaction: t });
+      if (giftPoints > 0 || giftGrowth > 0) {
+        await this.ctx.model.PointsLog.create({
+          userId,
+          type: 1,
+          source: 'register',
+          points: giftPoints,
+          balance: giftPoints,
+          growthDelta: giftGrowth,
+          remark: '新用户注册赠送',
+          expireAt,
+          // v2 FIFO 字段
+          pointsRemaining: giftPoints,
+          status: giftPoints > 0 ? 1 : 2,
+          sourceLevelId: freeLevelId,
+          sourceEvent: 'register',
+          growthMultiplier: multiplier,
+        }, { transaction: t });
+      }
     });
   }
 
