@@ -193,6 +193,72 @@ export default class PaymentService extends BaseService {
     } catch (e: any) {
       this.ctx.logger.warn(`[payment._applyPaymentSuccess] payment_success notification failed: ${e.message}`);
     }
+
+    // ========== 积分体系 v2 — 业务事件埋点（Task 18）==========
+    // 1) 历史首次消费判断（同 user 是否还有别的 paid 订单）
+    // 2) 消费里程碑事件（每次完单都发，由 progress_type=3 累加金额）
+    // 3) 订阅类首次/续费事件
+    // 4) 直接发消费积分（应用等级倍率，1元=1积分=1成长值）
+    // 注意：所有埋点用 try/catch 包住，绝不影响支付主流程
+    try {
+      const { Op } = require('sequelize');
+      const userId = paymentData.userId;
+      const orderId = orderForActivation.id;
+      const amount = Number(orderForActivation.amount);
+
+      // 1) first_consume：用户历史第一次成功支付（status=1）
+      const earlier = await this.ctx.model.MemberOrder.findOne({
+        where: { userId, status: 1, id: { [Op.ne]: orderId } },
+        attributes: ['id'],
+      });
+      if (!earlier) {
+        await (this.ctx.service as any).event.emit('first_consume', {
+          userId, amount, orderId,
+        });
+      }
+
+      // 2) consume_milestone：累计消费里程碑（progress_type=3 累加 amount）
+      await (this.ctx.service as any).event.emit('consume_milestone', {
+        userId, amount, orderId,
+      });
+
+      // 3) 订阅类首次/续费（仅 planCode 存在时）
+      if (orderForActivation.planCode) {
+        // _applyPaymentSuccess 内部已用 activatePaidPlan 写过 paidPlanCode
+        // 判断 first_subscribe 看本订单之前用户是否已有过订阅成功记录
+        const earlierSub = await this.ctx.model.MemberOrder.findOne({
+          where: {
+            userId,
+            status: 1,
+            id: { [Op.ne]: orderId },
+            planCode: { [Op.ne]: null },
+          },
+          attributes: ['id'],
+        });
+        const evtCode = earlierSub ? 'subscribe_renewal' : 'first_subscribe';
+        await (this.ctx.service as any).event.emit(evtCode, {
+          userId, amount, planCode: orderForActivation.planCode, orderId,
+        });
+      }
+
+      // 4) 直接发消费积分（1 元 = 1 积分 = 1 成长值，应用等级倍率）
+      const basePoints = Math.floor(amount);
+      if (basePoints > 0) {
+        await (this.ctx.service as any).member.addPoints({
+          userId,
+          points: basePoints,
+          growthDelta: basePoints,
+          source: 'order_paid',
+          event: 'order_paid',
+          applyMultiplier: true,
+          bizType: 'order',
+          bizId: String(orderId),
+          remark: `消费奖励：订单 ${orderForActivation.orderNo}`,
+        });
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[payment._applyPaymentSuccess] points-v2 events failed: ${e.message}`);
+    }
   }
 
   /** 处理支付失败 */

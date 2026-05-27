@@ -195,6 +195,18 @@ export default class UserService extends BaseService {
     // 清除缓存
     await this.clearCache(`${this.CACHE_PREFIX}${userId}`);
 
+    // ========== 积分体系 v2 — 资料完善事件埋点（Task 18）==========
+    // 当 nickname / avatar / phone 三者齐全时发 profile_completed
+    // 任务系统按"once"周期 + 唯一索引保证只触发一次
+    try {
+      const u: any = await this.ctx.model.User.findByPk(userId);
+      if (u && u.nickname && u.avatar && u.phone) {
+        await (this.ctx.service as any).event.emit('profile_completed', { userId });
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[user.updateProfile] points-v2 event failed: ${e.message}`);
+    }
+
     return this.getProfileExtra(userId);
   }
 

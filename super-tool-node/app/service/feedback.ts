@@ -214,6 +214,19 @@ export default class FeedbackService extends Service {
       this.ctx.logger.warn(`[feedback.reply] notification failed: ${e.message}`);
     }
 
+    // ========== 积分体系 v2 — 反馈被采纳事件埋点（Task 18）==========
+    // 业务"已回复"≈plan 期望的"采纳"语义；状态 0/1→2 触发任务进度
+    try {
+      if ((fb as any).userId) {
+        await (this.ctx.service as any).event.emit('feedback_adopted', {
+          userId: (fb as any).userId,
+          feedbackId: id,
+        });
+      }
+    } catch (e: any) {
+      this.ctx.logger.warn(`[feedback.reply] points-v2 event failed: ${e.message}`);
+    }
+
     // 话术使用记录（静默，失败不影响 reply）
     if (snippetId) {
       try {

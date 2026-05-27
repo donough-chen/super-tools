@@ -228,6 +228,40 @@ export default class RefundService extends BaseService {
         'success',
         `退款成功 ¥${ctx.amount.toFixed(2)}（订单 ${ctx.order.orderNo}）`,
       );
+
+      // ========== 积分体系 v2 — 退款扣回积分（Task 18）==========
+      // 找到原订单的 order_paid 积分流水，按退款比例扣回（不扣成长值）
+      // 用 runInBackground 隔离，绝不影响退款主流程
+      this.ctx.runInBackground(async () => {
+        try {
+          const original: any = await this.ctx.model.PointsLog.findOne({
+            where: {
+              userId: ctx.order.userId,
+              source: 'order_paid',
+              bizType: 'order',
+              bizId: String(ctx.order.id),
+            },
+            order: [['id', 'DESC']],
+          });
+          if (original) {
+            const orderAmount = Number(ctx.order.amount);
+            const refundRatio = orderAmount > 0 ? ctx.amount / orderAmount : 1;
+            const refundPts = Math.floor(Math.abs(original.points) * refundRatio);
+            if (refundPts > 0) {
+              await (this.ctx.service as any).member.refundPoints(
+                ctx.order.userId,
+                original.id,
+                refundPts,
+                {
+                  remark: `订单 ${ctx.order.orderNo} 退款扣回积分（不扣成长值）`,
+                },
+              );
+            }
+          }
+        } catch (e: any) {
+          this.ctx.logger.warn(`[refund.create] points-v2 refund failed: ${e.message}`);
+        }
+      });
     }
 
     return result;
