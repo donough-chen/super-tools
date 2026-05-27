@@ -124,17 +124,22 @@ WHERE `code` = 'BUSINESS_POINTS_EXPIRED_INAPP'
 -- §3.5 任务种子（#4 / #5 / #34）
 -- =========================================================================
 
+-- 说明：与 025 §4 已有 17 条任务做去重比对：
+--   ✗ consume_milestone_500  与 025 `achieve_consume_500` 重复（同事件 + 同阈值），剔除
+--   ✓ achieve_consume_1000   025 缺失 1000 档，补齐（code 改为 achieve_consume_* 命名一致）
+--   ✓ achieve_consume_3000   025 缺失 3000 档，补齐（code 改为 achieve_consume_* 命名一致）
+--   ✗ year_active            与 025 `yearly_active` 重复（同事件 daily_login + yearly），剔除
+--   ✓ subscribe_renewal      025 仅有首订阅 `achieve_first_subscribe`，续费奖励是新增
+--   ✓ register_complete      025 无注册欢迎奖励，新增
 INSERT IGNORE INTO `tasks`
   (`code`, `name`, `icon`, `description`, `category`, `trigger_event`, `condition`,
    `progress_type`, `progress_target`, `reward_points`, `reward_growth`,
    `reset_cycle`, `daily_cap_group`, `status`, `sort`)
 VALUES
-  ('consume_milestone_500',  '消费满 500',   '🛒', '累计消费满 500 元',  'achievement', 'consume_milestone', '{"amount_threshold":500}',  3, 500,  100, 50,  'once', NULL, 1, 100),
-  ('consume_milestone_1000', '消费满 1000',  '🛒', '累计消费满 1000 元', 'achievement', 'consume_milestone', '{"amount_threshold":1000}', 3, 1000, 300, 100, 'once', NULL, 1, 101),
-  ('consume_milestone_3000', '消费满 3000',  '🛒', '累计消费满 3000 元', 'achievement', 'consume_milestone', '{"amount_threshold":3000}', 3, 3000, 1000,300, 'once', NULL, 1, 102),
-  ('subscribe_renewal',      '订阅续费',     '🔁', '会员订阅续费奖励',    'achievement', 'subscribe_renewal', '{}',                        1, 1,    200, 50,  'once', NULL, 1, 110),
-  ('year_active',            '年度活跃',     '🎯', '本年累计登录 100 天', 'achievement', 'daily_login',       '{}',                        1, 100,  500, 100, 'yearly', NULL, 1, 120),
-  ('register_complete',      '完成注册',     '🎉', '欢迎奖励',           'newbie',      'register',          '{}',                        1, 1,    100, 50,  'once', NULL, 1, 1);
+  ('achieve_consume_1000',   '累计消费满1000元', '🛒', '累计消费达到1000元', 'achievement', 'consume_milestone', '{"amount":1000}', 3, 1000, 300, 100, 'once', NULL, 1, 75),
+  ('achieve_consume_3000',   '累计消费满3000元', '🛒', '累计消费达到3000元', 'achievement', 'consume_milestone', '{"amount":3000}', 3, 3000, 1000,300, 'once', NULL, 1, 85),
+  ('subscribe_renewal',      '订阅续费',         '🔁', '会员订阅续费奖励',    'achievement', 'subscribe_renewal', '{}',              1, 1,    200, 50,  'once', NULL, 1, 110),
+  ('register_complete',      '完成注册',         '🎉', '欢迎奖励',           'newbie',      'register',          '{}',              1, 1,    100, 50,  'once', NULL, 1, 1);
 
 -- =========================================================================
 -- §3.6 system_configs 默认值
@@ -176,8 +181,8 @@ WHERE `code` = 'BUSINESS_POINTS_EXPIRED_INAPP'
 
 -- 7) 删任务种子
 DELETE FROM `tasks` WHERE `code` IN (
-  'consume_milestone_500','consume_milestone_1000','consume_milestone_3000',
-  'subscribe_renewal','year_active','register_complete'
+  'achieve_consume_1000','achieve_consume_3000',
+  'subscribe_renewal','register_complete'
 );
 
 -- 8) 删配置
