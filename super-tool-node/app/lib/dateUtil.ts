@@ -66,3 +66,29 @@ export function formatLocalDateTime(d: Date = new Date()): string {
 export function localYearMonthStr(d: Date = new Date()): string {
   return localTodayStr(d).slice(0, 7);
 }
+
+/** 北京时间「YYYY」（用于年度任务周期键） */
+export function localYearStr(d: Date = new Date()): string {
+  return localTodayStr(d).slice(0, 4);
+}
+
+/**
+ * 北京时间 ISO 周键「YYYY-Www」
+ *  - 用 ISO 8601：周一为一周第一天，含本年第一个周四的那一周为第 1 周
+ *  - 注意 ISO 周年（weekYear）跨年时与日历年不同，例如 2026-01-01 (周四) 属 2026-W01；
+ *    但 2024-12-30 (周一) 属 2025-W01，所以年份必须用「ISO 周年」而非日历年。
+ */
+export function localIsoWeekStr(d: Date = new Date()): string {
+  const v = toLocalView(d);
+  // 用 UTC 整数运算，避免 Date 对象再次被 server 时区干扰
+  const tmp = new Date(Date.UTC(v.getFullYear(), v.getMonth(), v.getDate()));
+  // ISO: 周一=1 ... 周日=7
+  const dayNum = tmp.getUTCDay() || 7;
+  // 移到当周的周四（同 ISO 周年的代表日）
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - dayNum);
+  const weekYear = tmp.getUTCFullYear();
+  // 当年 1 月 1 日
+  const yearStart = new Date(Date.UTC(weekYear, 0, 1));
+  const weekNum = Math.ceil(((tmp.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${weekYear}-W${pad2(weekNum)}`;
+}

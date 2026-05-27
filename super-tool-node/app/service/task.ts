@@ -1,32 +1,26 @@
 import BaseService from './base';
-import { localTodayStr } from '../lib/dateUtil';
+import {
+  localTodayStr,
+  localYearMonthStr,
+  localYearStr,
+  localIsoWeekStr,
+} from '../lib/dateUtil';
 
 /**
- * 周期键计算（本地时区）
+ * 周期键计算（统一走 Asia/Shanghai 本地时区，A2 修复 server 时区漂移）
  *  - once: 'once'
  *  - daily: 'YYYY-MM-DD'
- *  - weekly: 'YYYY-Www'（ISO 周）
+ *  - weekly: 'YYYY-Www'（ISO 周；ISO 周年与日历年可能跨年差 1）
  *  - monthly: 'YYYY-MM'
  *  - yearly: 'YYYY'
- *
- *  TODO(A2 后续)：当前仍用 server 时区的 d.getFullYear/Month/Date；
- *               UTC server 上半夜会跨日错位。建议后续替换为 dateUtil 的本地时区版本。
  */
 function cycleKey(cycle: string, d: Date = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
   switch (cycle) {
     case 'once': return 'once';
-    case 'daily': return `${y}-${m}-${day}`;
-    case 'weekly': {
-      // ISO 周（与 sign month 同步用本地时区）
-      const onejan = new Date(y, 0, 1);
-      const week = Math.ceil(((+d - +onejan) / 86_400_000 + onejan.getDay() + 1) / 7);
-      return `${y}-W${String(week).padStart(2, '0')}`;
-    }
-    case 'monthly': return `${y}-${m}`;
-    case 'yearly': return `${y}`;
+    case 'daily': return localTodayStr(d);
+    case 'weekly': return localIsoWeekStr(d);
+    case 'monthly': return localYearMonthStr(d);
+    case 'yearly': return localYearStr(d);
     default: return 'once';
   }
 }
