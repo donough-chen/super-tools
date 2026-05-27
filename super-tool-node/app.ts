@@ -52,6 +52,30 @@ export default class AppBootHook {
         this.app.logger.error(`[schedule] boot register failed: ${e.message}`);
       }
     }
+
+    // ============================================================
+    // 积分成长体系 v2 - 跨 worker 领域事件监听（Task 5）
+    //   说明：本 worker 通过 EventService.emit 内已同步派发；
+    //         此监听仅处理"其他 worker 广播过来"的事件，
+    //         TaskService.onEvent 内部用唯一索引 + 事务锁做幂等。
+    // ============================================================
+    try {
+      (this.app as any).messenger.on('domain-event', async (evt: any) => {
+        if (!evt || !evt.code) return;
+        const ctx = this.app.createAnonymousContext();
+        try {
+          const taskSvc: any = (ctx.service as any).task;
+          if (taskSvc && typeof taskSvc.onEvent === 'function') {
+            await taskSvc.onEvent(evt);
+          }
+        } catch (err: any) {
+          ctx.logger.error(`[event recv:${evt.code}] ${err.message}`);
+        }
+      });
+      this.app.logger.info('[points-v2] domain-event messenger listener registered');
+    } catch (e: any) {
+      this.app.logger.warn(`[points-v2] register messenger listener failed: ${e.message}`);
+    }
   }
 
   async beforeClose() {
