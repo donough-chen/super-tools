@@ -137,4 +137,69 @@ describe('lib/pickFields - B7 admin field whitelist utility', () => {
       assertB7.strictEqual(r.status, 0);
     });
   });
+
+  describe('B8 admin/pointsMall whitelist scenario (simulated)', () => {
+    const ITEM_FIELDS = [
+      'name', 'icon', 'description', 'category',
+      'costPoints', 'requiredLevel', 'isVirtual', 'fulfillConfig',
+      'stock', 'dailyLimit', 'totalLimit',
+      'validFrom', 'validTo', 'sort', 'status',
+    ] as const;
+
+    it('rejects injected id / userId / createdAt / arbitrary fields', () => {
+      const malicious = {
+        id: 99999,
+        userId: 1,
+        createdAt: new Date('1970-01-01'),
+        updatedAt: new Date('1970-01-01'),
+        evilFlag: true,
+        // legit fields
+        name: 'Card',
+        category: 'virtual',
+        costPoints: 100,
+        fulfillConfig: { kind: 'auto' },
+        stock: 50,
+        status: 1,
+      };
+      const r: any = pickFields(malicious, ITEM_FIELDS);
+      assertB7.strictEqual(r.id, undefined, 'id must not be picked');
+      assertB7.strictEqual(r.userId, undefined, 'userId must not be picked');
+      assertB7.strictEqual(r.createdAt, undefined, 'createdAt must not be picked');
+      assertB7.strictEqual(r.updatedAt, undefined, 'updatedAt must not be picked');
+      assertB7.strictEqual(r.evilFlag, undefined, 'unknown fields must not be picked');
+      assertB7.strictEqual(r.name, 'Card');
+      assertB7.strictEqual(r.category, 'virtual');
+      assertB7.strictEqual(r.costPoints, 100);
+      assertB7.deepStrictEqual(r.fulfillConfig, { kind: 'auto' });
+      assertB7.strictEqual(r.stock, 50);
+      assertB7.strictEqual(r.status, 1);
+    });
+
+    it('UPDATE shares same whitelist as CREATE (no immutable business key)', () => {
+      // mall_items has only auto-increment id; no task.code-like immutable key.
+      // So CREATE and UPDATE legitimately share ITEM_FIELDS.
+      const r: any = pickFields(
+        { name: 'Renamed', costPoints: 200, isVirtual: true },
+        ITEM_FIELDS,
+      );
+      assertB7.strictEqual(r.name, 'Renamed');
+      assertB7.strictEqual(r.costPoints, 200);
+      assertB7.strictEqual(r.isVirtual, true);
+    });
+
+    it('preserves complex fulfillConfig object intact', () => {
+      const cfg = {
+        kind: 'coupon',
+        provider: 'meituan',
+        params: { skuId: 'A-001', region: ['BJ', 'SH'] },
+      };
+      const r: any = pickFields(
+        { name: 'X', category: 'c', costPoints: 1, fulfillConfig: cfg },
+        ITEM_FIELDS,
+      );
+      assertB7.deepStrictEqual(r.fulfillConfig, cfg);
+      // reference identity preserved (no deep clone)
+      assertB7.strictEqual(r.fulfillConfig, cfg);
+    });
+  });
 });
