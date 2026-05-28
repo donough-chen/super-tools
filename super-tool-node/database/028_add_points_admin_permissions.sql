@@ -110,9 +110,110 @@ VALUES
   ('points:cache:clear', '清理规则缓存（API）', 4, 'points', 'admin',
    '/api/admin/points/cache/clear', 'POST', 12, 1);
 
--- ===== §6. super_admin 默认拥有全部 points 权限（含本次新增 + 025 旧 API）=====
+-- ===== §6. 角色 × 权限映射 =====
+-- 参照 018_add_notification_system.sql §角色 × 权限映射 范式
+--
+-- 设计矩阵：
+--   ┌──────────────┬──────────┬────────┬──────────┬──────────┐
+--   │ 维度         │super_admin│ admin │ operator │ auditor  │
+--   ├──────────────┼──────────┼────────┼──────────┼──────────┤
+--   │ 顶级目录+菜单│   ✓      │   ✓    │   ✓ 全部 │ ✓ 全部   │
+--   │ 任务 CRUD    │   ✓      │   ✓    │   ✓      │ ✗        │
+--   │ 商品 C/U     │   ✓      │   ✓    │   ✓      │ ✗        │
+--   │ 订单退款     │   ✓      │   ✓    │   ✗      │ ✗        │
+--   │ 调整积分     │   ✓      │   ✓    │   ✗      │ ✗        │
+--   │ 触发任务/缓存│   ✓      │   ✓    │   ✗      │ ✗        │
+--   │ 失败事件重试 │   ✓      │   ✓    │   ✓      │ ✗        │
+--   │ 保存规则     │   ✓      │   ✓    │   ✗      │ ✗        │
+--   │ 只读 API     │   ✓      │   ✓    │   ✓      │ ✓        │
+--   └──────────────┴──────────┴────────┴──────────┴──────────┘
+--
+-- 说明：super_admin（roles.code='super_admin'）由 auth 中间件短路 RBAC，无需写入；
+--      为保持 role_permissions 表数据层可读性，仍写一次默认全量映射
+--      （与 018 注释风格保持一致：'super_admin 中间件短路，不受 RBAC 限制' 但仍可显式登记）
+
+-- ----- super_admin：全部 points 权限（type=1/2/3/4 全开）-----
 INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
-SELECT 1, `id` FROM `permissions` WHERE `module` = 'points';
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'super_admin'
+  AND p.module = 'points';
+
+-- ----- admin：全部 points 权限 -----
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'admin'
+  AND p.module = 'points';
+
+-- ----- operator：所有菜单 + 任务/商品 CRUD + 失败事件重试 + 全部只读 API
+--                （不含 refund / adjust / ops:trigger / cache:clear / rules:save）-----
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'operator'
+  AND p.module = 'points'
+  AND p.code IN (
+    -- 顶级目录 + 全部 10 个二级菜单（type=1 + type=2）
+    'points',
+    'points:menu:dashboard',
+    'points:menu:rules',
+    'points:menu:tasks',
+    'points:menu:mall:items',
+    'points:menu:mall:orders',
+    'points:menu:logs',
+    'points:menu:ops',
+    'points:menu:adjust',
+    'points:menu:events',
+    'points:menu:refund-ledger',
+    -- 按钮（type=3）：任务全套 + 商品 C/U + 失败事件重试
+    'points:btn:task:create',
+    'points:btn:task:edit',
+    'points:btn:task:delete',
+    'points:btn:mall:item:create',
+    'points:btn:mall:item:edit',
+    'points:btn:events:retry',
+    -- 只读 + CRUD API（type=4）：025 已落 11 条 + 028 §5 落 1 条
+    --   只读：list / mall:list / mall:orders / expire:stats / reconcile:view
+    --   CRUD：task:create/update/delete / mall:manage
+    --   不含：mall:refund / ops:trigger / cache:clear
+    'points:task:list',
+    'points:task:create',
+    'points:task:update',
+    'points:task:delete',
+    'points:mall:list',
+    'points:mall:manage',
+    'points:mall:orders',
+    'points:expire:stats',
+    'points:reconcile:view'
+  );
+
+-- ----- auditor：所有菜单（只读视角）+ 仅只读 API（list / orders / stats / reconcile）-----
+INSERT IGNORE INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id
+FROM `roles` r CROSS JOIN `permissions` p
+WHERE r.code = 'auditor'
+  AND p.module = 'points'
+  AND p.code IN (
+    -- 顶级目录 + 全部 10 个二级菜单（只读视角，不挂任何按钮）
+    'points',
+    'points:menu:dashboard',
+    'points:menu:rules',
+    'points:menu:tasks',
+    'points:menu:mall:items',
+    'points:menu:mall:orders',
+    'points:menu:logs',
+    'points:menu:ops',
+    'points:menu:adjust',
+    'points:menu:events',
+    'points:menu:refund-ledger',
+    -- 只读 API（type=4，不含任何写操作）
+    'points:task:list',
+    'points:mall:list',
+    'points:mall:orders',
+    'points:expire:stats',
+    'points:reconcile:view'
+  );
 
 COMMIT;
 
@@ -139,7 +240,16 @@ COMMIT;
 -- SELECT type, COUNT(*) FROM permissions WHERE module = 'points' GROUP BY type;
 -- 预期：type=1 → 1, type=2 → 10, type=3 → 11, type=4 → 12（11 旧 + 1 新）
 --
--- SELECT COUNT(*) FROM role_permissions rp
+-- 角色权限挂载校验
+-- SELECT r.code, COUNT(rp.permission_id) AS cnt
+--   FROM role_permissions rp
+--   INNER JOIN roles r       ON rp.role_id = r.id
 --   INNER JOIN permissions p ON rp.permission_id = p.id
---   WHERE rp.role_id = 1 AND p.module = 'points';
--- 预期：34（1+10+11+12）
+--   WHERE p.module = 'points'
+--   GROUP BY r.code
+--   ORDER BY cnt DESC;
+-- 预期:
+--   super_admin = 34 (1+10+11+12 全部)
+--   admin       = 34 (1+10+11+12 全部)
+--   operator    = 26 (1 顶级 + 10 菜单 + 6 按钮 + 9 API)
+--   auditor     = 16 (1 顶级 + 10 菜单 +   0 按钮 + 5 API)
