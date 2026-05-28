@@ -1,5 +1,6 @@
 import BaseService, { PaginationResult } from './base';
 import { ProviderCode, createProvider, getPaymentProvider, RefundResult } from '../lib/payment';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 interface CreateRefundInput {
   orderId: number;
@@ -260,6 +261,24 @@ export default class RefundService extends BaseService {
           }
         } catch (e: any) {
           this.ctx.logger.warn(`[refund.create] points-v2 refund failed: ${e.message}`);
+        }
+      });
+
+      // ========== 业务事件埋点（B9 / spec §2.12-#34）==========
+      // 退款成功后发 refund_completed 事件（供审计 / 通知 / 下游订阅者使用）
+      // 与积分扣回 runInBackground 独立：emit 失败不影响积分扣回，反之亦然
+      this.ctx.runInBackground(async () => {
+        try {
+          await (this.ctx.service as any).event.emit(EVENT_CODES.REFUND_COMPLETED, {
+            userId: ctx.order.userId,
+            orderId: ctx.order.id,
+            orderNo: ctx.order.orderNo,
+            refundId: ctx.refundId,
+            refundNo,
+            refundAmount: ctx.amount,
+          });
+        } catch (e: any) {
+          this.ctx.logger.warn(`[refund.create] event emit refund_completed failed: ${e.message}`);
         }
       });
     }

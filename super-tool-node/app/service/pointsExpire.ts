@@ -1,25 +1,21 @@
 import BaseService from './base';
+import { localTodayStr } from '../lib/dateUtil';
 
 /**
  * 积分过期 + 升级延长有效期
  *  设计依据: docs/superpowers/plans/2026-05-26-积分成长体系MVP实施计划-v2.md §Task 10
  *           docs/analysis/积分与成长体系深度评估报告.md §5.4 提醒触达 / §4.4 升级延长
+ *           docs/superpowers/plans/2026-05-27-积分成长体系后端优化-A基础设施实施计划.md Task A2
  *
  *  核心方法：
  *    - processExpiredBatches() —— 扫描 expire_at<=NOW 的批次清零（FIFO 状态置 3）
  *    - extendExpireOnUpgrade() —— 升级时把存量批次 expire_at = GREATEST(原值, NOW+新等级有效期)
  *    - sendExpireReminders()  —— T-30 / T-7 / T-0 多渠道提醒（PointsExpiryNotice 唯一索引保幂等）
  *    - getStats()             —— 管理端过期统计（即将过期 + 本月已过期）
+ *
+ *  日期统一走 lib/dateUtil（强制 Asia/Shanghai，与 server 时区无关）。
  */
 export default class PointsExpireService extends BaseService {
-  /** 取本地时区"今天"日期串（YYYY-MM-DD） */
-  private localTodayStr(d: Date = new Date()): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${dd}`;
-  }
-
   /**
    * 每日定时调用：清零已过期的批次
    *  - 分批扫描（每次 500 条）防大事务
@@ -30,7 +26,9 @@ export default class PointsExpireService extends BaseService {
     const { Op } = require('sequelize');
     const now = new Date();
     let totalExpired = 0;
-    const processedUserIds = new Set<number>();
+    // spec §2.6-#19：聚合每个用户当批次过期总额，通知 variables 带 {points, date}
+    //                让用户看到"您有 X 积分过期"而不是"您有积分过期"。
+    const processedUsers = new Map<number, number>();
 
     // 分批扫描，最多 100 轮（防止死循环）
     let safetyGuard = 100;
@@ -51,26 +49,29 @@ export default class PointsExpireService extends BaseService {
       for (const b of batches) {
         const expired = b.pointsRemaining;
         try {
-          await (this.ctx.model as any).transaction(async (t: any) => {
+          // spec §2.6-#19：txn 返回是否真扣分（exist/状态变化/无 member 等幂等命中场景
+          //                返回 false），外层据此决定是否计入通知聚合，避免重发。
+          const didExpire: boolean = await (this.ctx.model as any).transaction(async (t: any) => {
             // 幂等：先看是否已有过期记录
             const exist = await this.ctx.model.PointsExpiryLog.findOne({
               where: { sourceLogId: b.id },
               transaction: t,
             });
-            if (exist) return;
+            if (exist) return false;
 
             // 锁批次 + 锁会员
             await b.reload({ lock: t.LOCK.UPDATE, transaction: t });
-            if (b.status !== 1 || b.pointsRemaining <= 0) return;
+            if (b.status !== 1 || b.pointsRemaining <= 0) return false;
 
             const member: any = await this.ctx.model.UserMember.findOne({
               where: { userId: b.userId },
               lock: t.LOCK.UPDATE,
               transaction: t,
             });
-            if (!member) return;
-            // user_members.points 是 UNSIGNED → 钳到 0
-            const newBalance = Math.max(0, member.points - b.pointsRemaining);
+            if (!member) return false;
+            // 注：026 SQL 已 ALTER user_members.points / points_logs.balance 为 SIGNED，
+            //     允许负值；不再钳零（B2 / spec §2.7 单一事实源约束）。
+            const newBalance = member.points - b.pointsRemaining;
 
             // 1) 批次清零，状态置 3=已过期
             await b.update({ pointsRemaining: 0, status: 3 }, { transaction: t });
@@ -78,7 +79,7 @@ export default class PointsExpireService extends BaseService {
             // 2) 会员余额扣减
             await member.update({ points: newBalance }, { transaction: t });
 
-            // 3) 写 type=3 的过期流水（points_logs.balance 是 UNSIGNED → 已钳到 0）
+            // 3) 写 type=3 的过期流水（balance 已 SIGNED，可负）
             const expiredLog: any = await this.ctx.model.PointsLog.create(
               {
                 userId: b.userId,
@@ -110,26 +111,30 @@ export default class PointsExpireService extends BaseService {
               },
               { transaction: t },
             );
+            return true;
           });
-          totalExpired += expired;
-          processedUserIds.add(b.userId);
+          if (didExpire) {
+            totalExpired += expired;
+            // 同一用户多个批次过期时累加，通知里展示该用户本轮的总过期额
+            processedUsers.set(b.userId, (processedUsers.get(b.userId) || 0) + expired);
+          }
         } catch (err: any) {
           this.ctx.logger.error(`[expire] batch=${b.id} user=${b.userId} err=${err.message}`);
         }
       }
     }
 
-    // 对每个有积分被清零的用户发"已过期"通知
-    for (const uid of processedUserIds) {
+    // 对每个有积分被清零的用户发"已过期"通知（带具体金额）
+    for (const [uid, points] of processedUsers) {
       try {
         await (this.ctx.service.notification as any).core.send({
           typeCode: 'BUSINESS_POINTS_EXPIRED',
           userId: uid,
-          variables: { date: this.localTodayStr() },
+          variables: { date: localTodayStr(), points },
         });
       } catch { /* ignore */ }
     }
-    return { processedUsers: processedUserIds.size, totalExpired };
+    return { processedUsers: processedUsers.size, totalExpired };
   }
 
   /**
@@ -143,17 +148,15 @@ export default class PointsExpireService extends BaseService {
     newRule: { pointsExpireDays: number },
     transaction?: any,
   ): Promise<number> {
-    const { Op, literal } = require('sequelize');
+    // spec §2.6-#18：用 Sequelize.fn('GREATEST', col, val) 替代 literal 字符串拼接，
+    //                由 Sequelize 自动 bind 参数转义（虽然 newExpireAt 不来自用户输入，
+    //                但 literal 拼接日期字符串违反编码规范，统一收敛到 ORM 安全写法）。
+    const { Op, fn, col } = require('sequelize');
     const newExpireAt = new Date(Date.now() + newRule.pointsExpireDays * 86_400_000);
-    // 用本地时区格式化（MySQL DATETIME 默认按本地时区存储，避免 ISOString 的 UTC 偏移）
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const newExpireSql =
-      `${newExpireAt.getFullYear()}-${pad(newExpireAt.getMonth() + 1)}-${pad(newExpireAt.getDate())} ` +
-      `${pad(newExpireAt.getHours())}:${pad(newExpireAt.getMinutes())}:${pad(newExpireAt.getSeconds())}`;
 
     const [updated] = await (this.ctx.model.PointsLog as any).update(
       {
-        expireAt: literal(`GREATEST(\`expire_at\`, '${newExpireSql}')`),
+        expireAt: fn('GREATEST', col('expire_at'), newExpireAt),
       },
       {
         where: {
@@ -188,13 +191,13 @@ export default class PointsExpireService extends BaseService {
     let sent = 0;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = this.localTodayStr(today);
+      const todayStr = localTodayStr(today);
 
     for (const stage of stages) {
       const targetDay = new Date(today.getTime() + stage.days * 86_400_000);
       const dayStart = new Date(targetDay); dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(targetDay); dayEnd.setHours(23, 59, 59, 999);
-      const expireDateStr = this.localTodayStr(dayStart);
+      const expireDateStr = localTodayStr(dayStart);
 
       // 按用户聚合：当日到期的总积分
       const groups: any[] = await (this.ctx.model.PointsLog as any).findAll({

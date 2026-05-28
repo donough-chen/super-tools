@@ -1,5 +1,6 @@
 import BaseService from './base';
 import { ProviderCode, createProvider, getPaymentProvider } from '../lib/payment';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 interface CreatePaymentInput {
   orderId: number;
@@ -212,13 +213,13 @@ export default class PaymentService extends BaseService {
         attributes: ['id'],
       });
       if (!earlier) {
-        await (this.ctx.service as any).event.emit('first_consume', {
+        await (this.ctx.service as any).event.emit(EVENT_CODES.FIRST_CONSUME, {
           userId, amount, orderId,
         });
       }
 
       // 2) consume_milestone：累计消费里程碑（progress_type=3 累加 amount）
-      await (this.ctx.service as any).event.emit('consume_milestone', {
+      await (this.ctx.service as any).event.emit(EVENT_CODES.CONSUME_MILESTONE, {
         userId, amount, orderId,
       });
 
@@ -235,7 +236,7 @@ export default class PaymentService extends BaseService {
           },
           attributes: ['id'],
         });
-        const evtCode = earlierSub ? 'subscribe_renewal' : 'first_subscribe';
+        const evtCode = earlierSub ? EVENT_CODES.SUBSCRIBE_RENEWAL : EVENT_CODES.FIRST_SUBSCRIBE;
         await (this.ctx.service as any).event.emit(evtCode, {
           userId, amount, planCode: orderForActivation.planCode, orderId,
         });

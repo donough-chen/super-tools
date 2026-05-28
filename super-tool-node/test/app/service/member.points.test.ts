@@ -1,3 +1,4 @@
+export {};
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { app } = require('egg-mock/bootstrap');
 const assert = require('assert');
@@ -182,50 +183,9 @@ describe('MemberService - points lifecycle (v2)', () => {
     assert.strictEqual(giftLog.growthDelta, 0);    // 礼包不计成长值
   });
 
-  it('refundPoints 优先扣回原批次 + 剩余扣会员余额（允许负余额）', async () => {
-    const ctx = app.mockContext();
-    // 用户当前余额 0，模拟"原获得 100 积分，已被消耗 80，剩 20 在批次内"
-    const original: any = await app.model.PointsLog.create({
-      userId,
-      type: 1,
-      source: 'order_paid',
-      points: 100,
-      balance: 100,
-      pointsRemaining: 20,        // 已被消耗 80，剩 20
-      status: 1,
-      sourceLevelId: 1,
-      sourceEvent: 'order_paid',
-      growthMultiplier: 1.0,
-      expireAt: new Date(Date.now() + 365 * 86_400_000),
-    });
-    await app.model.UserMember.update({ points: 20 }, { where: { userId } });
-
-    // 退款 100：先扣原批次 20（status→4），剩 80 走会员余额
-    // 注：user_members.points 是 UNSIGNED 不能存负值 → 钳到 0；
-    //     真实"欠款 -80"保留在返回值 r.balance 与 points_logs.remark 模板中
-    const r = await ctx.service.member.refundPoints(userId, original.id, 100);
-    assert.strictEqual(r.balance, -80, '返回的 balance 反映理论值（含负欠款）');
-
-    const refreshed: any = await app.model.PointsLog.findByPk(original.id);
-    assert.strictEqual(refreshed.pointsRemaining, 0);
-    assert.strictEqual(refreshed.status, 4);    // 已退款回收
-
-    const m: any = await app.model.UserMember.findOne({ where: { userId } });
-    // user_members.points UNSIGNED → 钳到 0
-    assert.strictEqual(m.points, 0);
-    // 成长值不动
-    assert.strictEqual(m.growthValue, 0);
-
-    // 退款流水：balance 字段钳到 0（UNSIGNED 限制），理论欠款体现在 points 字段 + remark
-    const refundLog: any = await app.model.PointsLog.findOne({
-      where: { userId, source: 'refund' },
-    });
-    assert.ok(refundLog);
-    assert.strictEqual(refundLog.points, -100);
-    assert.strictEqual(refundLog.balance, 0, '流水 balance 字段受 UNSIGNED 限制钳到 0');
-    assert.ok(/-80/.test(refundLog.remark), 'remark 应记录理论欠款 -80');
-    assert.strictEqual(refundLog.growthDelta, 0);
-    assert.strictEqual(refundLog.bizType, 'refund');
-    assert.strictEqual(refundLog.bizId, String(original.id));
-  });
+  // 注：refundPoints 6 case 账本契约已迁移到独立文件 member.refund.test.ts
+  //     旧测试断言（status=4 / UNSIGNED 钳零 / remark 模板）已被 B1 改造取代：
+  //       - status=4 → 仅旧分支保留；新逻辑用 status=1/2/3 + metadata
+  //       - UNSIGNED 钳零 → 026 已 ALTER 为 SIGNED，model 同步
+  //       - remark 模板 → 改为结构化 metadata.{scenario,originalLogId,refundAmount,recoverHere,overflow}
 });

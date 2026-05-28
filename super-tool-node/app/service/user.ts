@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcryptjs';
 import BaseService, { PaginationOptions, PaginationResult } from './base';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 export default class UserService extends BaseService {
   private readonly CACHE_PREFIX = 'user:';
@@ -201,7 +202,7 @@ export default class UserService extends BaseService {
     try {
       const u: any = await this.ctx.model.User.findByPk(userId);
       if (u && u.nickname && u.avatar && u.phone) {
-        await (this.ctx.service as any).event.emit('profile_completed', { userId });
+        await (this.ctx.service as any).event.emit(EVENT_CODES.PROFILE_COMPLETED, { userId });
       }
     } catch (e: any) {
       this.ctx.logger.warn(`[user.updateProfile] points-v2 event failed: ${e.message}`);

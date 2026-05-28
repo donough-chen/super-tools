@@ -1,6 +1,7 @@
 import { Service } from 'egg';
 import { Op } from 'sequelize';
 import moment from 'moment';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 export interface FeedbackCreatePayload {
   userId?: number | null;
@@ -218,7 +219,7 @@ export default class FeedbackService extends Service {
     // 业务"已回复"≈plan 期望的"采纳"语义；状态 0/1→2 触发任务进度
     try {
       if ((fb as any).userId) {
-        await (this.ctx.service as any).event.emit('feedback_adopted', {
+        await (this.ctx.service as any).event.emit(EVENT_CODES.FEEDBACK_ADOPTED, {
           userId: (fb as any).userId,
           feedbackId: id,
         });

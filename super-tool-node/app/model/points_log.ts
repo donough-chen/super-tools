@@ -19,6 +19,7 @@ export interface PointsLogAttributes {
   sourceLevelId?: number;         // 获得时的等级ID（用于过期时长计算）
   sourceEvent?: string;           // 来源事件 code
   growthMultiplier: number;       // 获得时应用的等级积分倍率
+  metadata?: Record<string, any>; // 扩展信息（B1 退款账本等结构化追溯，JSON）
   createdAt?: Date;
 }
 
@@ -31,7 +32,8 @@ export default (app: Application) => {
     type: { type: TINYINT.UNSIGNED, allowNull: false },
     source: { type: STRING(50), allowNull: false },
     points: { type: INTEGER, allowNull: false },
-    balance: { type: INTEGER.UNSIGNED, allowNull: false },
+    // 注：DB 已在 026 ALTER 为 SIGNED（允许负值，对账锚点），model 与 SQL 保持一致
+    balance: { type: INTEGER, allowNull: false },
     growthDelta: { type: INTEGER, defaultValue: 0, field: 'growth_delta' },
     bizType: { type: STRING(50), allowNull: true, field: 'biz_type' },
     bizId: { type: STRING(64), allowNull: true, field: 'biz_id' },
@@ -43,6 +45,8 @@ export default (app: Application) => {
     sourceLevelId: { type: INTEGER.UNSIGNED, allowNull: true, field: 'source_level_id' },
     sourceEvent: { type: STRING(50), allowNull: true, field: 'source_event' },
     growthMultiplier: { type: DECIMAL(4, 2), defaultValue: 1.00, field: 'growth_multiplier' },
+    // B1 退款账本结构化字段（payload schema 见 027 SQL 注释）
+    metadata: { type: DataTypes.JSON, allowNull: true },
   }, {
     tableName: 'points_logs',
     timestamps: true,

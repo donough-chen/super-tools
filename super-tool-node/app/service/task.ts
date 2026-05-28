@@ -1,39 +1,28 @@
 import BaseService from './base';
+import {
+  localTodayStr,
+  localYearMonthStr,
+  localYearStr,
+  localIsoWeekStr,
+} from '../lib/dateUtil';
 
 /**
- * 周期键计算（本地时区）
+ * 周期键计算（统一走 Asia/Shanghai 本地时区，A2 修复 server 时区漂移）
  *  - once: 'once'
  *  - daily: 'YYYY-MM-DD'
- *  - weekly: 'YYYY-Www'（ISO 周）
+ *  - weekly: 'YYYY-Www'（ISO 周；ISO 周年与日历年可能跨年差 1）
  *  - monthly: 'YYYY-MM'
  *  - yearly: 'YYYY'
  */
 function cycleKey(cycle: string, d: Date = new Date()): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
   switch (cycle) {
     case 'once': return 'once';
-    case 'daily': return `${y}-${m}-${day}`;
-    case 'weekly': {
-      // ISO 周（与 sign month 同步用本地时区）
-      const onejan = new Date(y, 0, 1);
-      const week = Math.ceil(((+d - +onejan) / 86_400_000 + onejan.getDay() + 1) / 7);
-      return `${y}-W${String(week).padStart(2, '0')}`;
-    }
-    case 'monthly': return `${y}-${m}`;
-    case 'yearly': return `${y}`;
+    case 'daily': return localTodayStr(d);
+    case 'weekly': return localIsoWeekStr(d);
+    case 'monthly': return localYearMonthStr(d);
+    case 'yearly': return localYearStr(d);
     default: return 'once';
   }
-}
-
-/** 取本地时区的 today（YYYY-MM-DD），与 SignService 一致 */
-function localTodayStr(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
 }
 
 /**
@@ -51,6 +40,10 @@ function localTodayStr(): string {
  *   2 去重计数        progressMeta.distinctSet 添加去重 key，progress = set.size
  *   3 累计阈值        progress = progress + payload.amount
  *   4 直接覆盖        progress = max(progress, payload.streak)
+ *     - 用于连续签到任务：当 streak ≥ progressTarget 时立即 completed；
+ *       此后即使收到更大 streak 的事件，也因 status='completed' 直接 return（无副作用，幂等）。
+ *       例：achieve_sign_30 的 progress 可能停在 8（streak=8 时记录的最大值），后续 streak=9..29 的事件不再覆盖；
+ *           只要 streak 永远不达 30，任务就维持 pending；一旦达成则 completed 永久锁定。
  */
 export default class TaskService extends BaseService {
   /**
@@ -213,7 +206,13 @@ export default class TaskService extends BaseService {
       if (ut.status === 'claimed') this.ctx.throw(400, '已领取');
       if (ut.status !== 'completed') this.ctx.throw(400, '任务未完成');
 
-      // ====== 检查每日上限（task 类）======
+      // ====== B4: 过期校验（spec §2.3-#9）======
+      // expireAt 不为空且已过期 → 拒绝领奖（防止过期后仍发奖）
+      if (ut.expireAt && new Date(ut.expireAt).getTime() < Date.now()) {
+        this.ctx.throw(400, '任务已过期，无法领奖');
+      }
+
+      // ====== 检查每日上限（task / invite 两种维度，spec §2.3-#10）======
       if (task.dailyCapGroup === 'task') {
         const today = localTodayStr();
         const cap: any = await this.ctx.model.DailyPointsCap.findOne({
@@ -224,6 +223,18 @@ export default class TaskService extends BaseService {
         const taskCapLimit = await this.getTaskDailyCap();
         if (cap && cap.earned >= taskCapLimit) {
           this.ctx.throw(400, '今日任务积分已达上限');
+        }
+      } else if (task.dailyCapGroup === 'invite') {
+        // invite 类按 count 维度限频（每日最多 N 次邀请奖励）
+        const today = localTodayStr();
+        const cap: any = await this.ctx.model.DailyPointsCap.findOne({
+          where: { userId, capDate: today, capGroup: 'invite' },
+          lock: t.LOCK.UPDATE,
+          transaction: t,
+        });
+        const inviteCapLimit = await this.getInviteDailyCap();
+        if (cap && cap.count >= inviteCapLimit) {
+          this.ctx.throw(400, '今日邀请奖励次数已达上限');
         }
       }
 
@@ -280,12 +291,13 @@ export default class TaskService extends BaseService {
         { transaction: t },
       );
 
-      // ====== 累计每日上限计数（task 类）======
-      if (task.dailyCapGroup === 'task') {
+      // ====== 累计每日上限计数（task / invite 两种维度）======
+      if (task.dailyCapGroup === 'task' || task.dailyCapGroup === 'invite') {
         const today = localTodayStr();
+        const grp = task.dailyCapGroup;
         const [cap, created] = await (this.ctx.model.DailyPointsCap as any).findOrCreate({
-          where: { userId, capDate: today, capGroup: 'task' },
-          defaults: { userId, capDate: today, capGroup: 'task', earned: realPoints, count: 1 },
+          where: { userId, capDate: today, capGroup: grp },
+          defaults: { userId, capDate: today, capGroup: grp, earned: realPoints, count: 1 },
           transaction: t,
         });
         if (!created) {
@@ -304,22 +316,64 @@ export default class TaskService extends BaseService {
     });
   }
 
-  /** 列出用户任务（按 category 过滤） */
-  async listUserTasks(userId: number, filter: { category?: string } = {}) {
+  /**
+   * 列出用户任务（spec §2.3-#11：分页 + 等级门槛过滤 + status 过滤）
+   *  返回 { list, total, page, pageSize } 标准分页结构
+   */
+  async listUserTasks(
+    userId: number,
+    filter: {
+      category?: string;
+      status?: 'pending' | 'completed' | 'claimed' | 'expired' | 'all';
+      page?: number;
+      pageSize?: number;
+    } = {},
+  ): Promise<{ list: any[]; total: number; page: number; pageSize: number }> {
+    const page = Math.max(1, Number(filter.page) || 1);
+    const pageSize = Math.min(Math.max(1, Number(filter.pageSize) || 20), 100);
+
     const where: any = { status: 1 };
     if (filter.category) where.category = filter.category;
+
+    // 1) 等级字典：建 code → level 数值 Map（用 MemberLevel.level 数值字段比较）
+    const levels: any[] = await this.ctx.model.MemberLevel.findAll();
+    const levelDict = new Map<string, number>();
+    for (const lv of levels) levelDict.set(lv.code, Number(lv.level));
+
+    // 当前用户等级数值（拿不到默认 0，requiredLevel 任务一律不可见）
+    const member: any = await this.ctx.model.UserMember.findOne({ where: { userId } });
+    const myLevelNum = member ? (levelDict.get(member.levelCode) || 0) : 0;
+
+    // 2) 拉所有任务后做内存过滤（任务总量小，DB 等级比较成本高）
     const tasks: any[] = await this.ctx.model.Task.findAll({
       where,
       order: [['sort', 'ASC']],
     });
+    const visibleTasks = tasks.filter(task => {
+      if (!task.requiredLevel) return true; // 无门槛 → 全可见
+      const required = levelDict.get(task.requiredLevel);
+      if (required === undefined) return false; // requiredLevel 无效 → 隐藏（防脏数据）
+      return myLevelNum >= required;
+    });
 
-    const result: any[] = [];
-    for (const task of tasks) {
+    // 3) status 过滤：需要先查 user_task 状态，但放在分页前会让 total 不准；
+    //    采用"先按任务表分页，再查每页 user_task 进度"（status 过滤在分页内做，total 是任务表的过滤前总数）
+    //    取舍：如需 status 精准 total，可在此先全部装载 user_task；目前任务量不大，保持简单
+    const total = visibleTasks.length;
+    const paged = visibleTasks.slice((page - 1) * pageSize, page * pageSize);
+
+    const list: any[] = [];
+    for (const task of paged) {
       const ck = cycleKey(task.resetCycle);
       const ut: any = await this.ctx.model.UserTask.findOne({
         where: { userId, taskCode: task.code, cycleKey: ck },
       });
-      result.push({
+      // status 过滤（applied at page-level）
+      if (filter.status && filter.status !== 'all') {
+        const utStatus = ut?.status || 'pending';
+        if (utStatus !== filter.status) continue;
+      }
+      list.push({
         code: task.code,
         name: task.name,
         icon: task.icon,
@@ -331,9 +385,10 @@ export default class TaskService extends BaseService {
         progress: ut?.progress || 0,
         status: ut?.status || 'pending',
         expireAt: ut?.expireAt,
+        requiredLevel: task.requiredLevel || null,
       });
     }
-    return result;
+    return { list, total, page, pageSize };
   }
 
   /** 新手任务过期清理（schedule 调） */
@@ -362,5 +417,17 @@ export default class TaskService extends BaseService {
       if (rows.length > 0 && rows[0].value) return Number(rows[0].value) || 50;
     } catch { /* ignore */ }
     return 50;
+  }
+
+  /** 读取 system_configs 中的邀请类每日次数上限（兜底 5） */
+  private async getInviteDailyCap(): Promise<number> {
+    try {
+      const rows: any[] = await (this.app.model as any).query(
+        "SELECT `value` FROM `system_configs` WHERE `group`='points' AND `key`='daily_cap_invite' LIMIT 1",
+        { type: (this.app.model as any).QueryTypes.SELECT },
+      );
+      if (rows.length > 0 && rows[0].value) return Number(rows[0].value) || 5;
+    } catch { /* ignore */ }
+    return 5;
   }
 }

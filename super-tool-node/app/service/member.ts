@@ -252,7 +252,7 @@ export default class MemberService extends BaseService {
       const newGrowthValue = m.growthValue + realGrowth;
 
       const updateData: any = {
-        points: Math.max(0, newBalance),
+        points: newBalance,                       // B2: SIGNED 不再钳零
         totalPoints: newTotalPoints,
       };
       if (realGrowth > 0) updateData.growthValue = newGrowthValue;
@@ -266,7 +266,7 @@ export default class MemberService extends BaseService {
         type: inferredType,
         source,
         points: realPoints,
-        balance: Math.max(0, newBalance),
+        balance: newBalance,                       // B2: SIGNED 不再钳零
         growthDelta: skipGrowth ? 0 : (growthDelta || 0),
         bizType,
         bizId,
@@ -289,7 +289,7 @@ export default class MemberService extends BaseService {
       result = {
         logId: log.id,
         realPoints,                              // v2 新增：实际写入积分（含倍率）
-        currentPoints: Math.max(0, newBalance),
+        currentPoints: newBalance,               // B2: SIGNED 不再钳零
         currentGrowth: newGrowthValue,
         isLevelUp: levelUpResult.upgraded,
         newLevel: levelUpResult.newLevel,
@@ -407,12 +407,11 @@ export default class MemberService extends BaseService {
       // 注：若 allowNegative 且批次扣不够（退款场景），剩余 remaining 视为透支不再扣批次
 
       const newBalance = m.points - amount;
-      // user_members.points 是 UNSIGNED 不能存负值；允许负余额场景下仅钱到 0，
-      // “透支”部分由 points_logs 流水作为唯一事实源心备（评估报告 §5 单一事实源）
-      const balanceForMember = Math.max(0, newBalance);
-      const balanceForLog = options.allowNegative ? newBalance : balanceForMember;
+      // B2 / spec §2.7：026 已 ALTER user_members.points / points_logs.balance 为 SIGNED，允许负值。
+      //   - allowNegative=false: 上方已 throw（余额不足），走不到这里
+      //   - allowNegative=true （退款透支场景）: 直接写负余额，账本一致
       await m.update(
-        { points: balanceForMember },
+        { points: newBalance },
         { transaction: t },
       );
 
@@ -422,8 +421,9 @@ export default class MemberService extends BaseService {
           type: 2,
           source,
           points: -amount,
-          // points_logs.balance 也是 UNSIGNED → 钳到 0；理论值由 points 字段重建
-          balance: balanceForMember,          growthDelta: 0,
+          // points_logs.balance 同步写真实值（SIGNED）
+          balance: newBalance,
+          growthDelta: 0,
           bizType,
           bizId,
           remark: remark || `消耗积分 ${amount}`,
@@ -440,7 +440,7 @@ export default class MemberService extends BaseService {
 
       return {
         logId: log.id,
-        currentPoints: options.allowNegative ? newBalance : Math.max(0, newBalance),
+        currentPoints: newBalance,                // B2: SIGNED 不再钳零
         currentGrowth: m.growthValue,
         isLevelUp: false,
       };
@@ -451,13 +451,28 @@ export default class MemberService extends BaseService {
   }
 
   /**
-   * 退款回扣积分（v2 新增，依据 plan §Task 4 Step 4 + 评估报告 §5.2）
+   * 退款回扣积分
    *
-   * 规则：
-   *   - 不扣成长值（growth_delta=0）
-   *   - 允许负余额（系统配置 allow_negative_balance_for_refund=true）
-   *   - 优先扣回"原批次"的 points_remaining；扣完则置 status=4（已退款回收）
-   *   - 剩下的（已被消耗部分）直接扣会员余额
+   * 双分支（feature flag: system_configs.refund.reverse_fifo）：
+   *
+   *   ┌─ flag=true  → B1 反向 FIFO 账本契约（spec §2.7-#21 / plan B §B1）
+   *   │   公式：
+   *   │     recoverHere = min(R, B.points - B.pR)
+   *   │     overflow    = R - recoverHere
+   *   │     new M       = M + R                  // M 一律加全 R（含 overflow）
+   *   │     new B.pR    = B.pR + recoverHere     // 不超过 B.points
+   *   │   规则：
+   *   │     - 不扣成长值（growth_delta=0）
+   *   │     - 026 已 ALTER balance 为 SIGNED → 真实负值，无需钳零
+   *   │     - 原批次过期不复活：status=3 时仅回写 pR，status 不变
+   *   │     - 仅退被退订单的原批次（B2 不动），保持 FIFO 不变
+   *   │     - refund 流水 sourceEvent='mall_refund'，metadata 结构化追溯
+   *   │     - refund 流水 expireAt 继承原批次（Q-C: 不延长有效期）
+   *   │
+   *   └─ flag=false → 旧逻辑（向后兼容，已上线流量）
+   *       - 原批次 pR 扣完置 status=4（已退款回收）
+   *       - balance UNSIGNED 钳零、remark 模板记录欠款
+   *       - sourceEvent='refund'、不写 metadata
    */
   async refundPoints(
     userId: number,
@@ -466,6 +481,9 @@ export default class MemberService extends BaseService {
     options: { remark?: string; transaction?: any } = {},
   ) {
     if (refundAmount <= 0) this.ctx.throw(400, '退款积分必须为正数');
+
+    // === 读 feature flag ===
+    const useReverseFifo = await this.getRefundReverseFifoFlag();
 
     const ownTx = !options.transaction;
     const t: any = options.transaction || await (this.ctx.model as any).transaction();
@@ -482,38 +500,91 @@ export default class MemberService extends BaseService {
       });
       if (!member) this.ctx.throw(404, '会员记录不存在');
 
+      if (useReverseFifo) {
+        // ============== 新逻辑（B1 反向 FIFO 账本契约）==============
+        const R = refundAmount;
+        const batchCapacity = original.points - original.pointsRemaining; // 已被消耗的部分（可回写额度）
+        const recoverHere = Math.max(0, Math.min(R, batchCapacity));
+        const overflow = R - recoverHere;
+        const newBatchRemaining = original.pointsRemaining + recoverHere;
+        const newMemberPoints = member.points + R;
+
+        // 1) 回写原批次 pR
+        //    - status=1（可用）：回写后若仍 < points 保持 1；若已满（==points）也保持 1
+        //    - status=2（已耗尽）：回写后若 > 0 复活到 1
+        //    - status=3（已过期）：仅回写 pR，status 不变（账本完整 + FIFO 跳过）
+        //    - status=4（已退款回收，旧分支历史枚举）：保持 4 不复活
+        let newBatchStatus = original.status;
+        if (original.status === 2 && newBatchRemaining > 0) newBatchStatus = 1;
+        await original.update(
+          { pointsRemaining: newBatchRemaining, status: newBatchStatus },
+          { transaction: t },
+        );
+
+        // 2) 加会员余额（SIGNED 真实值，含可能的负值场景）
+        await member.update({ points: newMemberPoints }, { transaction: t });
+
+        // 3) 写 refund 流水：points=-R, pR=R, balance=new M, expireAt 继承
+        const refundLog: any = await this.ctx.model.PointsLog.create(
+          {
+            userId,
+            type: 2,
+            source: 'refund',
+            points: -R,
+            balance: newMemberPoints,
+            growthDelta: 0,
+            bizType: 'refund',
+            bizId: String(originalLogId),
+            remark: options.remark || `退款 #${originalLogId} (R=${R}, recoverHere=${recoverHere}, overflow=${overflow})`,
+            pointsRemaining: R,
+            status: 1,
+            sourceLevelId: member.levelId,
+            sourceEvent: 'mall_refund',                   // Q-D
+            growthMultiplier: original.growthMultiplier || 1.0,
+            expireAt: original.expireAt,                  // Q-C: 继承原批次
+            metadata: {
+              scenario: 'B1_REFUND',
+              originalLogId,
+              refundAmount: R,
+              recoverHere,
+              overflow,
+            },
+          },
+          { transaction: t },
+        );
+
+        if (ownTx) await t.commit();
+        return { logId: refundLog.id, balance: newMemberPoints };
+      }
+
+      // ============== 旧逻辑（flag=false，向后兼容）==============
       let toRecover = refundAmount;
-      // 优先从原批次扣回（仅当原批次还有可用余额）
       if (original.status === 1 && original.pointsRemaining > 0) {
         const recoverFromBatch = Math.min(toRecover, original.pointsRemaining);
         const newBatchRemaining = original.pointsRemaining - recoverFromBatch;
         await original.update(
           {
             pointsRemaining: newBatchRemaining,
-            status: newBatchRemaining === 0 ? 4 : 1,    // 4=已退款回收
+            status: newBatchRemaining === 0 ? 4 : 1,    // 4=已退款回收（旧逻辑保留）
           },
           { transaction: t },
         );
         toRecover -= recoverFromBatch;
       }
 
-      // 余下的直接扣会员余额（允许负余额）
-      // 注意：user_members.points 是 UNSIGNED，不能存负值。
-      //       实际负值记录于 points_logs.balance 中，有负余额可由流水重建。
       const newBalance = member.points - refundAmount;
-      const balanceForMember = Math.max(0, newBalance);
-      await member.update({ points: balanceForMember }, { transaction: t });
+      // B2 / spec §2.7：026 已 ALTER user_members.points / points_logs.balance 为 SIGNED，
+      //   旧分支同步不再钳零，账本一致。
+      await member.update({ points: newBalance }, { transaction: t });
 
-      // points_logs.balance 也是 UNSIGNED → 钳到 0；
-      // 理论欠款额度 = -refundAmount（由 points 字段保留）
       const log: any = await this.ctx.model.PointsLog.create(
         {
           userId,
           type: 2,
           source: 'refund',
           points: -refundAmount,
-          balance: balanceForMember,
-          growthDelta: 0,                            // 不扣成长值
+          balance: newBalance,
+          growthDelta: 0,
           bizType: 'refund',
           bizId: String(originalLogId),
           remark: options.remark || `退款扣回原批次 #${originalLogId}（理论余额 ${newBalance}）`,
@@ -527,11 +598,23 @@ export default class MemberService extends BaseService {
       );
 
       if (ownTx) await t.commit();
-      // 返回值中的 balance 是"理论余额"（含负值），方便上层判断
-      return { logId: log.id, balance: newBalance };    } catch (err) {
+      return { logId: log.id, balance: newBalance };
+    } catch (err) {
       if (ownTx) await t.rollback();
       throw err;
     }
+  }
+
+  /** 读取 system_configs.refund.reverse_fifo flag（兜底 false） */
+  private async getRefundReverseFifoFlag(): Promise<boolean> {
+    try {
+      const rows: any[] = await (this.app.model as any).query(
+        "SELECT `value` FROM `system_configs` WHERE `group`='refund' AND `key`='reverse_fifo' LIMIT 1",
+        { type: (this.app.model as any).QueryTypes.SELECT },
+      );
+      if (rows.length > 0 && rows[0].value) return String(rows[0].value).toLowerCase() === 'true';
+    } catch { /* ignore */ }
+    return false;
   }
 
   /**

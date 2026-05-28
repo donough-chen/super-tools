@@ -1,4 +1,5 @@
 import BaseService, { PaginationResult, PaginationOptions } from './base';
+import { EVENT_CODES } from '../lib/eventCodes';
 
 // ==================== 类型定义 ====================
 
@@ -68,7 +69,7 @@ export default class FavoriteService extends BaseService {
 
     // ========== 积分体系 v2 — 收藏事件埋点（Task 18）==========
     try {
-      await (this.ctx.service as any).event.emit('tool_favorited', {
+      await (this.ctx.service as any).event.emit(EVENT_CODES.TOOL_FAVORITED, {
         userId,
         tool_code: tool.code,
       });
