@@ -65,8 +65,9 @@ export default class PointsExpireService extends BaseService {
               transaction: t,
             });
             if (!member) return;
-            // user_members.points 是 UNSIGNED → 钳到 0
-            const newBalance = Math.max(0, member.points - b.pointsRemaining);
+            // 注：026 SQL 已 ALTER user_members.points / points_logs.balance 为 SIGNED，
+            //     允许负值；不再钳零（B2 / spec §2.7 单一事实源约束）。
+            const newBalance = member.points - b.pointsRemaining;
 
             // 1) 批次清零，状态置 3=已过期
             await b.update({ pointsRemaining: 0, status: 3 }, { transaction: t });
@@ -74,7 +75,7 @@ export default class PointsExpireService extends BaseService {
             // 2) 会员余额扣减
             await member.update({ points: newBalance }, { transaction: t });
 
-            // 3) 写 type=3 的过期流水（points_logs.balance 是 UNSIGNED → 已钳到 0）
+            // 3) 写 type=3 的过期流水（balance 已 SIGNED，可负）
             const expiredLog: any = await this.ctx.model.PointsLog.create(
               {
                 userId: b.userId,

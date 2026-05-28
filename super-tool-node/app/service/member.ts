@@ -252,7 +252,7 @@ export default class MemberService extends BaseService {
       const newGrowthValue = m.growthValue + realGrowth;
 
       const updateData: any = {
-        points: Math.max(0, newBalance),
+        points: newBalance,                       // B2: SIGNED 不再钳零
         totalPoints: newTotalPoints,
       };
       if (realGrowth > 0) updateData.growthValue = newGrowthValue;
@@ -266,7 +266,7 @@ export default class MemberService extends BaseService {
         type: inferredType,
         source,
         points: realPoints,
-        balance: Math.max(0, newBalance),
+        balance: newBalance,                       // B2: SIGNED 不再钳零
         growthDelta: skipGrowth ? 0 : (growthDelta || 0),
         bizType,
         bizId,
@@ -289,7 +289,7 @@ export default class MemberService extends BaseService {
       result = {
         logId: log.id,
         realPoints,                              // v2 新增：实际写入积分（含倍率）
-        currentPoints: Math.max(0, newBalance),
+        currentPoints: newBalance,               // B2: SIGNED 不再钳零
         currentGrowth: newGrowthValue,
         isLevelUp: levelUpResult.upgraded,
         newLevel: levelUpResult.newLevel,
@@ -407,12 +407,11 @@ export default class MemberService extends BaseService {
       // 注：若 allowNegative 且批次扣不够（退款场景），剩余 remaining 视为透支不再扣批次
 
       const newBalance = m.points - amount;
-      // user_members.points 是 UNSIGNED 不能存负值；允许负余额场景下仅钱到 0，
-      // “透支”部分由 points_logs 流水作为唯一事实源心备（评估报告 §5 单一事实源）
-      const balanceForMember = Math.max(0, newBalance);
-      const balanceForLog = options.allowNegative ? newBalance : balanceForMember;
+      // B2 / spec §2.7：026 已 ALTER user_members.points / points_logs.balance 为 SIGNED，允许负值。
+      //   - allowNegative=false: 上方已 throw（余额不足），走不到这里
+      //   - allowNegative=true （退款透支场景）: 直接写负余额，账本一致
       await m.update(
-        { points: balanceForMember },
+        { points: newBalance },
         { transaction: t },
       );
 
@@ -422,8 +421,9 @@ export default class MemberService extends BaseService {
           type: 2,
           source,
           points: -amount,
-          // points_logs.balance 也是 UNSIGNED → 钳到 0；理论值由 points 字段重建
-          balance: balanceForMember,          growthDelta: 0,
+          // points_logs.balance 同步写真实值（SIGNED）
+          balance: newBalance,
+          growthDelta: 0,
           bizType,
           bizId,
           remark: remark || `消耗积分 ${amount}`,
@@ -440,7 +440,7 @@ export default class MemberService extends BaseService {
 
       return {
         logId: log.id,
-        currentPoints: options.allowNegative ? newBalance : Math.max(0, newBalance),
+        currentPoints: newBalance,                // B2: SIGNED 不再钳零
         currentGrowth: m.growthValue,
         isLevelUp: false,
       };
@@ -573,10 +573,9 @@ export default class MemberService extends BaseService {
       }
 
       const newBalance = member.points - refundAmount;
-      // 注：026 后 user_members.points / points_logs.balance 已为 SIGNED；
-      //     旧逻辑保留钳零行为以维持现有调用方契约不变。
-      const balanceForMember = Math.max(0, newBalance);
-      await member.update({ points: balanceForMember }, { transaction: t });
+      // B2 / spec §2.7：026 已 ALTER user_members.points / points_logs.balance 为 SIGNED，
+      //   旧分支同步不再钳零，账本一致。
+      await member.update({ points: newBalance }, { transaction: t });
 
       const log: any = await this.ctx.model.PointsLog.create(
         {
@@ -584,7 +583,7 @@ export default class MemberService extends BaseService {
           type: 2,
           source: 'refund',
           points: -refundAmount,
-          balance: balanceForMember,
+          balance: newBalance,
           growthDelta: 0,
           bizType: 'refund',
           bizId: String(originalLogId),

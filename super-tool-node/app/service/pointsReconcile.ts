@@ -12,9 +12,11 @@ import { localTodayStr } from '../lib/dateUtil';
  *       vs 理论余额（SUM(points_logs.points)）"，差异落 PointsDailySnapshot.is_anomaly
  *    2. 每小时巡检：抽样最近 1 小时变动的用户（≤100），发现差异落告警
  *
- *  注意：
- *    - 本系统因 user_members.points 是 UNSIGNED，钳到 0 时会与流水累计值产生预期差异；
- *      对账时把"理论值钳到 0"再比较（diff = actual - max(0, theoretical)）
+ *  注意（A1 / B2 之后已变更）：
+ *    - 026 SQL 已 ALTER user_members.points / points_logs.balance 为 SIGNED，允许负值；
+ *      对账直接 diff = actual - theoretical，不再钳零（spec §2.7 单一事实源）。
+ *    - 退款负余额场景属于真实账本状态而非异常，将在 isAnomaly 判定中通过
+ *      |diff| > 0 自然识别（无差异即合规，与符号无关）。
  *    - 日期统一走 lib/dateUtil（强制 Asia/Shanghai）
  */
 export default class PointsReconcileService extends BaseService {
@@ -50,9 +52,8 @@ export default class PointsReconcileService extends BaseService {
           raw: true,
         });
         const theoretical = Number(sumRow?.total) || 0;
-        // 钳到 0（user_members.points 为 UNSIGNED）
-        const theoreticalClamped = Math.max(0, theoretical);
-        const diff = m.points - theoreticalClamped;
+        // SIGNED 后理论值与实际值都可负，直接对比（B2）
+        const diff = m.points - theoretical;
         const isAnomaly = Math.abs(diff) > 0;
         if (isAnomaly) anomalies++;
 
@@ -61,7 +62,7 @@ export default class PointsReconcileService extends BaseService {
             snapshotDate: todayStr,
             userId: m.userId,
             pointsBalance: m.points,
-            theoreticalBalance: theoreticalClamped,
+            theoreticalBalance: theoretical,
             diff,
             growthValue: m.growthValue,
             levelId: m.levelId,
@@ -110,7 +111,8 @@ export default class PointsReconcileService extends BaseService {
         where: { userId },
         raw: true,
       });
-      const theoretical = Math.max(0, Number(sumRow?.total) || 0);
+      const theoretical = Number(sumRow?.total) || 0;
+      // SIGNED 后理论值与实际值都可负，直接对比（B2）
       const diff = m.points - theoretical;
       if (Math.abs(diff) > 0) {
         anomalies.push({ userId, actual: m.points, theoretical, diff });
