@@ -70,10 +70,12 @@ describe('lib/pickFields - B7 admin field whitelist utility', () => {
     try {
       const r = pickFields({ a: 1 }, ['a', '__pickFields_polluted']);
       assertB7.deepStrictEqual(r, { a: 1 });
+      // Use hasOwnProperty (own-key check); note: `in` would query the prototype chain
+      // and would return true here precisely because we just polluted Object.prototype.
       assertB7.strictEqual(
-        '__pickFields_polluted' in r,
+        Object.prototype.hasOwnProperty.call(r, '__pickFields_polluted'),
         false,
-        'prototype-only keys must not be picked',
+        'prototype-only keys must not be picked as own properties',
       );
     } finally {
       delete (Object.prototype as any).__pickFields_polluted;
