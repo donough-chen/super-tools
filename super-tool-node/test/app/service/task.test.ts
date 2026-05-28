@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const { app } = require('egg-mock/bootstrap');
-const assert = require('assert');
+import { app } from 'egg-mock/bootstrap';
+import * as assert from 'assert';
 
 describe('TaskService - event-driven progress + claim', () => {
   let userId: number;
@@ -217,8 +217,11 @@ describe('TaskService - event-driven progress + claim', () => {
       userId,
       payload: { tool_code: 'json_format' },
     });
-    const list: any[] = await ctx.service.task.listUserTasks(userId, { category: 'newbie' });
-    const first = list.find(x => x.code === 'newbie_first_tool');
+    // B4: listUserTasks 返回 {list, total, page, pageSize}
+    const r: any = await ctx.service.task.listUserTasks(userId, { category: 'newbie', pageSize: 100 });
+    assert.ok(Array.isArray(r.list));
+    assert.ok(typeof r.total === 'number');
+    const first = r.list.find((x: any) => x.code === 'newbie_first_tool');
     assert.ok(first);
     assert.strictEqual(first.progress, 1);
     assert.strictEqual(first.status, 'completed');
