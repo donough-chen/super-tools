@@ -380,21 +380,29 @@ export default (app: Application) => {
   //
   // 写入类路由（claim / exchange / sign）挂 rateLimit + Idempotency-Key 中间件
   // 读取类路由仅 auth，不强制幂等
+  //
+  // Plan A · Task A7：
+  //   - idem (兼容版, enforce=false)：未带 Idempotency-Key 也放行，预留给未来非关键写入路由
+  //   - idemEnforced (强制版, enforce=true)：未带 Idempotency-Key 直接 400
+  //     用于 sign / claim / exchange 三个扣资源接口，杜绝重放双花
   const idem = (app.middleware as any).idempotency({ ttlHours: 24 }, app);
+  const idemEnforced = (app.middleware as any).idempotency({ ttlHours: 24, enforce: true }, app);
+  // 兼容引用：保留 idem 供未来扩展（当前未使用，关闭 lint 警告）
+  void idem;
   const rl = (max: number, windowSec: number) =>
     (app.middleware as any).rateLimit({ max, window: windowSec }, app);
 
-  // 签到（业务上 user_signs 唯一索引强制 1/天，rateLimit 兜底防爆刷）
-  router.post('/api/sign', auth, rl(10, 60), idem, (controller as any).sign.create);
+  // 签到（业务上 user_signs 唯一索引强制 1/天，rateLimit 兜底防爆刷；强制带 Idempotency-Key）
+  router.post('/api/sign', auth, rl(10, 60), idemEnforced, (controller as any).sign.create);
   router.get('/api/sign/status', auth, (controller as any).sign.status);
 
-  // 任务中心
+  // 任务中心（claim 强制带 Idempotency-Key，防 onClaim 重复发奖）
   router.get('/api/tasks', auth, (controller as any).task.index);
-  router.post('/api/tasks/:code/claim', auth, rl(10, 60), idem, (controller as any).task.claim);
+  router.post('/api/tasks/:code/claim', auth, rl(10, 60), idemEnforced, (controller as any).task.claim);
 
-  // 积分商城
+  // 积分商城（exchange 强制带 Idempotency-Key，防扣积分重复）
   router.get('/api/points-mall/items', auth, (controller as any).pointsMall.items);
-  router.post('/api/points-mall/exchange', auth, rl(5, 60), idem, (controller as any).pointsMall.exchange);
+  router.post('/api/points-mall/exchange', auth, rl(5, 60), idemEnforced, (controller as any).pointsMall.exchange);
   router.get('/api/points-mall/orders', auth, (controller as any).pointsMall.orders);
 
   // ==================== 积分体系（管理端） ====================
@@ -415,6 +423,12 @@ export default (app: Application) => {
   router.get('/api/admin/points/expire/stats', auth, perm('points:expire:stats'), (controller.admin as any).pointsOps.expireStats);
   router.get('/api/admin/points/reconcile', auth, perm('points:reconcile:view'), (controller.admin as any).pointsOps.reconcile);
   router.post('/api/admin/points/ops/trigger', auth, perm('points:ops:trigger'), (controller.admin as any).pointsOps.trigger);
+
+  // Plan A · Task A7/A8: pointsRule 缓存清理（管理端配置变更后热更）
+  //   路径与 plan A8 设计一致：POST /api/admin/points/cache/clear?levelId=X
+  //   - 不传 levelId：清空全部等级缓存
+  //   - 传 levelId：仅清单个等级
+  router.post('/api/admin/points/cache/clear', auth, perm('points:ops:trigger'), (controller.admin as any).pointsOps.clearRuleCache);
 
   // ==================== Socket.IO 路由（通知命名空间） ====================
   const io = (app as any).io;
