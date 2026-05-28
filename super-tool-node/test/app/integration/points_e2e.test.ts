@@ -1,3 +1,4 @@
+export {};
 /* eslint-disable @typescript-eslint/no-var-requires */
 /**
  * 积分体系 v2 端到端集成测试（Task 22）

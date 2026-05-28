@@ -1,3 +1,4 @@
+export {};
 /* eslint-disable @typescript-eslint/no-var-requires */
 /**
  * B1 退款账本契约（review 锁定的 6 个 case）

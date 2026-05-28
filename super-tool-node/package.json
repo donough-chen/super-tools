@@ -13,6 +13,8 @@
     "dev": "egg-bin dev --ts",
     "debug": "egg-bin debug --ts",
     "cov": "cross-env EGG_SERVER_ENV=unittest egg-bin cov --ts",
+    "test:jest": "jest",
+    "test:jest:watch": "jest --watch",
     "lint": "eslint app config test --ext .ts",
     "clean": "rimraf dist typings",
     "build": "tsc -p tsconfig.json",
