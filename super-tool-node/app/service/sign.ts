@@ -7,12 +7,15 @@ import { EVENT_CODES } from '../lib/eventCodes';
  *  设计依据: docs/superpowers/plans/2026-05-26-积分成长体系MVP实施计划-v2.md §Task 6
  *           docs/analysis/积分与成长体系深度评估报告.md §3 行为矩阵 / §4.2 等级签到底分
  *           docs/superpowers/plans/2026-05-27-积分成长体系后端优化-A基础设施实施计划.md Task A2
+ *           docs/superpowers/plans/2026-05-27-积分成长体系后端优化-B业务修复实施计划.md Task B3
  *
  *  规则：
  *    1. 每日 1 次（DB 唯一索引 user_signs.uk_user_date 兜底）
  *    2. 基础积分按等级：free=1 / silver=2 / gold=3 / diamond=5 / black=10
  *    3. 连续天数：last_sign_date === 昨天 → streak+1；否则归零（断签归零策略 / 用户决策 A + 未来加 C）
- *    4. 里程碑奖励通过 sign_streak 事件由 TaskService 处理（progress_type=4 覆盖式）
+ *    4. 里程碑奖励通过 sign_streak 事件由 TaskService 处理（progress_type=4 覆盖式）：
+ *       - tasks WHERE trigger_event='sign_streak' 是里程碑预览的事实源（B3）
+ *       - 每日签到底分 growthEarned=0；里程碑成长值由 task_completion_logs 单独记录
  *    5. 签到积分不叠加等级倍率（仅消费类积分才叠加）
  *    6. 日期统一走 lib/dateUtil（强制 Asia/Shanghai，与 server 时区无关）
  */
@@ -56,6 +59,8 @@ export default class SignService extends BaseService {
           signDate: today,
           streak: newStreak,
           pointsEarned: points,
+          // 每日签到底分恒不带成长值（与设计文档一致）；
+          // 里程碑成长值（7/30/365 天）由 sign_streak 事件触发 TaskService 写 task_completion_logs。
           growthEarned: 0,
           levelId: member.levelId,
         },
@@ -118,6 +123,21 @@ export default class SignService extends BaseService {
     const member: any = await this.ctx.model.UserMember.findOne({ where: { userId } });
 
     const today = localTodayStr();
+
+    // 里程碑奖励预览（spec §2.2-#6 / plan B §B3）
+    //   事实源：tasks WHERE trigger_event='sign_streak' AND status=1
+    //   返回字段固定为 { streak, points, growth }（H5 直接渲染），按 streak 升序
+    const milestoneTasks: any[] = await this.ctx.model.Task.findAll({
+      where: { triggerEvent: 'sign_streak', status: 1 },
+      attributes: ['progressTarget', 'rewardPoints', 'rewardGrowth'],
+      order: [['progress_target', 'ASC']],
+    });
+    const milestones = milestoneTasks.map((t: any) => ({
+      streak: t.progressTarget,
+      points: t.rewardPoints,
+      growth: t.rewardGrowth,
+    }));
+
     return {
       yearMonth: ym,
       signedDates: records.map(r => (typeof r.signDate === 'string' ? r.signDate : new Date(r.signDate).toISOString().slice(0, 10))),
@@ -127,6 +147,7 @@ export default class SignService extends BaseService {
         const d = typeof r.signDate === 'string' ? r.signDate : new Date(r.signDate).toISOString().slice(0, 10);
         return d === today;
       }),
+      milestones,                          // B3: 里程碑预览
     };
   }
 }
