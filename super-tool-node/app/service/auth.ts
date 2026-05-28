@@ -162,6 +162,18 @@ export default class AuthService extends BaseService {
 
       // 初始化会员记录
       try { await this.service.member.initMember((user as any).id); } catch (e) { this.ctx.logger.warn('[wechatLogin] initMember failed', e); }
+
+      // ========== 业务事件埋点（B9 / spec §2.12-#34）==========
+      // 微信登录即注册路径：首次创建用户时发 register 事件
+      try {
+        await (this.service as any).event.emit(EVENT_CODES.REGISTER, {
+          userId: (user as any).id,
+          source: `wechat_${platform}`,
+          registeredAt: new Date().toISOString(),
+        });
+      } catch (e: any) {
+        this.ctx.logger.warn(`[auth.wechatLogin] event emit register failed: ${e.message}`);
+      }
     }
 
     const userData = (user as any).toJSON();
@@ -284,6 +296,18 @@ export default class AuthService extends BaseService {
 
       // 初始化会员记录
       try { await this.service.member.initMember((user as any).id); } catch (e) { this.ctx.logger.warn('[phoneLogin] initMember failed', e); }
+
+      // ========== 业务事件埋点（B9 / spec §2.12-#34）==========
+      // 手机号登录即注册路径：首次创建用户时发 register 事件
+      try {
+        await (this.service as any).event.emit(EVENT_CODES.REGISTER, {
+          userId: (user as any).id,
+          source: `phone_${platform || 'h5'}`,
+          registeredAt: new Date().toISOString(),
+        });
+      } catch (e: any) {
+        this.ctx.logger.warn(`[auth.phoneLogin] event emit register failed: ${e.message}`);
+      }
     }
 
     const userData = (user as any).toJSON();
@@ -389,6 +413,18 @@ export default class AuthService extends BaseService {
 
     // 5. 初始化会员记录
     try { await this.service.member.initMember((user as any).id); } catch (e) { this.ctx.logger.warn('[register] initMember failed', e); }
+
+    // ========== 业务事件埋点（B9 / spec §2.12-#34）==========
+    // 账号密码注册路径：发 register 事件供任务系统 / 审计 / 下游订阅者使用
+    try {
+      await (this.service as any).event.emit(EVENT_CODES.REGISTER, {
+        userId: (user as any).id,
+        source: platform || 'web',
+        registeredAt: new Date().toISOString(),
+      });
+    } catch (e: any) {
+      this.ctx.logger.warn(`[auth.register] event emit register failed: ${e.message}`);
+    }
 
     return { id: (user as any).id, uuid: (user as any).uuid };
   }

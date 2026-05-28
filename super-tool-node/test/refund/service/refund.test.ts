@@ -139,8 +139,8 @@ describe('RefundService', () => {
       expect.objectContaining({ where: { userId: 5 } }),
     );
 
-    // 异步任务已注册（2 个：notify + audit）
-    expect(ctx.runInBackground).toHaveBeenCalledTimes(2);
+    // 异步任务已注册（4 个：notify + audit + refundPoints 扣回 + emit refund_completed）
+    expect(ctx.runInBackground).toHaveBeenCalledTimes(4);
   });
 
   it('case2: Provider 返回 success=false → throw 400 + 事务回滚（4 表均不 update）', async () => {
@@ -243,7 +243,7 @@ describe('RefundService', () => {
     // create 返回时，bg tasks 已注册但还未执行
     expect(ctx.service.notification.core.send).not.toHaveBeenCalled();
     expect(ctx.service.audit.log).not.toHaveBeenCalled();
-    expect(ctx._bgTasks.length).toBe(2);
+    expect(ctx._bgTasks.length).toBe(4);
 
     // 手动触发后才会调用
     await ctx._runBgTasks();
