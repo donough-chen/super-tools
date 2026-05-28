@@ -430,6 +430,21 @@ export default (app: Application) => {
   //   - 传 levelId：仅清单个等级
   router.post('/api/admin/points/cache/clear', auth, perm('points:ops:trigger'), (controller.admin as any).pointsOps.clearRuleCache);
 
+  // Plan §Task 12: 领域事件追溯
+  //   - GET  /api/admin/points/events                  列表查询（多维度筛选 + 分页）
+  //   - POST /api/admin/points/events/:id/retry        失败事件重试派发
+  //   权限码 points:events:list / points:events:retry 由 028 SQL 落库
+  router.get('/api/admin/points/events', auth, perm('points:events:list'), (controller.admin as any).pointsOps.eventsList);
+  router.post('/api/admin/points/events/:id/retry', auth, perm('points:events:retry'), (controller.admin as any).pointsOps.eventsRetry);
+
+  // Plan §Task 13: 退款账本（B1 灰度）
+  //   - GET /api/admin/points/refund-ledger            查 metadata.scenario='B1_REFUND' 流水
+  //   - GET /api/admin/points/refund-ledger/flag       读 system_configs.refund.reverse_fifo
+  //   权限码 points:refund-ledger:list / points:refund-ledger:flag 由 028 SQL 落库
+  //   注：精确路径 /flag 必须放在通用列表之前，避免被 :id 类参数吞掉（虽然此处暂无 :id，预留约定）
+  router.get('/api/admin/points/refund-ledger/flag', auth, perm('points:refund-ledger:flag'), (controller.admin as any).pointsOps.refundLedgerFlag);
+  router.get('/api/admin/points/refund-ledger', auth, perm('points:refund-ledger:list'), (controller.admin as any).pointsOps.refundLedgerList);
+
   // ==================== Socket.IO 路由（通知命名空间） ====================
   const io = (app as any).io;
   if (io) {

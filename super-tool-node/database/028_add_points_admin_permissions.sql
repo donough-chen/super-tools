@@ -9,8 +9,8 @@
 --   §2  顶级目录（type=1）       — 1 条
 --   §3  二级菜单（type=2）       — 10 条
 --   §4  按钮权限（type=3）       — 11 条
---   §5  兜底 API（type=4）       — 1 条（points:cache:clear）
---   §5.5 type=4 API parent_id 重挂枝 — 12 条（接管 025 §7 的 11 条 + 028 §5 的 1 条）
+--   §5  兜底 API（type=4）       — 5 条（points:cache:clear + Task 12/13 共 4 条）
+--   §5.5 type=4 API parent_id 重挂枝 — 16 条（025 §7 的 11 条 + 028 §5 的 5 条）
 --   §6  角色 × 权限映射          — super_admin / admin / operator / auditor 4 角色
 --
 -- 注意：
@@ -109,15 +109,29 @@ UNION ALL
 SELECT 'points:btn:events:retry', '失败事件重试', 3, 'points', 'admin',
        (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t), 10, 1;
 
--- ===== §5. 兜底 API（type=4）— 1 条 =====
+-- ===== §5. 兜底 API（type=4）— 5 条 =====
 -- 路由 POST /api/admin/points/cache/clear 在 router.ts 当前用 'points:ops:trigger' 鉴权；
 -- 同步落 'points:cache:clear' 入库便于未来切换权限码（如需更细粒度）；
--- 当前不替换 router.ts，仅作 RBAC 元数据登记，不影响运行时
+-- 当前不替换 router.ts，仅作 RBAC 元数据登记，不影响运行时。
+--
+-- Task 12 / Task 13 新增的 4 条 API 权限：router.ts 已实际生效启用，
+--   GET  /api/admin/points/events                 -> points:events:list
+--   POST /api/admin/points/events/:id/retry       -> points:events:retry
+--   GET  /api/admin/points/refund-ledger          -> points:refund-ledger:list
+--   GET  /api/admin/points/refund-ledger/flag     -> points:refund-ledger:flag
 INSERT IGNORE INTO `permissions`
   (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `sort`, `status`)
 VALUES
-  ('points:cache:clear', '清理规则缓存（API）', 4, 'points', 'admin',
-   '/api/admin/points/cache/clear', 'POST', 12, 1);
+  ('points:cache:clear',          '清理规则缓存（API）',         4, 'points', 'admin',
+   '/api/admin/points/cache/clear',         'POST', 12, 1),
+  ('points:events:list',          '事件追溯列表（API）',         4, 'points', 'admin',
+   '/api/admin/points/events',              'GET',  21, 1),
+  ('points:events:retry',         '事件重试派发（API）',         4, 'points', 'admin',
+   '/api/admin/points/events/:id/retry',    'POST', 22, 1),
+  ('points:refund-ledger:list',   '退款账本流水列表（API）',     4, 'points', 'admin',
+   '/api/admin/points/refund-ledger',       'GET',  31, 1),
+  ('points:refund-ledger:flag',   '退款账本灰度状态（API）',     4, 'points', 'admin',
+   '/api/admin/points/refund-ledger/flag',  'GET',  32, 1);
 
 -- ===== §5.5 type=4 API 权限 parent_id 重挂枝 =====
 -- 背景：025 §7 写入 11 条 API 权限时未指定 parent_id（默认 0），导致它们在权限树
@@ -127,35 +141,43 @@ VALUES
 -- 策略：本段以 UPDATE 方式把 025 §7 的 11 条 + 028 §5 的 1 条共 12 条 type=4 API，
 --      按业务归属重挂到对应 type=2 菜单的 parent_id 下。完整挂载矩阵：
 --
---      points:menu:dashboard   ← points:expire:stats
---      points:menu:tasks       ← points:task:list / create / update / delete (4)
---      points:menu:mall:items  ← points:mall:list / manage (2)
---      points:menu:mall:orders ← points:mall:orders / refund (2)
---      points:menu:ops         ← points:reconcile:view / ops:trigger / cache:clear (3)
+--      points:menu:dashboard      ← points:expire:stats
+--      points:menu:tasks          ← points:task:list / create / update / delete (4)
+--      points:menu:mall:items     ← points:mall:list / manage (2)
+--      points:menu:mall:orders    ← points:mall:orders / refund (2)
+--      points:menu:ops            ← points:reconcile:view / ops:trigger / cache:clear (3)
+--      points:menu:events         ← points:events:list / retry (2)
+--      points:menu:refund-ledger  ← points:refund-ledger:list / flag (2)
 --
 -- 幂等：UPDATE 是天然幂等的；多次执行结果一致
--- 注意：使用单条 UPDATE + CASE WHEN 而非 12 条独立 UPDATE，减少 SQL 解析开销，
+-- 注意：使用单条 UPDATE + CASE WHEN 而非 16 条独立 UPDATE，减少 SQL 解析开销，
 --      同时保证原子性
 
 UPDATE `permissions`
 SET `parent_id` = CASE `code`
   -- 概览页 API
-  WHEN 'points:expire:stats'    THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:dashboard') t)
+  WHEN 'points:expire:stats'        THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:dashboard') t)
   -- 任务管理 API
-  WHEN 'points:task:list'       THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
-  WHEN 'points:task:create'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
-  WHEN 'points:task:update'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
-  WHEN 'points:task:delete'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
+  WHEN 'points:task:list'           THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
+  WHEN 'points:task:create'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
+  WHEN 'points:task:update'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
+  WHEN 'points:task:delete'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:tasks') t)
   -- 商城商品 API
-  WHEN 'points:mall:list'       THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:items') t)
-  WHEN 'points:mall:manage'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:items') t)
+  WHEN 'points:mall:list'           THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:items') t)
+  WHEN 'points:mall:manage'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:items') t)
   -- 商城订单 API
-  WHEN 'points:mall:orders'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:orders') t)
-  WHEN 'points:mall:refund'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:orders') t)
+  WHEN 'points:mall:orders'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:orders') t)
+  WHEN 'points:mall:refund'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:mall:orders') t)
   -- 运维中心 API
-  WHEN 'points:reconcile:view'  THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
-  WHEN 'points:ops:trigger'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
-  WHEN 'points:cache:clear'     THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
+  WHEN 'points:reconcile:view'      THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
+  WHEN 'points:ops:trigger'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
+  WHEN 'points:cache:clear'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
+  -- 事件追溯 API（Task 12）
+  WHEN 'points:events:list'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t)
+  WHEN 'points:events:retry'        THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t)
+  -- 退款账本 API（Task 13）
+  WHEN 'points:refund-ledger:list'  THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:refund-ledger') t)
+  WHEN 'points:refund-ledger:flag'  THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:refund-ledger') t)
   ELSE `parent_id`
 END
 WHERE `module` = 'points'
@@ -165,7 +187,9 @@ WHERE `module` = 'points'
     'points:task:list', 'points:task:create', 'points:task:update', 'points:task:delete',
     'points:mall:list', 'points:mall:manage',
     'points:mall:orders', 'points:mall:refund',
-    'points:reconcile:view', 'points:ops:trigger', 'points:cache:clear'
+    'points:reconcile:view', 'points:ops:trigger', 'points:cache:clear',
+    'points:events:list', 'points:events:retry',
+    'points:refund-ledger:list', 'points:refund-ledger:flag'
   );
 
 -- ===== §6. 角色 × 权限映射 =====
@@ -231,9 +255,9 @@ WHERE r.code = 'operator'
     'points:btn:mall:item:create',
     'points:btn:mall:item:edit',
     'points:btn:events:retry',
-    -- 只读 + CRUD API（type=4）：025 已落 11 条 + 028 §5 落 1 条
-    --   只读：list / mall:list / mall:orders / expire:stats / reconcile:view
-    --   CRUD：task:create/update/delete / mall:manage
+    -- 只读 + CRUD API（type=4）：025 已落 11 条 + 028 §5 落 5 条
+    --   只读：list / mall:list / mall:orders / expire:stats / reconcile:view / events:list / refund-ledger:list / refund-ledger:flag
+    --   CRUD：task:create/update/delete / mall:manage / events:retry
     --   不含：mall:refund / ops:trigger / cache:clear
     'points:task:list',
     'points:task:create',
@@ -243,7 +267,11 @@ WHERE r.code = 'operator'
     'points:mall:manage',
     'points:mall:orders',
     'points:expire:stats',
-    'points:reconcile:view'
+    'points:reconcile:view',
+    'points:events:list',
+    'points:events:retry',
+    'points:refund-ledger:list',
+    'points:refund-ledger:flag'
   );
 
 -- ----- auditor：所有菜单（只读视角）+ 仅只读 API（list / orders / stats / reconcile）-----
@@ -270,7 +298,10 @@ WHERE r.code = 'auditor'
     'points:mall:list',
     'points:mall:orders',
     'points:expire:stats',
-    'points:reconcile:view'
+    'points:reconcile:view',
+    'points:events:list',
+    'points:refund-ledger:list',
+    'points:refund-ledger:flag'
   );
 
 COMMIT;
@@ -287,10 +318,14 @@ DELETE rp FROM `role_permissions` rp
 
 DELETE FROM `permissions` WHERE module = 'points' AND type IN (1, 2, 3);
 
-DELETE FROM `permissions` WHERE code = 'points:cache:clear';
+DELETE FROM `permissions` WHERE code IN (
+  'points:cache:clear',
+  'points:events:list', 'points:events:retry',
+  'points:refund-ledger:list', 'points:refund-ledger:flag'
+);
 
 -- §5.5 重挂枝回滚：把 025 §7 的 11 条 API 的 parent_id 还原为 0（顶级孤儿状态）
--- 注：028 §5 的 'points:cache:clear' 在上一步已被 DELETE，无需还原
+-- 注：028 §5 的 5 条新 API（cache:clear / events:* / refund-ledger:*）在上一步已被 DELETE，无需还原
 UPDATE `permissions`
 SET `parent_id` = 0
 WHERE `module` = 'points'
@@ -310,7 +345,7 @@ COMMIT;
 -- 上线后校验 SQL（手动执行）
 -- ============================================================
 -- SELECT type, COUNT(*) FROM permissions WHERE module = 'points' GROUP BY type;
--- 预期：type=1 → 1, type=2 → 10, type=3 → 11, type=4 → 12（11 旧 + 1 新）
+-- 预期：type=1 → 1, type=2 → 10, type=3 → 11, type=4 → 16（11 旧 + 5 新）
 --
 -- 角色权限挂载校验
 -- SELECT r.code, COUNT(rp.permission_id) AS cnt
@@ -321,10 +356,10 @@ COMMIT;
 --   GROUP BY r.code
 --   ORDER BY cnt DESC;
 -- 预期:
---   super_admin = 34 (1+10+11+12 全部)
---   admin       = 34 (1+10+11+12 全部)
---   operator    = 26 (1 顶级 + 10 菜单 + 6 按钮 + 9 API)
---   auditor     = 16 (1 顶级 + 10 菜单 +   0 按钮 + 5 API)
+--   super_admin = 38 (1+10+11+16 全部)
+--   admin       = 38 (1+10+11+16 全部)
+--   operator    = 31 (1 顶级 + 10 菜单 + 6 按钮 + 13 API + 1 按钮 events:retry = 7 按钮 实际见 §6 IN 列表)
+--   auditor     = 19 (1 顶级 + 10 菜单 +   0 按钮 + 8 API)
 --
 -- 权限树完整性校验（确认 12 条 type=4 API 已正确挂到 type=2 菜单下，无孤儿）
 -- SELECT child.code AS api_code, parent.code AS menu_code, parent.name AS menu_name
