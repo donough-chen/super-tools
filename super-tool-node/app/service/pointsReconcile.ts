@@ -18,6 +18,11 @@ import { localTodayStr } from '../lib/dateUtil';
  *    - 退款负余额场景属于真实账本状态而非异常，将在 isAnomaly 判定中通过
  *      |diff| > 0 自然识别（无差异即合规，与符号无关）。
  *    - 日期统一走 lib/dateUtil（强制 Asia/Shanghai）
+ *
+ *  注意（B6 变更，spec §2.8-#25/#26）：
+ *    - hourlyBalanceCheck 抽样从固定 100 改为活跃用户 5%，clamp 到 [100, 1000]。
+ *    - 原 alertSvc.createLog/create 兜底为死代码（alert.ts 无此公共入口），已移除；
+ *      告警通道延后到 C 阶段单独立项（含 AlertRule 注册 + metricType 扩展）。
  */
 export default class PointsReconcileService extends BaseService {
   /**
@@ -82,19 +87,32 @@ export default class PointsReconcileService extends BaseService {
 
   /**
    * 每小时余额巡检
-   *   找最近 1 小时有 points_logs 写入的用户（最多 100 个），逐个核算
+   *   抽样最近 1 小时有 points_logs 写入的用户（5% 比例，下限 100，上限 1000），逐个核算
    *   差异 > 0 落告警 + 写日志
+   *
+   *   B6（spec §2.8-#25）：固定 100 抽样在大用户量下覆盖率不足，改为按活跃用户 5% 抽样。
+   *     先 COUNT(DISTINCT user_id) 拿活跃数，再以比例计算 limit，clamp 到 [100, 1000]。
    */
   async hourlyBalanceCheck(): Promise<{ checked: number; anomalies: any[] }> {
     const { Op, fn, col } = require('sequelize');
     const Sequelize = require('sequelize');
     const since = new Date(Date.now() - 60 * 60 * 1000);
 
-    // 用 Sequelize.where + col('created_at') 直接以列名查询，避免 attribute 名问题
+    // 1) 先查最近 1h 活跃用户数（DISTINCT user_id）
+    const activeRow: any = await (this.ctx.model.PointsLog as any).findOne({
+      attributes: [[fn('COUNT', fn('DISTINCT', col('user_id'))), 'cnt']],
+      where: Sequelize.where(col('created_at'), { [Op.gte]: since }),
+      raw: true,
+    });
+    const active = Number(activeRow?.cnt) || 0;
+    // 5% 抽样，下限 100，上限 1000（B6 §2.8-#25）
+    const limit = Math.max(100, Math.min(1000, Math.ceil(active * 0.05)));
+
+    // 2) 取抽样用户列表（DISTINCT user_id，限 limit 个）
     const recent: any[] = await (this.ctx.model.PointsLog as any).findAll({
       attributes: [[fn('DISTINCT', col('user_id')), 'userId']],
       where: Sequelize.where(col('created_at'), { [Op.gte]: since }),
-      limit: 100,
+      limit,
       raw: true,
     });
 
@@ -120,26 +138,13 @@ export default class PointsReconcileService extends BaseService {
     }
 
     if (anomalies.length > 0) {
+      // B6 §2.8-#26：原 alertSvc.createLog/create 兜底属死代码（alert.ts 实际无此公共入口，
+      // fn1 永远为 null）。已移除。告警通道留待 C 阶段单独设计 AlertRule 注册 +
+      // checkAllRules metricType 扩展，避免 hardcode ruleId / 污染 AlertRule 表。
+      // 当前以 logger.error 作为可观测性入口（运维可经日志聚合订阅 [reconcile] anomalies=*）
       this.ctx.logger.error(
         `[reconcile] anomalies=${anomalies.length} sample=${JSON.stringify(anomalies.slice(0, 3))}`,
       );
-      // 触发告警（如有 alert 模块）
-      try {
-        const alertSvc: any = (this.ctx.service as any).alert;
-        if (alertSvc) {
-          const fn1 = alertSvc.createLog || alertSvc.create || null;
-          if (typeof fn1 === 'function') {
-            await fn1.call(alertSvc, {
-              ruleCode: 'points_balance_anomaly',
-              severity: 'warning',
-              message: `积分余额异常 ${anomalies.length} 个用户`,
-              payload: { anomalies: anomalies.slice(0, 10) },
-            });
-          }
-        }
-      } catch (err: any) {
-        this.ctx.logger.warn(`[reconcile] alert failed: ${err.message}`);
-      }
     }
 
     return { checked: recent.length, anomalies };
