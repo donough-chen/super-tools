@@ -187,6 +187,78 @@ async function run() {
     },
   });
 
+  // CASE 8 (A6): emit 时 evt._pid = 当前 worker pid
+  cases.push({
+    name: 'A6 emit 时 evt._pid 标记当前 pid',
+    fn: async () => {
+      const s = fresh();
+      const svc = makeService(s);
+      await svc.emit('sign', { userId: 1 });
+      const taskEvt = s.taskOnEventCalls[0];
+      if (taskEvt._pid !== process.pid) {
+        throw new Error(`expected _pid=${process.pid}, got ${taskEvt._pid}`);
+      }
+      const messengerEvt = s.messengerSendCalls[0].evt;
+      if (messengerEvt._pid !== process.pid) {
+        throw new Error(`messenger evt _pid wrong`);
+      }
+    },
+  });
+
+  // CASE 9 (A6): dispatchFromMessenger 收到自己 worker 的回声 → 跳过
+  cases.push({
+    name: 'A6 dispatchFromMessenger 跳过同 pid 自己的回声',
+    fn: async () => {
+      const s = fresh();
+      const svc = makeService(s);
+      await svc.dispatchFromMessenger({
+        code: 'sign',
+        userId: 1,
+        payload: { userId: 1 },
+        ts: Date.now(),
+        _pid: process.pid, // 来自当前 worker 的回声
+      });
+      if (s.taskOnEventCalls.length !== 0) {
+        throw new Error('should NOT dispatch when _pid === self');
+      }
+    },
+  });
+
+  // CASE 10 (A6): dispatchFromMessenger 收到其他 worker 的事件 → 派发
+  cases.push({
+    name: 'A6 dispatchFromMessenger 来自其他 worker 时派发',
+    fn: async () => {
+      const s = fresh();
+      const svc = makeService(s);
+      await svc.dispatchFromMessenger({
+        code: 'sign',
+        userId: 1,
+        payload: { userId: 1 },
+        ts: Date.now(),
+        _pid: process.pid + 99999, // 假装来自其他 worker
+      });
+      if (s.taskOnEventCalls.length !== 1) {
+        throw new Error('should dispatch when _pid is other worker');
+      }
+      if (s.domainEventCreates.length !== 0) throw new Error('should NOT write DB');
+      if (s.messengerSendCalls.length !== 0) throw new Error('should NOT re-broadcast');
+    },
+  });
+
+  // CASE 11 (A6): dispatchFromMessenger 收到无效 evt → 安全跳过
+  cases.push({
+    name: 'A6 dispatchFromMessenger 无效 evt 安全跳过',
+    fn: async () => {
+      const s = fresh();
+      const svc = makeService(s);
+      await svc.dispatchFromMessenger(null);
+      await svc.dispatchFromMessenger({});
+      await svc.dispatchFromMessenger({ userId: 1 } as any);
+      if (s.taskOnEventCalls.length !== 0) throw new Error('should not dispatch invalid');
+      if (s.errors.length !== 0) throw new Error(`unexpected error: ${s.errors}`);
+    },
+  });
+
   let pass = 0, fail = 0;
   for (const c of cases) {
     try {

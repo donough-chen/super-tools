@@ -29,6 +29,8 @@ export interface DomainEvent {
   userId: number;
   payload?: any;
   ts?: number;
+  /** 发出该事件的 worker pid（仅 messenger 广播路径使用，dispatchFromMessenger 据此跳过自身）*/
+  _pid?: number;
 }
 
 export default class EventService extends BaseService {
@@ -48,6 +50,7 @@ export default class EventService extends BaseService {
       userId: payload.userId,
       payload,
       ts: Date.now(),
+      _pid: process.pid,
     };
 
     // 1) 写库（追溯）—— 失败仅 warn，不阻塞业务
@@ -94,14 +97,17 @@ export default class EventService extends BaseService {
 
   /**
    * messenger 跨 worker 入口（由 app.ts didReady 钩子调用）
-   *  当前与 dispatchInProcess 行为等价：因为 worker 之间收到事件后，
-   *  应当各自独立派发，由 user_tasks 的唯一索引保证幂等。
-   *
-   *  之所以单独保留一个方法名而不直接复用 dispatchInProcess：
-   *  - 语义上区分"业务侧调用"和"messenger 接收"
-   *  - 后续可以加上跳过自身、重放统计等 messenger 专属逻辑
+   *  - 当任一 worker emit 时，messenger.sendToApp 会广播到所有 worker（含发送方自己）
+   *  - 这里通过 evt._pid 比对跳过自身，避免 emit 所在 worker 重复派发
+   *    （即使不跳过，user_tasks 唯一索引也能兜底幂等，但跳过省一次无意义事务）
+   *  - 不再写库 / 不再二次广播（避免循环）
    */
   async dispatchFromMessenger(evt: DomainEvent): Promise<void> {
+    if (!evt || !evt.code) return;
+    if (evt._pid && evt._pid === process.pid) {
+      // 来自当前 worker 的回声：emit 内已 dispatchInProcess，跳过
+      return;
+    }
     await this.dispatchInProcess(evt);
   }
 }

@@ -54,19 +54,28 @@ export default class AppBootHook {
     }
 
     // ============================================================
-    // 积分成长体系 v2 - 跨 worker 领域事件监听（Task 5）
-    //   说明：本 worker 通过 EventService.emit 内已同步派发；
-    //         此监听仅处理"其他 worker 广播过来"的事件，
-    //         TaskService.onEvent 内部用唯一索引 + 事务锁做幂等。
+    // 积分成长体系 v2 - 跨 worker 领域事件监听（Task 5 / Plan A · Task A6）
+    //   说明：
+    //     - emit 所在 worker 内已通过 EventService.dispatchInProcess 同步派发；
+    //     - messenger.sendToApp 会把事件广播到所有 worker（含发送方自身）；
+    //     - 这里统一交给 EventService.dispatchFromMessenger，由它通过
+    //       evt._pid 比对跳过自身、再调用 dispatchInProcess；
+    //     - TaskService.onEvent 通过 user_tasks 唯一索引 + 事务锁做幂等兜底。
     // ============================================================
     try {
       (this.app as any).messenger.on('domain-event', async (evt: any) => {
         if (!evt || !evt.code) return;
         const ctx = this.app.createAnonymousContext();
         try {
-          const taskSvc: any = (ctx.service as any).task;
-          if (taskSvc && typeof taskSvc.onEvent === 'function') {
-            await taskSvc.onEvent(evt);
+          const eventSvc: any = (ctx.service as any).event;
+          if (eventSvc && typeof eventSvc.dispatchFromMessenger === 'function') {
+            await eventSvc.dispatchFromMessenger(evt);
+          } else {
+            // 老路径兜底：直接调 task.onEvent
+            const taskSvc: any = (ctx.service as any).task;
+            if (taskSvc && typeof taskSvc.onEvent === 'function') {
+              await taskSvc.onEvent(evt);
+            }
           }
         } catch (err: any) {
           ctx.logger.error(`[event recv:${evt.code}] ${err.message}`);
