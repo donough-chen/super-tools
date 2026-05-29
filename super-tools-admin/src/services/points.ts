@@ -80,6 +80,57 @@ export interface ReconcileSnapshot {
   isAnomaly: 0 | 1;
 }
 
+// 领域事件追溯（Plan §Task 12）
+export type DomainEventStatus = 'emitted' | 'dispatched' | 'failed';
+export interface DomainEvent {
+  id: number;
+  eventCode: string;
+  userId: number;
+  payload: any | null;
+  status: DomainEventStatus;
+  retryCount: number;
+  lastError: string | null;
+  createdAt: string;
+  updatedAt?: string;
+}
+export interface DomainEventListQuery {
+  eventCode?: string;
+  userId?: number;
+  status?: DomainEventStatus;
+  startTime?: string;
+  endTime?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+// 退款账本（Plan §Task 13 / B1 灰度）
+export interface RefundLedgerEntry {
+  id: number;
+  userId: number;
+  type: number;
+  source: string;
+  points: number;
+  balance: number;
+  bizType?: string | null;
+  bizId?: string | null;
+  remark?: string | null;
+  metadata?: {
+    scenario?: 'B1_REFUND';
+    originalLogId?: number;
+    refundAmount?: number;
+    recoverHere?: number;
+    overflow?: number;
+    fallbackBatchIds?: number[];
+    [k: string]: any;
+  } | null;
+  createdAt: string;
+}
+export interface RefundLedgerFlag {
+  enabled: boolean;
+  raw: string;
+  exists: boolean;
+}
+
 // ==================== 任务管理 ====================
 export async function listTasks(params?: PointsTaskListQuery) {
   return request('/api/admin/points/tasks', { params });
@@ -150,4 +201,25 @@ export async function clearRuleCache(levelId?: number) {
     method: 'POST',
     params: levelId ? { levelId } : undefined,
   });
+}
+
+// ==================== 领域事件追溯（Plan §Task 12）====================
+export async function listDomainEvents(params?: DomainEventListQuery) {
+  return request('/api/admin/points/events', { params });
+}
+export async function retryDomainEvent(id: number) {
+  return request(`/api/admin/points/events/${id}/retry`, { method: 'POST' });
+}
+
+// ==================== 退款账本（Plan §Task 13 / B1 灰度）====================
+export async function listRefundLedger(params?: {
+  userId?: number;
+  originalLogId?: number;
+  page?: number;
+  pageSize?: number;
+}) {
+  return request('/api/admin/points/refund-ledger', { params });
+}
+export async function getRefundLedgerFlag() {
+  return request('/api/admin/points/refund-ledger/flag');
 }
