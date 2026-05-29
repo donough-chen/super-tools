@@ -23,3 +23,9 @@ export type { KeepAliveContextValue, KeepAliveProps, CacheEntry } from './KeepAl
 export type { SendCodeButtonProps } from './SendCodeButton';
 export type { SwitchProps } from './Switch';
 export type { ToolActionPopupProps, ToolActionItem } from './ToolActionPopup';
+
+// 积分成长体系组件
+export { default as SignCalendar } from './SignCalendar';
+export type { SignCalendarProps } from './SignCalendar';
+export { default as TaskCard } from './TaskCard';
+export type { TaskCardProps } from './TaskCard';
