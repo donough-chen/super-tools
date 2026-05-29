@@ -5,6 +5,7 @@
  *  关键断言：所有日期计算固定按 Asia/Shanghai 时区执行，
  *           不依赖 server 进程的 process.env.TZ。
  */
+import { describe, it, expect } from '@jest/globals';
 import {
   localTodayStr,
   prevDayStr,
