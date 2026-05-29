@@ -1,317 +1,290 @@
 /**
- * 会员服务页 Member（Phase 2 升降级版）
+ * 会员中心（积分成长体系总入口）
  *
- * 重大变更（vs phase1）：
- *   - 跨套餐不再"灰禁用"，改为"可点击 → previewOrder → 二次确认 modal"
- *   - 二次确认 modal 展示：scene / amount / remainingValue / newExpireAt / reason
- *   - createOrder 返回 needPayment=false 时（scene=4 降级 0 元订单）直接跳订单详情
- *   - createOrder 返回 needPayment=true 时跳收银台让用户选支付通道
+ * 模块：等级卡 / 数据卡片 / 4 快捷入口 / 我的权益预览 / 今日任务（含签到） / 商城推荐
  *
- * 4 个场景：
- *   - scene=1 新购：未付费/已过期 → 立即订阅
- *   - scene=2 续费：同套餐 → 立即续费（叠加剩余天数）
- *   - scene=3 升级：跨套餐 + newPrice > remainingValue → 差价订单
- *   - scene=4 降级：跨套餐 + newPrice <= remainingValue → 0 元订单立即开通
+ * Plan: Task 2.3
  */
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { navigateBack, navigateTo } from '@/utils/navigator';
+import React, { useEffect, useMemo } from 'react';
+import { history } from 'umi';
 import { safeNavigate } from '../../utils/safeNavigate';
 import { showToast } from '../../utils/toast';
-import { getMemberInfo, getMemberPlans } from '../../service/member';
-import { createOrder, previewOrder, listMyOrders } from '../../service/payment';
-import type { PaidPlan, OrderPreviewResult, OrderScene } from '../../types/order';
-import type { MemberInfo } from '../../types/auth';
+import {
+  useUserStore,
+  useMemberStore,
+  useSignStore,
+  useTaskStore,
+  usePointsMallStore,
+  selectGroupedTasks,
+} from '../../store';
 import AppHeader from '../../components/AppHeader';
-import AppModal from '../../components/AppModal';
+import { resolveIcon } from '../../utils/icon';
 import './index.less';
 
-const MemberPage: React.FC = () => {
-  const [plans, setPlans] = useState<PaidPlan[]>([]);
-  const [memberInfo, setMemberInfo] = useState<MemberInfo | null>(null);
-  const [selectedPlanCode, setSelectedPlanCode] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
-  const [pendingOrderModal, setPendingOrderModal] = useState<{
-    visible: boolean;
-    orderNo?: string;
-    orderId?: number;
-  }>({ visible: false });
-
-  // Phase 2：升降级二次确认 modal
-  const [previewModal, setPreviewModal] = useState<{
-    visible: boolean;
-    preview?: OrderPreviewResult;
-    targetPlanCode?: string;
-  }>({ visible: false });
-
-  const fetchAll = useCallback(async () => {
-    try {
-      const [planRes, memberRes] = await Promise.all([getMemberPlans(), getMemberInfo()]);
-      const planList: PaidPlan[] = (planRes?.code === 200 ? planRes.data || [] : []) as PaidPlan[];
-      const validPlans = planList
-        .filter((p) => p.status === 1)
-        .sort((a, b) => a.sort - b.sort);
-      setPlans(validPlans);
-      setMemberInfo((memberRes?.code === 200 ? memberRes.data : null) as MemberInfo | null);
-      if (validPlans.length) {
-        // 默认选当前付费套餐，否则第一个
-        const currentCode =
-          memberRes?.data?.paid?.isPaid && memberRes.data.paid.planCode
-            ? memberRes.data.paid.planCode
-            : validPlans[0].code;
-        setSelectedPlanCode(currentCode);
-      }
-    } catch (e: any) {
-      showToast(e?.message || '加载失败', 'error');
-    }
-  }, []);
+const MemberCenterPage: React.FC = () => {
+  const { isLoggedIn, userInfo } = useUserStore();
+  const memberInfo = useMemberStore((s) => s.memberInfo);
+  const fetchMemberInfo = useMemberStore((s) => s.fetchMemberInfo);
+  const signStatus = useSignStore((s) => s.status);
+  const fetchSignStatus = useSignStore((s) => s.fetchStatus);
+  const submitSign = useSignStore((s) => s.submitSign);
+  const signSubmitting = useSignStore((s) => s.submitting);
+  const tasks = useTaskStore((s) => s.tasks);
+  const fetchTasks = useTaskStore((s) => s.fetchTasks);
+  const mallItems = usePointsMallStore((s) => s.items);
+  const fetchMallItems = usePointsMallStore((s) => s.fetchItems);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
-
-  const currentPaid = memberInfo?.paid;
-  const currentPaidCode = currentPaid?.isPaid ? currentPaid.planCode : null;
-
-  /**
-   * Phase 2 卡片状态规则：
-   *   未付费 / 已过期 → all 'available'（点击直接下单）
-   *   付费同套餐 → 'current'（点击续费）
-   *   付费跨套餐 → 'switchable'（点击 → preview → 二次确认 modal）
-   *   永久套餐已开通 → 'lifetime-disabled'（永久不可切换）
-   */
-  const planState = (plan: PaidPlan): 'available' | 'current' | 'switchable' | 'lifetime-disabled' => {
-    if (!currentPaidCode) return 'available';
-    if (currentPaidCode === plan.code) return 'current';
-    // 当前是永久 → 禁用所有切换（spec § 9.2 永久会员不支持切换）
-    const currentPlan = plans.find((p) => p.code === currentPaidCode);
-    if (currentPlan && currentPlan.durationDays === 0) return 'lifetime-disabled';
-    return 'switchable';
-  };
-
-  const selectedPlan = useMemo(
-    () => plans.find((p) => p.code === selectedPlanCode),
-    [plans, selectedPlanCode],
-  );
-  const selectedState = selectedPlan ? planState(selectedPlan) : 'available';
-
-  const buttonLabel = useMemo(() => {
-    if (!selectedPlan) return '选择套餐';
-    if (selectedState === 'lifetime-disabled') return '永久会员不支持切换';
-    if (selectedState === 'current') {
-      const days = currentPaid?.remainingDays;
-      return `立即续费 ¥${selectedPlan.price}${days != null ? `（剩 ${days} 天）` : ''}`;
-    }
-    if (selectedState === 'switchable') return `切换到「${selectedPlan.name}」`;
-    return `立即订阅 ¥${selectedPlan.price}`;
-  }, [selectedPlan, selectedState, currentPaid]);
-
-  const buttonDisabled = !selectedPlan || selectedState === 'lifetime-disabled' || submitting;
-
-  /** 真正发起下单（scene 1/2 直接走，scene 3/4 经过 preview confirm） */
-  const doCreateOrder = useCallback(async (planCode: string) => {
-    setSubmitting(true);
-    try {
-      const orderRes = await createOrder(planCode);
-      if (orderRes?.code !== 200 || !orderRes.data) {
-        throw new Error(orderRes?.message || '下单失败');
-      }
-      const { orderId, needPayment, scene, reason } = orderRes.data;
-
-      // scene=4 降级 0 元订单：立即开通会员，直接跳订单详情（不进收银台）
-      if (!needPayment) {
-        showToast(`${reason || '已开通'}`, 'success');
-        safeNavigate(`/member/orders/${orderId}`);
-        return;
-      }
-
-      // scene 1/2/3：跳收银台让用户选支付通道
-      safeNavigate(`/member/cashier?orderId=${orderId}`);
-    } catch (e: any) {
-      const msg: string = e?.message || e?.errMsg || String(e);
-      // 解析后端 400「您有未完成订单 MOxxx」
-      const m = msg.match(/未完成订单\s+(\S+)/);
-      if (m) {
-        try {
-          const ordersRes = await listMyOrders({ status: 0, page: 1, pageSize: 5 });
-          const target = ordersRes?.data?.list?.find((o: any) => o.orderNo === m[1]);
-          setPendingOrderModal({ visible: true, orderNo: m[1], orderId: target?.id });
-        } catch {
-          setPendingOrderModal({ visible: true, orderNo: m[1] });
-        }
-        return;
-      }
-      showToast(msg, 'error');
-    } finally {
-      setSubmitting(false);
-    }
-  }, []);
-
-  const handleSubmit = useCallback(async () => {
-    if (!selectedPlan || selectedState === 'lifetime-disabled') return;
-
-    // 跨套餐：先 preview，弹 modal 二次确认
-    if (selectedState === 'switchable') {
-      setSubmitting(true);
-      try {
-        const res = await previewOrder(selectedPlan.code);
-        if (res?.code !== 200 || !res.data) {
-          throw new Error(res?.message || '预览失败');
-        }
-        setPreviewModal({
-          visible: true,
-          preview: res.data,
-          targetPlanCode: selectedPlan.code,
-        });
-      } catch (e: any) {
-        showToast(e?.message || '预览失败', 'error');
-      } finally {
-        setSubmitting(false);
-      }
+    if (!isLoggedIn) {
+      safeNavigate('/login');
       return;
     }
+    fetchMemberInfo();
+    fetchSignStatus();
+    fetchTasks();
+    fetchMallItems();
+  }, [isLoggedIn, fetchMemberInfo, fetchSignStatus, fetchTasks, fetchMallItems]);
 
-    // 新购 / 续费：直接下单
-    await doCreateOrder(selectedPlan.code);
-  }, [selectedPlan, selectedState, doCreateOrder]);
+  const dailyTasks = useMemo(
+    () => selectGroupedTasks(tasks).daily.slice(0, 3),
+    [tasks],
+  );
+  const recommendedItems = useMemo(() => mallItems.slice(0, 2), [mallItems]);
 
-  /** 升降级 modal 内容文案 */
-  const previewModalText = useMemo(() => {
-    const p = previewModal.preview;
-    if (!p) return '';
-    const expireDate = p.newExpireAt.slice(0, 10);
-    if (p.scene === 3) {
-      // 升级
-      return `从「${p.currentPlanName || '当前套餐'}」升级到「${p.newPlanName}」\n\n${p.reason}\n\n应付：¥${p.amount}\n新到期：${expireDate}（自支付成功起算）`;
+  const level = memberInfo?.level;
+  const nextLevel = memberInfo?.nextLevel;
+  const progressPercent = nextLevel
+    ? Math.min(100, Math.round(nextLevel.progress * 100))
+    : 100;
+
+  const handleSign = async () => {
+    try {
+      const result = await submitSign();
+      if (result) {
+        showToast(`🎉 签到成功 +${result.pointsAwarded} 积分`, 'success');
+      }
+    } catch (e: any) {
+      showToast(e?.message || '签到失败', 'error');
     }
-    if (p.scene === 4) {
-      // 降级 amount=0
-      return `从「${p.currentPlanName || '当前套餐'}」降级到「${p.newPlanName}」\n\n${p.reason}\n\n本次无需支付，立即生效\n新到期：${expireDate}`;
-    }
-    return p.reason;
-  }, [previewModal.preview]);
+  };
+
+  const QUICK_ENTRIES = [
+    { key: 'points-logs', label: '积分明细', icon: '📋', path: '/member/points-logs' },
+    { key: 'tasks', label: '任务中心', icon: '🎯', path: '/tasks' },
+    { key: 'mall', label: '积分商城', icon: '🛍️', path: '/points-mall' },
+    { key: 'subscribe', label: '订阅会员', icon: '👑', path: '/member/subscribe' },
+  ];
 
   return (
-    <div className="page-member">
+    <div className="page-member-center">
       <AppHeader
-        title="会员"
+        title="会员中心"
         showBack
-        onBack={() => navigateTo('/mine')}
+        onBack={() => history.goBack()}
         rightSlot={
           <span
-            className="page-member__orders-link"
-            onClick={() => safeNavigate('/member/orders')}
+            className="page-member-center__level-link"
+            onClick={() => safeNavigate('/member/level')}
           >
-            我的订单
+            等级详情
           </span>
         }
       />
-      <main className="page-member__content">
-        {/* 当前会员状态卡 */}
-        <div className="page-member__status">
-          {currentPaid?.isPaid ? (
-            <>
-              <div className="page-member__status-title">
-                {currentPaid.planName || currentPaid.planCode || '付费会员'}
+
+      <main className="page-member-center__content">
+        {/* 1. 顶部等级卡 */}
+        <div
+          className="page-member-center__hero"
+          style={level?.color ? { background: level.color } : undefined}
+          onClick={() => safeNavigate('/member/level')}
+        >
+          <div className="page-member-center__hero-row">
+            <img
+              className="page-member-center__avatar"
+              src={userInfo?.avatar || resolveIcon('/assets/icons/avatar.png')}
+              alt="avatar"
+            />
+            <div className="page-member-center__hero-info">
+              <div className="page-member-center__nickname">
+                {userInfo?.nickname || userInfo?.username || '用户'}
               </div>
-              <div className="page-member__status-sub">
-                {currentPaid.expireAt ? `有效期至 ${currentPaid.expireAt.slice(0, 10)}` : '永久有效'}
-                {currentPaid.remainingDays != null && (
-                  <>（剩 {currentPaid.remainingDays} 天）</>
-                )}
+              <div className="page-member-center__level-name">
+                {level?.icon ? `${level.icon} ` : ''}
+                {level?.name || '普通用户'}
+              </div>
+              <div className="page-member-center__growth">
+                成长值 {memberInfo?.growthValue ?? 0}
+              </div>
+            </div>
+          </div>
+
+          {nextLevel ? (
+            <>
+              <div className="page-member-center__progress">
+                <div
+                  className="page-member-center__progress-bar"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <div className="page-member-center__progress-text">
+                距 {nextLevel.name} 还差 {nextLevel.remaining} 成长值
               </div>
             </>
           ) : (
-            <>
-              <div className="page-member__status-title">尚未开通付费会员</div>
-              <div className="page-member__status-sub">订阅享受更多专属权益</div>
-            </>
+            <div className="page-member-center__progress-text">
+              ✨ 您已是最高等级
+            </div>
           )}
         </div>
 
-        {/* 套餐列表 */}
-        <div className="page-member__plans">
-          {plans.map((plan) => {
-            const state = planState(plan);
-            const klass = ['page-member__plan'];
-            if (selectedPlanCode === plan.code) klass.push('page-member__plan--active');
-            if (state === 'lifetime-disabled') klass.push('page-member__plan--disabled');
-            if (state === 'current') klass.push('page-member__plan--current');
-            if (state === 'switchable') klass.push('page-member__plan--switchable');
-            return (
-              <div
-                key={plan.code}
-                className={klass.join(' ')}
-                onClick={() => state !== 'lifetime-disabled' && setSelectedPlanCode(plan.code)}
-              >
-                <h3 className="page-member__plan-name">{plan.name}</h3>
-                <div className="page-member__plan-price">¥{plan.price}</div>
-                {Number(plan.originalPrice) > Number(plan.price) && (
-                  <div className="page-member__plan-original">¥{plan.originalPrice}</div>
-                )}
-                <p className="page-member__plan-desc">
-                  {plan.description ||
-                    (plan.durationDays === 0 ? '永久' : `${plan.durationDays} 天`)}
-                </p>
-                {state === 'current' && (
-                  <div className="page-member__plan-tag">当前套餐</div>
-                )}
-                {state === 'switchable' && (
-                  <div className="page-member__plan-tag page-member__plan-tag--switchable">
-                    可切换
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {/* 2. 数据卡片 */}
+        <div className="page-member-center__stats">
+          <div
+            className="page-member-center__stat"
+            onClick={() => safeNavigate('/member/points-logs')}
+          >
+            <div className="page-member-center__stat-value">
+              {memberInfo?.points ?? 0}
+            </div>
+            <div className="page-member-center__stat-label">可用积分</div>
+          </div>
+          <div
+            className="page-member-center__stat"
+            onClick={() => safeNavigate('/member/points-logs')}
+          >
+            <div className="page-member-center__stat-value">
+              {memberInfo?.totalPoints ?? 0}
+            </div>
+            <div className="page-member-center__stat-label">累计积分</div>
+          </div>
+          <div
+            className="page-member-center__stat"
+            onClick={() => safeNavigate('/tasks')}
+          >
+            <div className="page-member-center__stat-value">
+              {signStatus?.continuousDays ?? 0}
+            </div>
+            <div className="page-member-center__stat-label">连签天数</div>
+          </div>
         </div>
 
-        <button
-          className="page-member__subscribe"
-          disabled={buttonDisabled}
-          onClick={handleSubmit}
-        >
-          {submitting ? '处理中...' : buttonLabel}
-        </button>
+        {/* 3. 快捷入口 */}
+        <div className="page-member-center__entries">
+          {QUICK_ENTRIES.map((e) => (
+            <div
+              key={e.key}
+              className="page-member-center__entry"
+              onClick={() => safeNavigate(e.path)}
+            >
+              <div className="page-member-center__entry-icon">{e.icon}</div>
+              <div className="page-member-center__entry-label">{e.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* 4. 我的权益（简版） */}
+        <div className="page-member-center__section">
+          <div className="page-member-center__section-title">我的权益</div>
+          <div
+            className="page-member-center__benefits"
+            onClick={() => safeNavigate('/member/level')}
+          >
+            <div className="page-member-center__benefits-text">
+              {level
+                ? `当前 ${level.name}，享受专属权益`
+                : '登录后查看会员权益'}
+            </div>
+            <span className="page-member-center__more">查看全部权益 →</span>
+          </div>
+        </div>
+
+        {/* 5. 今日任务（含签到） */}
+        <div className="page-member-center__section">
+          <div className="page-member-center__section-title">
+            今日任务
+            <span
+              className="page-member-center__more"
+              onClick={() => safeNavigate('/tasks')}
+            >
+              全部 →
+            </span>
+          </div>
+
+          <div className="page-member-center__sign">
+            <div>
+              <div className="page-member-center__sign-title">每日签到</div>
+              <div className="page-member-center__sign-sub">
+                {signStatus?.signedToday
+                  ? `今日已签到 · 已连签 ${signStatus.continuousDays} 天`
+                  : '签到可获得积分'}
+              </div>
+            </div>
+            <button
+              className="page-member-center__sign-btn"
+              disabled={signStatus?.signedToday || signSubmitting}
+              onClick={handleSign}
+            >
+              {signSubmitting
+                ? '签到中...'
+                : signStatus?.signedToday
+                  ? '已签到'
+                  : '签到'}
+            </button>
+          </div>
+
+          {dailyTasks.length === 0 && (
+            <div className="page-member-center__empty">暂无日常任务</div>
+          )}
+          {dailyTasks.map((t) => (
+            <div
+              key={t.code}
+              className="page-member-center__task"
+              onClick={() => safeNavigate('/tasks')}
+            >
+              <div className="page-member-center__task-name">{t.name}</div>
+              <div className="page-member-center__task-reward">
+                +{t.rewardPoints} 积分
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* 6. 商城推荐 */}
+        {recommendedItems.length > 0 && (
+          <div className="page-member-center__section">
+            <div className="page-member-center__section-title">
+              积分商城推荐
+              <span
+                className="page-member-center__more"
+                onClick={() => safeNavigate('/points-mall')}
+              >
+                更多 →
+              </span>
+            </div>
+            <div className="page-member-center__mall">
+              {recommendedItems.map((it) => (
+                <div
+                  key={it.id}
+                  className="page-member-center__mall-item"
+                  onClick={() => safeNavigate(`/points-mall/items/${it.id}`)}
+                >
+                  <img
+                    className="page-member-center__mall-img"
+                    src={it.images[0]}
+                    alt={it.name}
+                  />
+                  <div className="page-member-center__mall-name">{it.name}</div>
+                  <div className="page-member-center__mall-points">
+                    {it.pointsActual ?? it.pointsRequired} 积分
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
-
-      {/* 已存在未支付订单的提示 modal */}
-      <AppModal
-        visible={pendingOrderModal.visible}
-        title="存在未完成订单"
-        content={`您有一笔未支付的订单 ${pendingOrderModal.orderNo}，请先处理后再下单`}
-        confirmText={pendingOrderModal.orderId ? '查看订单' : '知道了'}
-        cancelText="关闭"
-        onConfirm={() => {
-          if (pendingOrderModal.orderId) {
-            safeNavigate(`/member/orders/${pendingOrderModal.orderId}`);
-          }
-          setPendingOrderModal({ visible: false });
-        }}
-        onCancel={() => setPendingOrderModal({ visible: false })}
-        onClose={() => setPendingOrderModal({ visible: false })}
-      />
-
-      {/* Phase 2：升降级二次确认 modal */}
-      <AppModal
-        visible={previewModal.visible}
-        title={previewModal.preview?.scene === 3 ? '确认升级' : '确认降级'}
-        content={previewModalText}
-        confirmText={
-          previewModal.preview?.needPayment
-            ? `去支付 ¥${previewModal.preview?.amount}`
-            : '确认（无需支付）'
-        }
-        cancelText="再想想"
-        onConfirm={() => {
-          const code = previewModal.targetPlanCode;
-          setPreviewModal({ visible: false });
-          if (code) doCreateOrder(code);
-        }}
-        onCancel={() => setPreviewModal({ visible: false })}
-        onClose={() => setPreviewModal({ visible: false })}
-      />
     </div>
   );
 };
 
-export default MemberPage;
+export default MemberCenterPage;
