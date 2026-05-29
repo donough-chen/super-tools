@@ -29,7 +29,7 @@ export interface DomainEventAttributes {
 }
 
 export default (app: Application) => {
-  const { STRING, BIGINT, INTEGER, TEXT, JSON: JSON_TYPE, ENUM } = DataTypes;
+  const { STRING, BIGINT, INTEGER, TEXT, JSON: JSON_TYPE, DATE, ENUM } = DataTypes;
 
   const DomainEvent = app.model.define('DomainEvent', {
     id:         { type: BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -39,6 +39,8 @@ export default (app: Application) => {
     status:     { type: ENUM('emitted', 'dispatched', 'failed'), allowNull: false, defaultValue: 'emitted' },
     retryCount: { type: INTEGER.UNSIGNED, allowNull: false, defaultValue: 0, field: 'retry_count' },
     lastError:  { type: TEXT, allowNull: true, field: 'last_error' },
+    createdAt: { type: DATE, allowNull: true, field: 'created_at' },
+    updatedAt: { type: DATE, allowNull: true, field: 'updated_at' },
   }, {
     tableName: 'domain_events',
     timestamps: true,

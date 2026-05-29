@@ -35,13 +35,13 @@ DELETE rp FROM `role_permissions` rp
 DELETE FROM `permissions` WHERE module = 'points' AND type IN (1, 2, 3);
 
 -- ===== §2. 顶级目录（type=1）=====
-INSERT INTO `permissions`
+INSERT IGNORE INTO `permissions`
   (`code`, `name`, `type`, `module`, `icon`, `platform`, `path`, `parent_id`, `sort`, `status`)
 VALUES
   ('points', '积分管理', 1, 'points', 'GiftOutlined', 'admin', '/points', 0, 85, 1);
 
 -- ===== §3. 二级菜单（type=2）— 10 条 =====
-INSERT INTO `permissions`
+INSERT IGNORE INTO `permissions`
   (`code`, `name`, `type`, `module`, `platform`, `path`, `parent_id`, `sort`, `status`)
 SELECT 'points:menu:dashboard', '积分概览', 2, 'points', 'admin', '/points/dashboard',
        (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points') t), 10, 1
@@ -74,7 +74,7 @@ SELECT 'points:menu:refund-ledger', '退款账本', 2, 'points', 'admin', '/poin
        (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points') t), 100, 1;
 
 -- ===== §4. 按钮权限（type=3）— 11 条 =====
-INSERT INTO `permissions`
+INSERT IGNORE INTO `permissions`
   (`code`, `name`, `type`, `module`, `platform`, `parent_id`, `sort`, `status`)
 SELECT 'points:btn:rules:save', '保存积分规则', 3, 'points', 'admin',
        (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:rules') t), 10, 1
@@ -119,38 +119,47 @@ SELECT 'points:btn:events:retry', '失败事件重试', 3, 'points', 'admin',
 --   POST /api/admin/points/events/:id/retry       -> points:events:retry
 --   GET  /api/admin/points/refund-ledger          -> points:refund-ledger:list
 --   GET  /api/admin/points/refund-ledger/flag     -> points:refund-ledger:flag
+--
+-- 写法对齐 018 通知系统 SQL 范式：
+--   - 移除 name 中的（API）后缀
+--   - 初始 INSERT 时就指定 parent_id（避免孤儿状态）
+--   - 使用与 018 一致的命名风格
 INSERT IGNORE INTO `permissions`
-  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `sort`, `status`)
+  (`code`, `name`, `type`, `module`, `platform`, `path`, `method`, `parent_id`, `sort`, `status`)
 VALUES
-  ('points:cache:clear',          '清理规则缓存（API）',         4, 'points', 'admin',
-   '/api/admin/points/cache/clear',         'POST', 12, 1),
-  ('points:events:list',          '事件追溯列表（API）',         4, 'points', 'admin',
-   '/api/admin/points/events',              'GET',  21, 1),
-  ('points:events:retry',         '事件重试派发（API）',         4, 'points', 'admin',
-   '/api/admin/points/events/:id/retry',    'POST', 22, 1),
-  ('points:refund-ledger:list',   '退款账本流水列表（API）',     4, 'points', 'admin',
-   '/api/admin/points/refund-ledger',       'GET',  31, 1),
-  ('points:refund-ledger:flag',   '退款账本灰度状态（API）',     4, 'points', 'admin',
-   '/api/admin/points/refund-ledger/flag',  'GET',  32, 1);
+  ('points:cache:clear',          '清理规则缓存',         4, 'points', 'admin',
+   '/api/admin/points/cache/clear',         'POST',
+   (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t), 12, 1),
+  ('points:events:list',          '事件追溯列表',         4, 'points', 'admin',
+   '/api/admin/points/events',              'GET',
+   (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t), 21, 1),
+  ('points:events:retry',         '事件重试派发',         4, 'points', 'admin',
+   '/api/admin/points/events/:id/retry',    'POST',
+   (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t), 22, 1),
+  ('points:refund-ledger:list',   '退款账本流水列表',     4, 'points', 'admin',
+   '/api/admin/points/refund-ledger',       'GET',
+   (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:refund-ledger') t), 31, 1),
+  ('points:refund-ledger:flag',   '退款账本灰度状态',     4, 'points', 'admin',
+   '/api/admin/points/refund-ledger/flag',  'GET',
+   (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:refund-ledger') t), 32, 1);
 
 -- ===== §5.5 type=4 API 权限 parent_id 重挂枝 =====
 -- 背景：025 §7 写入 11 条 API 权限时未指定 parent_id（默认 0），导致它们在权限树
 --      中成为顶级孤儿，与本迁移新建的 'points' 顶级目录无父子关联，违反 018 范式
 --      ("目录 → 菜单 → API" 三级树)。
 --
--- 策略：本段以 UPDATE 方式把 025 §7 的 11 条 + 028 §5 的 1 条共 12 条 type=4 API，
---      按业务归属重挂到对应 type=2 菜单的 parent_id 下。完整挂载矩阵：
+-- 策略：本段以 UPDATE 方式把 025 §7 的 11 条 type=4 API（028 §5 新增的 5 条已在
+--      INSERT 时指定 parent_id），按业务归属重挂到对应 type=2 菜单的 parent_id 下。
+--      完整挂载矩阵：
 --
 --      points:menu:dashboard      ← points:expire:stats
 --      points:menu:tasks          ← points:task:list / create / update / delete (4)
 --      points:menu:mall:items     ← points:mall:list / manage (2)
 --      points:menu:mall:orders    ← points:mall:orders / refund (2)
---      points:menu:ops            ← points:reconcile:view / ops:trigger / cache:clear (3)
---      points:menu:events         ← points:events:list / retry (2)
---      points:menu:refund-ledger  ← points:refund-ledger:list / flag (2)
+--      points:menu:ops            ← points:reconcile:view / ops:trigger (2)
 --
 -- 幂等：UPDATE 是天然幂等的；多次执行结果一致
--- 注意：使用单条 UPDATE + CASE WHEN 而非 16 条独立 UPDATE，减少 SQL 解析开销，
+-- 注意：使用单条 UPDATE + CASE WHEN 而非 11 条独立 UPDATE，减少 SQL 解析开销，
 --      同时保证原子性
 
 UPDATE `permissions`
@@ -171,13 +180,6 @@ SET `parent_id` = CASE `code`
   -- 运维中心 API
   WHEN 'points:reconcile:view'      THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
   WHEN 'points:ops:trigger'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
-  WHEN 'points:cache:clear'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:ops') t)
-  -- 事件追溯 API（Task 12）
-  WHEN 'points:events:list'         THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t)
-  WHEN 'points:events:retry'        THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:events') t)
-  -- 退款账本 API（Task 13）
-  WHEN 'points:refund-ledger:list'  THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:refund-ledger') t)
-  WHEN 'points:refund-ledger:flag'  THEN (SELECT id FROM (SELECT id FROM `permissions` WHERE code = 'points:menu:refund-ledger') t)
   ELSE `parent_id`
 END
 WHERE `module` = 'points'
@@ -187,9 +189,7 @@ WHERE `module` = 'points'
     'points:task:list', 'points:task:create', 'points:task:update', 'points:task:delete',
     'points:mall:list', 'points:mall:manage',
     'points:mall:orders', 'points:mall:refund',
-    'points:reconcile:view', 'points:ops:trigger', 'points:cache:clear',
-    'points:events:list', 'points:events:retry',
-    'points:refund-ledger:list', 'points:refund-ledger:flag'
+    'points:reconcile:view', 'points:ops:trigger'
   );
 
 -- ===== §6. 角色 × 权限映射 =====
@@ -361,13 +361,13 @@ COMMIT;
 --   operator    = 31 (1 顶级 + 10 菜单 + 6 按钮 + 13 API + 1 按钮 events:retry = 7 按钮 实际见 §6 IN 列表)
 --   auditor     = 19 (1 顶级 + 10 菜单 +   0 按钮 + 8 API)
 --
--- 权限树完整性校验（确认 12 条 type=4 API 已正确挂到 type=2 菜单下，无孤儿）
+-- 权限树完整性校验（确认 16 条 type=4 API 已正确挂到 type=2 菜单下，无孤儿）
 -- SELECT child.code AS api_code, parent.code AS menu_code, parent.name AS menu_name
 --   FROM permissions child
 --   LEFT JOIN permissions parent ON child.parent_id = parent.id
 --   WHERE child.module = 'points' AND child.type = 4
 --   ORDER BY parent.sort, child.sort;
--- 预期: 12 行全部 menu_code 非空（无 NULL），且 menu_code 全部以 'points:menu:' 开头
+-- 预期: 16 行全部 menu_code 非空（无 NULL），且 menu_code 全部以 'points:menu:' 开头
 --
 -- 孤儿检测（应返回 0 行）
 -- SELECT code FROM permissions
