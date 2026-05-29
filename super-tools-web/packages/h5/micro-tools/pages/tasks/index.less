@@ -1,0 +1,105 @@
+@import '~@/assets/variables.less';
+
+.page-tasks {
+  min-height: 100vh;
+  background: var(--bg-page);
+
+  &__content {
+    padding-top: var(--header-height);
+    padding-bottom: 60px;
+  }
+
+  &__header-stats {
+    display: flex;
+    margin: 16px 32px;
+    padding: 24px 0;
+    background: linear-gradient(135deg, #1677ff, #45a6ff);
+    color: #fff;
+    border-radius: 16px;
+
+    > div {
+      flex: 1;
+      text-align: center;
+      border-right: 1px solid rgba(255, 255, 255, 0.3);
+
+      &:last-child {
+        border-right: none;
+      }
+    }
+  }
+
+  &__stat-num {
+    font-size: 36px;
+    font-weight: 600;
+  }
+
+  &__stat-label {
+    font-size: 22px;
+    opacity: 0.9;
+    margin-top: 4px;
+  }
+
+  &__panel {
+    margin: 16px 32px;
+  }
+
+  &__hero {
+    background: linear-gradient(135deg, #52c41a, #87d068);
+    color: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+
+  &__hero-title {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  &__hero-sub {
+    font-size: 24px;
+    opacity: 0.9;
+    margin-bottom: 16px;
+  }
+
+  &__progress-bar {
+    height: 16px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  &__progress-fill {
+    height: 100%;
+    background: #fff;
+    border-radius: 999px;
+    transition: width 0.6s ease-out;
+  }
+
+  &__progress-text {
+    font-size: 24px;
+    margin-top: 8px;
+    opacity: 0.9;
+  }
+
+  &__section-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 24px 0 12px;
+  }
+
+  &__activity-meta {
+    font-size: 22px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 80px 0;
+    color: var(--text-tertiary);
+    font-size: 28px;
+  }
+}
