@@ -24,14 +24,16 @@ import './index.less';
 import { resolveIcon } from '../../utils/icon';
 
 const MENU_ITEMS = [
-  { key: 'member', name: '订阅会员', path: '/member', icon: '/assets/icons/like.png'},
-  { key: 'orders', name: '我的订单', path: '/member/orders', icon: '/assets/icons/crown.png'},
-  { key: 'about', name: '关于我们', path: '/about', icon: '/assets/icons/about.png'},
-  { key: 'works', name: '更多作品', path: '/about', icon: '/assets/icons/more.png'},
-  { key: 'settings', name: '设置', path: '/settings', icon: '/assets/icons/setting.png'},
-  { key: 'help', name: '使用帮助', path: '/help', icon: '/assets/icons/help.png'},
-  { key: 'logout', name: '退出登录', path: '', icon: '/assets/icons/logout.png'},
-  { key: 'feedback', name: '意见反馈', path: '/feedback', icon: '/assets/icons/feedback.png'},
+  { key: 'member', name: '会员中心', path: '/member', icon: '/assets/icons/like.png' },
+  { key: 'tasks', name: '任务中心', path: '/tasks', icon: '/assets/icons/crown.png' },
+  { key: 'mall', name: '积分商城', path: '/points-mall', icon: '/assets/icons/like.png' },
+  { key: 'subscribe', name: '订阅会员', path: '/member/subscribe', icon: '/assets/icons/crown.png' },
+  { key: 'orders', name: '我的订单', path: '/member/orders', icon: '/assets/icons/crown.png' },
+  { key: 'feedback', name: '意见反馈', path: '/feedback', icon: '/assets/icons/feedback.png' },
+  { key: 'about', name: '关于我们', path: '/about', icon: '/assets/icons/about.png' },
+  { key: 'settings', name: '设置', path: '/settings', icon: '/assets/icons/setting.png' },
+  { key: 'help', name: '使用帮助', path: '/help', icon: '/assets/icons/help.png' },
+  { key: 'logout', name: '退出登录', path: '', icon: '/assets/icons/logout.png' },
 ];
 
 const MinePage: React.FC = () => {
