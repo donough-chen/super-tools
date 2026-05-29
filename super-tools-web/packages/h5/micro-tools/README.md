@@ -59,7 +59,11 @@ packages/h5/micro-tools/
 │   ├── AppModal/             # 底部弹起弹窗组件
 │   ├── KeepAlive/            # 页面缓存组件
 │   ├── SendCodeButton/       # 验证码发送按钮（含全局倒计时持久化）
-│   └── Switch/               # 开关组件（隐私/通知/设备推送页共用）
+│   ├── Switch/               # 开关组件（隐私/通知/设备推送页共用）
+│   ├── SignCalendar/         # 签到日历周视图
+│   ├── TaskCard/             # 任务卡片组件
+│   ├── MallItemCard/         # 商城商品卡片
+│   └── Countdown/            # 倒计时组件
 │
 ├── constants/                # 项目常量
 │   ├── index.ts              # TabBar 配置、模式选项、排序选项
@@ -85,8 +89,11 @@ packages/h5/micro-tools/
 │   ├── common.ts             # 公共业务接口（banner / tool / favorite / featured / site）
 │   ├── auth.ts               # 认证接口（11 个 V1 端点）
 │   ├── user.ts               # 用户资料接口
-│   ├── member.ts             # 会员接口
-│   └── device.ts             # 设备 / 会话接口
+│   ├── member.ts             # 会员接口（含等级/权益/积分流水/备用签到）
+│   ├── device.ts             # 设备 / 会话接口
+│   ├── sign.ts               # 签到接口（GET status / POST sign）
+│   ├── task.ts               # 任务中心接口（GET tasks / POST claim）
+│   └── pointsMall.ts         # 积分商城接口（含字段适配器）
 │
 ├── store/                    # Zustand 状态管理
 │   ├── index.ts              # 统一导出
@@ -95,9 +102,13 @@ packages/h5/micro-tools/
 │   ├── favorites.ts          # 收藏数据
 │   ├── sites.ts              # 网站数据（分类、排序）
 │   ├── user.ts               # 用户登录态 / 资料 / 绑定 / 密码（重构版）
-│   ├── member.ts             # 会员等级信息（5 分钟缓存）
+│   ├── member.ts             # 会员等级信息（5 分钟缓存 + 升级 Toast 检测）
 │   ├── device.ts             # 设备 / 会话管理
-│   └── sendCode.ts           # 验证码倒计时全局状态（sessionStorage 持久化）
+│   ├── sendCode.ts           # 验证码倒计时全局状态（sessionStorage 持久化）
+│   ├── sign.ts               # 签到状态 + 提交签到
+│   ├── task.ts               # 任务列表 + 领取奖励
+│   ├── pointsLog.ts          # 积分流水（分页+筛选）
+│   └── pointsMall.ts         # 积分商城（商品/订单/兑换）
 │
 ├── layouts/                  # 路由布局（接入鉴权拦截器 + 路由守卫 + 设备注册 + KeepAlive）
 │   └── index.tsx
@@ -121,7 +132,18 @@ packages/h5/micro-tools/
 │   │   ├── privacy/          # 三级 — 隐私设置
 │   │   └── notification/     # 三级 — 通知设置
 │   ├── profile/              # 二级 — 个人信息（5 卡片完整编辑能力）
-│   ├── member/               # 二级 — 会员服务页
+│   ├── member/               # 二级 — 会员中心（积分成长体系总入口）
+│   │   ├── subscribe/        # 三级 — 订阅会员（原 /member 订阅逻辑迁移至此）
+│   │   ├── level/            # 三级 — 会员等级详情
+│   │   ├── points-logs/      # 三级 — 积分明细
+│   │   ├── cashier/          # 三级 — 收银台
+│   │   └── orders/           # 三级 — 订阅订单
+│   ├── tasks/                # 二级 — 任务中心（4 Tab：新手/日常/成长/活动）
+│   ├── points-mall/          # 二级 — 积分商城
+│   │   ├── category/         # 三级 — 分类商品列表
+│   │   ├── items/            # 三级 — 商品详情 + 兑换确认
+│   │   ├── exchange-success/ # 三级 — 兑换成功页
+│   │   └── orders/           # 三级 — 兑换记录
 │   ├── help/                 # 二级 — 使用帮助页
 │   └── about/                # 二级 — 关于我们页
 │

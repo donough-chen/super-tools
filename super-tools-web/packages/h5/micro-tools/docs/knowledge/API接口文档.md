@@ -1,7 +1,7 @@
 # API 接口文档
 
 > **适用范围**：`packages/h5/micro-tools/service.ts`  
-> **最后更新**：2026-04-09
+> **最后更新**：2026-05-29
 
 ---
 
@@ -676,3 +676,50 @@ proxy: {
 2. 在 `mock/index.ts` 中添加对应 Mock 数据
 3. 在对应 Store 中创建 action 调用接口
 4. 更新本文档中的接口清单
+
+---
+
+## 六、积分成长体系接口
+
+> 新增于 2026-05-29，对应 service 文件：`service/member.ts`（扩展）、`service/sign.ts`、`service/task.ts`、`service/pointsMall.ts`
+
+### 会员模块（扩展）
+
+| 方法 | 路径 | 函数名 | 说明 |
+|------|------|--------|------|
+| GET | `/api/member/levels` | `getMemberLevels` | 等级列表（公开） |
+| GET | `/api/member/benefits` | `getMemberBenefits` | 当前用户权益对比 |
+| GET | `/api/member/points-logs` | `getPointsLogs(params)` | 积分流水（分页+筛选） |
+| POST | `/api/member/daily-sign` | `memberDailySign(idemKey)` | 备用签到（前端默认用 /api/sign） |
+
+### 签到模块（`service/sign.ts`）
+
+| 方法 | 路径 | 函数名 | 说明 |
+|------|------|--------|------|
+| GET | `/api/sign/status` | `getSignStatus` | 签到状态（含连签天数、本周日历） |
+| POST | `/api/sign` | `doSign(idemKey)` | 签到（必传 Idempotency-Key） |
+
+### 任务中心（`service/task.ts`）
+
+| 方法 | 路径 | 函数名 | 说明 |
+|------|------|--------|------|
+| GET | `/api/tasks` | `getTasks` | 任务列表（5 种 type） |
+| POST | `/api/tasks/:code/claim` | `claimTask(code, idemKey)` | 领取奖励（必传 Idempotency-Key） |
+
+### 积分商城（`service/pointsMall.ts`）
+
+| 方法 | 路径 | 函数名 | 说明 |
+|------|------|--------|------|
+| GET | `/api/points-mall/items` | `getMallItems(params)` | 商品列表（含适配器 `adaptMallItem`） |
+| POST | `/api/points-mall/exchange` | `exchangeItem(itemId, idemKey)` | 兑换商品（必传 Idempotency-Key） |
+| GET | `/api/points-mall/orders` | `getMallOrders(params)` | 兑换订单（含适配器 `adaptMallOrder`） |
+
+### 写入接口约定
+
+- 必传请求头 `Idempotency-Key: <UUID v4>`（使用 `utils/idempotency.ts` 的 `genIdemKey()` 生成）
+- 限流：sign/claim 10次/分钟，exchange 5次/分钟
+- 重放命中响应头 `x-idempotent-replayed: true`
+
+### 数据模型
+
+详见 `types/points.ts`，包含：`MemberLevelItem`、`SignStatus`、`SignResult`、`TaskItem`、`TaskClaimResult`、`PointsLog`、`MallItem`、`MallOrder`、`ExchangeResult` 等 20 个类型定义。
