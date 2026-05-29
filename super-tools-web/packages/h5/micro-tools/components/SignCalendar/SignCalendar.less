@@ -1,0 +1,74 @@
+@import '~@/assets/variables.less';
+
+.sign-calendar {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+
+  &__row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    &--head {
+      color: var(--text-tertiary);
+      font-size: 24px;
+    }
+  }
+
+  &__cell {
+    flex: 1;
+    text-align: center;
+    height: 64px;
+    line-height: 64px;
+    margin: 0 4px;
+    border-radius: 12px;
+    background: var(--bg-page);
+    color: var(--text-secondary);
+    font-size: 28px;
+    transition: all 0.2s;
+
+    &.is-signed {
+      background: rgba(82, 196, 26, 0.15);
+      color: #52c41a;
+    }
+
+    &.is-today {
+      box-shadow: 0 0 0 2px var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+  }
+
+  &__info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 24px;
+    color: var(--text-secondary);
+    margin: 16px 0;
+
+    strong {
+      color: var(--primary-color);
+    }
+  }
+
+  &__milestone {
+    color: var(--text-tertiary);
+  }
+
+  &__btn {
+    width: 100%;
+    padding: 20px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 28px;
+    cursor: pointer;
+
+    &:disabled {
+      background: var(--text-tertiary);
+      cursor: not-allowed;
+    }
+  }
+}
