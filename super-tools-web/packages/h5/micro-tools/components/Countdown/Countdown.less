@@ -1,0 +1,18 @@
+@import '~@/assets/variables.less';
+
+.countdown {
+  font-size: 24px;
+  color: var(--text-primary);
+
+  &__prefix { color: var(--text-secondary); }
+  &__seg {
+    display: inline-block;
+    background: rgba(255, 77, 79, 0.1);
+    color: #ff4d4f;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+    font-weight: 600;
+  }
+  &.is-finished { color: var(--text-tertiary); }
+}
