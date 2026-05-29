@@ -1,0 +1,41 @@
+@import '~@/assets/variables.less';
+
+.page-mall {
+  min-height: 100vh;
+  background: var(--bg-page);
+
+  &__content { padding-top: var(--header-height); padding-bottom: 60px; }
+  &__orders-link { color: var(--primary-color); font-size: 26px; }
+
+  &__points-card {
+    margin: 16px 32px; padding: 32px;
+    background: linear-gradient(135deg, #fa541c, #ff7a45);
+    color: #fff; border-radius: 16px;
+  }
+  &__points-row { display: flex; justify-content: space-between; align-items: center; }
+  &__points-label { font-size: 26px; opacity: 0.9; }
+  &__points-value { font-size: 56px; font-weight: 600; margin-top: 4px; }
+  &__earn-btn {
+    padding: 12px 24px; background: #fff; color: #fa541c;
+    border: none; border-radius: 999px; font-size: 26px; cursor: pointer;
+  }
+  &__level-tip { margin-top: 12px; font-size: 24px; opacity: 0.85; }
+
+  &__section { margin: 16px 32px; }
+  &__section-title {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 30px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px;
+  }
+
+  &__flash-list { display: flex; gap: 12px; overflow-x: auto; > * { flex: 0 0 200px; } }
+
+  &__categories {
+    display: flex; background: #fff; border-radius: 16px; padding: 24px 0;
+  }
+  &__category { flex: 1; text-align: center; cursor: pointer; }
+  &__category-icon { font-size: 48px; margin-bottom: 8px; }
+  &__category-name { font-size: 24px; color: var(--text-primary); }
+
+  &__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  &__empty { text-align: center; padding: 80px 0; color: var(--text-tertiary); font-size: 28px; }
+}
