@@ -1,0 +1,239 @@
+@import '~@/assets/variables.less';
+
+.page-points-logs {
+  min-height: 100vh;
+  background: var(--bg-page);
+
+  &__content {
+    padding-top: var(--header-height);
+    padding-bottom: 60px;
+  }
+
+  &__summary {
+    margin: 16px 32px;
+    padding: 32px;
+    background: linear-gradient(135deg, #1677ff, #45a6ff);
+    color: #fff;
+    border-radius: 16px;
+  }
+
+  &__summary-main {
+    font-size: 26px;
+    opacity: 0.9;
+  }
+
+  &__summary-points {
+    font-size: 56px;
+    font-weight: 600;
+    margin: 8px 0 24px;
+  }
+
+  &__summary-row {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  &__summary-num {
+    font-size: 30px;
+    font-weight: 600;
+    text-align: center;
+
+    &.gain {
+      color: #b7eb8f;
+    }
+    &.consume {
+      color: #ffccc7;
+    }
+    &.expire {
+      color: #ffe58f;
+    }
+  }
+
+  &__summary-label {
+    font-size: 22px;
+    opacity: 0.85;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  &__expiring {
+    margin: 16px 32px;
+    padding: 24px;
+    background: #fff7e6;
+    border: 1px solid #ffd591;
+    border-radius: 12px;
+  }
+
+  &__expiring-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #fa8c16;
+    margin-bottom: 12px;
+  }
+
+  &__expiring-item {
+    padding: 12px 0;
+    border-top: 1px dashed #ffd591;
+
+    &:first-of-type {
+      border-top: none;
+    }
+  }
+
+  &__expiring-points {
+    font-size: 26px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  &__expiring-sub {
+    font-size: 22px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  &__filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 24px 32px 16px;
+    padding: 16px;
+    background: #fff;
+    border-radius: 12px;
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 16px;
+  }
+
+  &__tab {
+    padding: 8px 20px;
+    font-size: 26px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: 999px;
+
+    &.is-active {
+      background: var(--primary-color);
+      color: #fff;
+    }
+  }
+
+  &__range {
+    position: relative;
+    font-size: 26px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  &__range-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    min-width: 140px;
+  }
+
+  &__range-item {
+    padding: 12px 24px;
+    font-size: 26px;
+    cursor: pointer;
+
+    &.is-active {
+      color: var(--primary-color);
+    }
+    &:hover {
+      background: var(--bg-page);
+    }
+  }
+
+  &__group {
+    margin: 16px 32px;
+  }
+
+  &__group-title {
+    text-align: center;
+    font-size: 24px;
+    color: var(--text-tertiary);
+    margin: 24px 0 16px;
+  }
+
+  &__item {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 12px;
+  }
+
+  &__item-left {
+    flex: 1;
+    padding-right: 16px;
+  }
+
+  &__item-title {
+    font-size: 28px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  &__item-desc {
+    font-size: 22px;
+    color: var(--text-tertiary);
+    line-height: 1.4;
+  }
+
+  &__item-right {
+    text-align: right;
+  }
+
+  &__item-points {
+    font-size: 30px;
+    font-weight: 600;
+
+    &.is-gain {
+      color: #52c41a;
+    }
+    &.is-consume {
+      color: #ff4d4f;
+    }
+    &.is-expired {
+      color: var(--text-tertiary);
+    }
+  }
+
+  &__item-time {
+    font-size: 22px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+  }
+
+  &__loading,
+  &__end {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 24px;
+    padding: 24px 0;
+  }
+
+  &__empty {
+    text-align: center;
+    padding: 80px 32px;
+    color: var(--text-secondary);
+    font-size: 30px;
+  }
+
+  &__empty-sub {
+    font-size: 24px;
+    color: var(--text-tertiary);
+    margin-top: 12px;
+  }
+}
