@@ -34,11 +34,22 @@ export const useMemberStore = create<MemberState & MemberActions>()(
       try {
         const res: any = await memberService.getMemberInfo();
         if (res?.code === 200 && res.data) {
+          const prevLevel = get().memberInfo?.level?.level ?? 0;
+          const newLevel = res.data?.level?.level ?? 0;
           set(s => {
             s.memberInfo = res.data;
             s.fetchedAt = Date.now();
             s.loading = false;
           });
+          // 等级升级 Toast 检测（仅在非首次加载时触发）
+          if (newLevel > prevLevel && prevLevel > 0) {
+            import('../utils/toast').then(({ showToast }) => {
+              showToast(
+                `🎉 恭喜升级到${res.data.level.name}！`,
+                'success',
+              );
+            });
+          }
         } else {
           set(s => { s.loading = false; });
         }
