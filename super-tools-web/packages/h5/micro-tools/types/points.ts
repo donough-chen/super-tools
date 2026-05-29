@@ -1,0 +1,159 @@
+/**
+ * 积分成长体系 — 数据类型定义
+ * 字段缺失处由 service 层适配，types 描述「期望存在」的最大集。
+ *
+ * Spec: super-tool-node/docs/superpowers/specs/2026-05-29-积分成长体系H5页面-design.md
+ */
+
+// === 等级（GET /api/member/levels） ===
+export interface MemberLevelItem {
+  id: number;
+  name: string;
+  code: string;
+  level: number;
+  icon: string | null;
+  color: string | null;
+  upgradePoints: number;
+  upgradeGrowth: number;
+  upgradeConsume: string;
+  benefits: Record<string, any> | null;
+  description: string | null;
+  sort: number;
+  status: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// === 当前用户权益对比（GET /api/member/benefits） ===
+export interface MemberBenefitsResponse {
+  current: MemberLevelItem;
+  next: MemberLevelItem | null;
+  benefitsDiff?: Array<{
+    key: string;
+    name: string;
+    currentValue: any;
+    nextValue: any;
+    locked: boolean;
+  }>;
+}
+
+// === 签到 ===
+export interface SignStatus {
+  signedToday: boolean;
+  continuousDays: number;
+  totalDays: number;
+  todayPoints?: number;
+  weekCalendar?: Array<{ date: string; signed: boolean }>;
+  monthCalendar?: Array<{ date: string; signed: boolean }>;
+}
+export interface SignResult {
+  pointsAwarded: number;
+  growthAwarded: number;
+  continuousDays: number;
+  bonusPoints?: number;
+}
+
+// === 任务 ===
+export type TaskType = 'new_user' | 'daily' | 'weekly' | 'milestone' | 'activity';
+export type TaskStatus = 'locked' | 'in_progress' | 'completed' | 'claimed';
+export interface TaskItem {
+  code: string;
+  name: string;
+  description?: string;
+  type: TaskType;
+  rewardPoints: number;
+  rewardGrowth?: number;
+  status: TaskStatus;
+  progress?: { current: number; target: number };
+  jumpPath?: string;
+  expireAt?: string;
+  category?: string;
+}
+export interface TaskClaimResult {
+  pointsAwarded: number;
+  growthAwarded?: number;
+}
+
+// === 积分流水 ===
+export type PointsLogType =
+  | 'sign'
+  | 'consume_reward'
+  | 'task'
+  | 'mall_exchange'
+  | 'expired'
+  | 'admin_adjust'
+  | 'refund'
+  | 'other';
+
+export interface PointsLog {
+  id: number;
+  type: PointsLogType;
+  points: number;
+  growthValue?: number;
+  description: string;
+  createdAt: string;
+  expireAt?: string | null;
+  metadata?: Record<string, any>;
+}
+export interface PointsLogsQuery {
+  page?: number;
+  pageSize?: number;
+  type?: PointsLogType | 'all';
+  startDate?: string;
+  endDate?: string;
+}
+export interface PointsLogsResponse {
+  list: PointsLog[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// === 商城 ===
+export type MallItemCategory = 'benefit' | 'coupon' | 'physical' | 'thirdparty';
+export type MallItemTag = 'hot' | 'limited' | 'levelExclusive' | 'newArrival';
+
+export interface MallItem {
+  id: number;
+  name: string;
+  description?: string;
+  images: string[];
+  pointsRequired: number;
+  pointsActual?: number;
+  stock?: number;
+  category?: MallItemCategory;
+  tags?: MallItemTag[];
+  exclusiveLevel?: string;
+  monthlyLimit?: number;
+  monthlyUsed?: number;
+  exchangedCount?: number;
+  saleEndAt?: string;
+}
+export interface MallItemsQuery {
+  page?: number;
+  pageSize?: number;
+  category?: MallItemCategory;
+}
+export interface ExchangeResult {
+  orderId: number;
+  orderNo: string;
+  pointsCost: number;
+  remainingPoints: number;
+}
+export type MallOrderStatus = 'pending' | 'completed' | 'shipping' | 'cancelled';
+export interface MallOrder {
+  id: number;
+  orderNo: string;
+  itemId: number;
+  itemName: string;
+  itemImage?: string;
+  pointsCost: number;
+  status: MallOrderStatus;
+  createdAt: string;
+  trackingInfo?: { carrier: string; number: string };
+}
+export interface MallOrdersQuery {
+  page?: number;
+  pageSize?: number;
+  status?: MallOrderStatus | 'all';
+}
