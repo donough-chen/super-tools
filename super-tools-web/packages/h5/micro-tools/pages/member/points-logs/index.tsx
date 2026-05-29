@@ -71,12 +71,11 @@ const PointsLogsPage: React.FC = () => {
     fetchLogs(true);
   }, [fetchMemberInfo, fetchLogs]);
 
-  // Tab 切换
+  // Tab 切换（不传 type 给后端，纯前端筛选避免后端 type 解析问题）
   const handleTab = (key: 'all' | 'gain' | 'consume' | 'expired') => {
     setActiveTab(key);
-    if (key === 'expired') {
-      setFilter({ type: 'expired' });
-    } else {
+    // 始终用 type='all' 拉全量数据，前端 displayLogs 做客户端过滤
+    if (filter.type !== 'all') {
       setFilter({ type: 'all' });
     }
   };

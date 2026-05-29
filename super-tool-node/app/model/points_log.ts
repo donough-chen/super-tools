@@ -47,6 +47,7 @@ export default (app: Application) => {
     growthMultiplier: { type: DECIMAL(4, 2), defaultValue: 1.00, field: 'growth_multiplier' },
     // B1 退款账本结构化字段（payload schema 见 027 SQL 注释）
     metadata: { type: DataTypes.JSON, allowNull: true },
+    createdAt: { type: DATE, allowNull: true, field: 'created_at' },
   }, {
     tableName: 'points_logs',
     timestamps: true,

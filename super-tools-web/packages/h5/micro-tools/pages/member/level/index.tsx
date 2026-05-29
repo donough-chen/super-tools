@@ -186,6 +186,26 @@ const BenefitsList: React.FC<{
   if (entries.length === 0) {
     return <div className="page-level__empty">暂无权益数据</div>;
   }
+
+  /** 将 boolean/数字/字符串转换为友好文案 */
+  const formatValue = (key: string, value: any): string => {
+    if (typeof value === 'boolean') {
+      return value ? '已开通' : '未开通';
+    }
+    if (typeof value === 'number') {
+      // 倍率类型加 ×
+      if (key === 'points_multiplier') return `${value}×`;
+      // 折扣
+      if (key === 'discount') return value < 1 ? `${value * 10}折` : `${value}折`;
+      // 天数
+      if (key === 'points_expire_days') return `${value} 天`;
+      // 积分
+      if (key.includes('points')) return `${value} 积分`;
+      return String(value);
+    }
+    return String(value);
+  };
+
   return (
     <div className={`page-level__benefits${locked ? ' is-locked' : ''}`}>
       {entries.map(([k, v]) => (
@@ -196,7 +216,7 @@ const BenefitsList: React.FC<{
           <span className="page-level__benefit-name">
             {BENEFIT_KEY_LABELS[k]}
           </span>
-          <span className="page-level__benefit-value">{String(v)}</span>
+          <span className="page-level__benefit-value">{formatValue(k, v)}</span>
         </div>
       ))}
     </div>

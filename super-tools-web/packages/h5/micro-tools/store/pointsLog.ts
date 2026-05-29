@@ -100,12 +100,13 @@ export const usePointsLogStore = create<PointsLogState & PointsLogActions>()(
             s.logs = reset ? list : [...s.logs, ...list];
             s.total = total;
             s.page = nextPage;
-            s.hasMore = s.logs.length < total;
+            s.hasMore = list.length > 0 && s.logs.length < total;
             s.loading = false;
           });
         } else {
           set((s) => {
             s.loading = false;
+            s.hasMore = false;
           });
         }
       } catch (e) {

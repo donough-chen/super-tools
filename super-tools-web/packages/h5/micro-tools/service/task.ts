@@ -19,8 +19,7 @@ export const claimTask = (
   code: string,
   idemKey: string,
 ): Promise<ApiResult<TaskClaimResult>> =>
-  request.post(
-    `/api/tasks/${encodeURIComponent(code)}/claim`,
-    {},
-    { headers: { 'Idempotency-Key': idemKey } },
-  );
+  request.post(`/api/tasks/${encodeURIComponent(code)}/claim`, {
+    data: {},
+    headers: { 'Idempotency-Key': idemKey },
+  });

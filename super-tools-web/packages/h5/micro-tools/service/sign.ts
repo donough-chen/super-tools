@@ -16,8 +16,7 @@ export const getSignStatus = (): Promise<ApiResult<SignStatus>> =>
   request.get('/api/sign/status');
 
 export const doSign = (idemKey: string): Promise<ApiResult<SignResult>> =>
-  request.post(
-    '/api/sign',
-    {},
-    { headers: { 'Idempotency-Key': idemKey } },
-  );
+  request.post('/api/sign', {
+    data: {},
+    headers: { 'Idempotency-Key': idemKey },
+  });

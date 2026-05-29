@@ -81,11 +81,10 @@ export const exchangeItem = (
   itemId: number,
   idemKey: string,
 ): Promise<ApiResult<ExchangeResult>> =>
-  request.post(
-    '/api/points-mall/exchange',
-    { itemId },
-    { headers: { 'Idempotency-Key': idemKey } },
-  );
+  request.post('/api/points-mall/exchange', {
+    data: { itemId },
+    headers: { 'Idempotency-Key': idemKey },
+  });
 
 export const getMallOrders = async (
   params: MallOrdersQuery = {},

@@ -49,8 +49,7 @@ export const getPointsLogs = (
 export const memberDailySign = (
   idemKey: string,
 ): Promise<ApiResult<SignResult>> =>
-  request.post(
-    `${API_BASE}/member/daily-sign`,
-    {},
-    { headers: { 'Idempotency-Key': idemKey } },
-  );
+  request.post(`${API_BASE}/member/daily-sign`, {
+    data: {},
+    headers: { 'Idempotency-Key': idemKey },
+  });
