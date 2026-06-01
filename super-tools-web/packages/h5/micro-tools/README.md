@@ -223,7 +223,16 @@ yarn workspace h5-micro-tools add some-package
 | `/settings/privacy` | 隐私设置 | 显示手机号 / 邮箱 / 在线状态（防抖保存） | 强 |
 | `/settings/notification` | 通知设置 | 推送 / 短信 / 邮件 + 当前设备推送 | 强 |
 | `/profile` | 个人信息 | 头像 / 基础资料 / 扩展资料 / 会员卡 / 邀请码 | 强 |
-| `/member` | 会员 | 会员套餐选择与订阅 | 强 |
+| `/member` | 会员中心 | 积分成长体系总入口（签到/等级/积分） | 强 |
+| `/member/level` | 会员等级 | 等级详情与进度 | 强 |
+| `/member/points-logs` | 积分明细 | 积分流水记录 | 强 |
+| `/member/subscribe` | 订阅会员 | 会员套餐订阅 | 强 |
+| `/tasks` | 任务中心 | 新手/日常/成长/活动任务 | 强 |
+| `/points-mall` | 积分商城 | 商品首页（Banner/热门/分类） | — |
+| `/points-mall/category/:code` | 分类商品 | 按分类浏览商品 | — |
+| `/points-mall/items/:id` | 商品详情 | 商品详情 + 兑换确认 | — |
+| `/points-mall/exchange-success` | 兑换成功 | 兑换成功页 | — |
+| `/points-mall/orders` | 兑换记录 | 我的兑换订单 | 强 |
 | `/help` | 使用帮助 | FAQ 问答列表 | — |
 | `/about` | 关于我们 | 应用信息与外链 | — |
 
@@ -249,6 +258,10 @@ yarn workspace h5-micro-tools add some-package
 | `<KeepAlive />` | 页面缓存 | 一级页面切换保持滚动位置与 UI 状态 |
 | `<SendCodeButton />` | 验证码发送 | 全局倒计时持久化 / 自动校验 / 失败错误码映射 |
 | `<Switch />` | 开关 | 纯 CSS 实现 / 隐私 / 通知 / 设备推送共用 |
+| `<SignCalendar />` | 签到日历 | 周视图日历 / 签到状态标记 / 连签天数显示 |
+| `<TaskCard />` | 任务卡片 | 任务状态 / 进度条 / 奖励积分 / 操作按钮 |
+| `<MallItemCard />` | 商城商品卡片 | 商品图片 / 积分价格 / 标签 / 库存状态 |
+| `<Countdown />` | 倒计时 | 天/时/分/秒 / 到期自动回调 |
 
 > 📖 详细组件 API 请参阅 [docs/组件使用文档.md](docs/组件使用文档.md)
 
@@ -263,9 +276,13 @@ yarn workspace h5-micro-tools add some-package
 | `useFavoritesStore` | `favorites.ts` | 收藏工具列表与增删操作 |
 | `useSitesStore` | `sites.ts` | 网站分类 Tab + 网站列表 + 排序 |
 | `useUserStore` | `user.ts` | 登录态 / 用户资料（基础+扩展）/ Token 管理 / 账号绑定 / 修改密码 / 当前会话 ID |
-| `useMemberStore` | `member.ts` | 会员等级信息（5 分钟缓存） |
+| `useMemberStore` | `member.ts` | 会员等级信息（5 分钟缓存 + 升级 Toast 检测） |
 | `useDeviceStore` | `device.ts` | 设备列表 / 会话列表 / 推送开关 / 踢下线 |
 | `useSendCodeStore` | `sendCode.ts` | 验证码倒计时全局状态（sessionStorage 持久化） |
+| `useSignStore` | `sign.ts` | 签到状态 + 提交签到（积分成长体系） |
+| `useTaskStore` | `task.ts` | 任务列表 + 领取奖励（积分成长体系） |
+| `usePointsLogStore` | `pointsLog.ts` | 积分流水（分页+筛选）（积分成长体系） |
+| `usePointsMallStore` | `pointsMall.ts` | 积分商城（商品/订单/兑换）（积分成长体系） |
 
 > 📖 详细 Store 设计请参阅 [docs/状态管理文档.md](docs/状态管理文档.md)
 
