@@ -204,12 +204,19 @@ export default class MemberService extends BaseService {
       if (endDate) where.createdAt[Op.lte] = new Date(endDate + 'T23:59:59');
     }
     const result = await this.paginate(this.ctx.model.PointsLog, { where }, pagination);
-    // 数字 type → 字符串 type，供前端 TYPE_LABELS 匹配
+    // Sequelize 实例 → 普通对象，并做数字 type → 字符串适配
     if (result.list) {
-      result.list = result.list.map((log: any) => ({
-        ...log,
-        type: this.TYPE_MAP[log.type] || 'other',
-      }));
+      result.list = result.list.map((log: any) => {
+        const plain = log.toJSON ? log.toJSON() : { ...log };
+        return {
+          ...plain,
+          type: this.TYPE_MAP[plain.type] ?? 'other',
+          // 确保前端期望的字段存在
+          description: plain.remark || '',
+          createdAt: plain.createdAt ? new Date(plain.createdAt).toISOString() : '',
+          expireAt: plain.expireAt ? new Date(plain.expireAt).toISOString() : null,
+        };
+      });
     }
     return result;
   }

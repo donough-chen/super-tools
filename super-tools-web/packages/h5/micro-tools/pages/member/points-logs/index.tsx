@@ -41,8 +41,10 @@ const RANGE_OPTIONS: Array<{ key: DateRangeKey; label: string }> = [
   { key: 'all', label: '全部' },
 ];
 
-const formatDate = (iso: string): string => {
+const formatDate = (iso: string | null | undefined): string => {
+  if (!iso) return '';
   const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
   const now = new Date();
   if (d.toDateString() === now.toDateString()) {
     return `今天 ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
