@@ -292,15 +292,21 @@ const LogItem: React.FC<{ log: PointsLog }> = ({ log }) => {
     : isPositive
       ? 'is-gain'
       : 'is-consume';
-  const icon = isExpired ? '⚫' : isPositive ? '🟢' : '🔴';
+  const icon = isExpired ? '⚠️' : isPositive ? '🟢' : '🔴';
+
+  // 优先显示 description（后端 remark），标题用类型标签兜底
+  const title = log.description || TYPE_LABELS[log.type] || log.type;
 
   return (
     <div className="page-points-logs__item">
       <div className="page-points-logs__item-left">
         <div className="page-points-logs__item-title">
-          {icon} {TYPE_LABELS[log.type] || log.type}
+          {icon} {title}
         </div>
-        <div className="page-points-logs__item-desc">{log.description}</div>
+        {/* description 与类型标签不同时才显示副标题，避免重复 */}
+        {log.description && log.description !== TYPE_LABELS[log.type] && (
+          <div className="page-points-logs__item-desc">{log.description}</div>
+        )}
       </div>
       <div className="page-points-logs__item-right">
         <div className={`page-points-logs__item-points ${colorClass}`}>

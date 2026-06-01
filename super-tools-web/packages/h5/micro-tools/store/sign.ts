@@ -76,11 +76,9 @@ export const useSignStore = create<SignState & SignActions>()(
         const idemKey = genIdemKey();
         const res: any = await doSign(idemKey);
         if (res?.code === 200 && res.data) {
+          // 签到成功后强制刷新状态（含 weekCalendar/continuousDays）
+          await get().fetchStatus(true);
           set((s) => {
-            if (s.status) {
-              s.status.signedToday = true;
-              s.status.continuousDays = res.data.continuousDays;
-            }
             s.submitting = false;
           });
           // 跨 Store 同步：积分变动后强刷会员信息
@@ -92,6 +90,17 @@ export const useSignStore = create<SignState & SignActions>()(
         });
         throw new Error(res?.message || '签到失败');
       } catch (e: any) {
+        // 409 今日已签到：静默刷新状态，不抛错
+        if ((e as any)?.response?.status === 409 || (e as any)?.message?.includes('已签到')) {
+          await get().fetchStatus(true);
+          set((s) => { s.submitting = false; });
+          const st = get().status;
+          return {
+            pointsAwarded: 0,
+            growthAwarded: 0,
+            continuousDays: st?.continuousDays ?? 0,
+          } as SignResult;
+        }
         set((s) => {
           s.submitting = false;
         });

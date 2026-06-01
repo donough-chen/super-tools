@@ -181,7 +181,18 @@ export default class MemberService extends BaseService {
 
   /**
    * 获取积分流水（分页）
+   * type 映射：1=sign, 2=consume_reward, 3=task, 4=mall_exchange, 5=expired, 6=admin_adjust, 7=refund
    */
+  private readonly TYPE_MAP: Record<number, string> = {
+    1: 'sign',
+    2: 'consume_reward',
+    3: 'task',
+    4: 'mall_exchange',
+    5: 'expired',
+    6: 'admin_adjust',
+    7: 'refund',
+  };
+
   async getPointsLogs(userId: number, query: any): Promise<PaginationResult<any>> {
     const { type, startDate, endDate, ...pagination } = query;
     const { Op } = require('sequelize');
@@ -192,7 +203,15 @@ export default class MemberService extends BaseService {
       if (startDate) where.createdAt[Op.gte] = new Date(startDate);
       if (endDate) where.createdAt[Op.lte] = new Date(endDate + 'T23:59:59');
     }
-    return this.paginate(this.ctx.model.PointsLog, { where }, pagination);
+    const result = await this.paginate(this.ctx.model.PointsLog, { where }, pagination);
+    // 数字 type → 字符串 type，供前端 TYPE_LABELS 匹配
+    if (result.list) {
+      result.list = result.list.map((log: any) => ({
+        ...log,
+        type: this.TYPE_MAP[log.type] || 'other',
+      }));
+    }
+    return result;
   }
 
   /**
