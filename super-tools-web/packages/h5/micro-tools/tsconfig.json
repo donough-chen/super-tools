@@ -16,7 +16,13 @@
     "jsx": "react",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["*"]
+      "@/*": ["*"],
+      "@/utils/*": ["../../shared/utils/*"],
+      "@/appsdk/*": ["../../shared/appsdk/*"],
+      "@/hooks/*": ["../../shared/hooks/*"],
+      "@/constants/*": ["../../shared/constants/*"],
+      "@/contexts/*": ["../../shared/contexts/*"],
+      "@/components/*": ["../../shared/components/*"]
     },
     "types": ["node"]
   },

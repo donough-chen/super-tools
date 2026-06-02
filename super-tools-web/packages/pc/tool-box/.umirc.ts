@@ -1,4 +1,5 @@
 import { defineConfig } from 'umi';
+import { join } from 'path';
 
 export default defineConfig({
   // 标题
@@ -13,6 +14,15 @@ export default defineConfig({
   theme: {
     'primary-color': '#4f46e5',
     'border-radius-base': '8px',
+  },
+  alias: {
+    '@shared': join(process.cwd(), 'packages/shared'),
+    '@/utils': join(process.cwd(), 'packages/shared/utils'),
+    '@/appsdk': join(process.cwd(), 'packages/shared/appsdk'),
+    '@/hooks': join(process.cwd(), 'packages/shared/hooks'),
+    '@/constants': join(process.cwd(), 'packages/shared/constants'),
+    '@/contexts': join(process.cwd(), 'packages/shared/contexts'),
+    '@/components': join(process.cwd(), 'packages/shared/components'),
   },
   // 路由配置
   routes: [
