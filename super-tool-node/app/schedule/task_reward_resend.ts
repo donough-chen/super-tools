@@ -42,10 +42,30 @@ export default class TaskRewardResendSchedule extends Subscription {
           { nextRetryAt: { [Op.lte]: new Date() } },
         ],
       },
+      include: [
+        {
+          model: (ctx.model as any).UserTask,
+          as: 'userTask',
+          where: { status: { [Op.ne]: 'claimed' } },
+          required: false,
+        },
+      ],
       limit: 100,
     });
 
+    // 二次过滤：include 在部分 sequelize 版本中不生效时，逐条校验
+    const filtered: any[] = [];
     for (const comp of pendings as any[]) {
+      // 通过 userTaskId 反查 user_tasks 状态，跳过已领取
+      const ut: any = await ctx.model.UserTask.findByPk(comp.userTaskId);
+      if (ut?.status === 'claimed') {
+        ctx.logger.info(`[task_resend] skip claimed user=${comp.userId} task=${comp.taskCode}`);
+        continue;
+      }
+      filtered.push(comp);
+    }
+
+    for (const comp of filtered) {
       try {
         await (ctx.model as any).transaction(async (t: any) => {
           const result: any = await ctx.service.member.addPoints({

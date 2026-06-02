@@ -161,21 +161,6 @@ export default class TaskService extends BaseService {
       );
 
       if (completed) {
-        // 写 completion log（pending → 等待用户 claim 才发奖；userTaskId 唯一索引保幂等）
-        await (this.ctx.model.TaskCompletionLog as any).findOrCreate({
-          where: { userTaskId: ut.id },
-          defaults: {
-            userTaskId: ut.id,
-            userId: ut.userId,
-            taskCode: ut.taskCode,
-            cycleKey: ut.cycleKey,
-            rewardPoints: 0,
-            rewardGrowth: 0,
-            bonusRate: 1.0,
-            status: 'pending',
-          },
-          transaction: t,
-        });
         // 通知（不阻塞主流程）
         try {
           await (this.ctx.service.notification as any).core.send({
@@ -190,64 +175,76 @@ export default class TaskService extends BaseService {
 
   /** 用户领奖 */
   async claim(userId: number, taskCode: string) {
-    return await (this.ctx.model as any).transaction(async (t: any) => {
-      const task: any = await this.ctx.model.Task.findOne({
+    // 阶段一：校验 + 写入 completion log（独立事务，确保记录持久化，供补发扫描处理）
+    let comp: any = null;
+    let ut: any = null;
+    let task: any = null;
+    let realPoints = 0;
+    let rule: any = null;
+    let t1: any = null;
+
+    try {
+      t1 = await (this.ctx.model as any).transaction();
+
+      task = await this.ctx.model.Task.findOne({
         where: { code: taskCode, status: 1 },
+        transaction: t1,
       });
-      if (!task) this.ctx.throw(404, '任务不存在');
+      if (!task) { await t1.rollback(); this.ctx.throw(404, '任务不存在'); }
 
       const ck = cycleKey(task.resetCycle);
-      const ut: any = await this.ctx.model.UserTask.findOne({
+      ut = await this.ctx.model.UserTask.findOne({
         where: { userId, taskCode, cycleKey: ck },
-        lock: t.LOCK.UPDATE,
-        transaction: t,
+        lock: t1.LOCK.UPDATE,
+        transaction: t1,
       });
-      if (!ut) this.ctx.throw(400, '任务尚未达成');
-      if (ut.status === 'claimed') this.ctx.throw(400, '已领取');
-      if (ut.status !== 'completed') this.ctx.throw(400, '任务未完成');
+      if (!ut) { await t1.rollback(); this.ctx.throw(400, '任务尚未达成'); }
+      if (ut.status === 'claimed') { await t1.rollback(); this.ctx.throw(400, '已领取'); }
+      if (ut.status !== 'completed') { await t1.rollback(); this.ctx.throw(400, '任务未完成'); }
 
-      // ====== B4: 过期校验（spec §2.3-#9）======
-      // expireAt 不为空且已过期 → 拒绝领奖（防止过期后仍发奖）
+      // B4: 过期校验
       if (ut.expireAt && new Date(ut.expireAt).getTime() < Date.now()) {
+        await t1.rollback();
         this.ctx.throw(400, '任务已过期，无法领奖');
       }
 
-      // ====== 检查每日上限（task / invite 两种维度，spec §2.3-#10）======
+      // 检查每日上限
       if (task.dailyCapGroup === 'task') {
         const today = localTodayStr();
         const cap: any = await this.ctx.model.DailyPointsCap.findOne({
           where: { userId, capDate: today, capGroup: 'task' },
-          lock: t.LOCK.UPDATE,
-          transaction: t,
+          lock: t1.LOCK.UPDATE,
+          transaction: t1,
         });
         const taskCapLimit = await this.getTaskDailyCap();
         if (cap && cap.earned >= taskCapLimit) {
+          await t1.rollback();
           this.ctx.throw(400, '今日任务积分已达上限');
         }
       } else if (task.dailyCapGroup === 'invite') {
-        // invite 类按 count 维度限频（每日最多 N 次邀请奖励）
         const today = localTodayStr();
         const cap: any = await this.ctx.model.DailyPointsCap.findOne({
           where: { userId, capDate: today, capGroup: 'invite' },
-          lock: t.LOCK.UPDATE,
-          transaction: t,
+          lock: t1.LOCK.UPDATE,
+          transaction: t1,
         });
         const inviteCapLimit = await this.getInviteDailyCap();
         if (cap && cap.count >= inviteCapLimit) {
+          await t1.rollback();
           this.ctx.throw(400, '今日邀请奖励次数已达上限');
         }
       }
 
-      // ====== 应用任务加成 ======
       const member: any = await this.ctx.model.UserMember.findOne({
-        where: { userId }, transaction: t,
+        where: { userId },
+        transaction: t1,
       });
-      if (!member) this.ctx.throw(404, '会员记录不存在');
-      const rule = await this.ctx.service.pointsRule.getLevelRule(member.levelId);
-      const realPoints = this.ctx.service.pointsRule.applyTaskBonus(task.rewardPoints, rule);
+      if (!member) { await t1.rollback(); this.ctx.throw(404, '会员记录不存在'); }
+      rule = await this.ctx.service.pointsRule.getLevelRule(member.levelId);
+      realPoints = this.ctx.service.pointsRule.applyTaskBonus(task.rewardPoints, rule);
 
-      // ====== 写 completion log（已存在则更新）======
-      const [comp] = await (this.ctx.model.TaskCompletionLog as any).findOrCreate({
+      // 写入/更新 completion log，状态 pending（事务提交后记录持久化，addPoints 失败时供补发扫描处理）
+      const [compRow] = await (this.ctx.model.TaskCompletionLog as any).findOrCreate({
         where: { userTaskId: ut.id },
         defaults: {
           userTaskId: ut.id, userId, taskCode, cycleKey: ck,
@@ -256,18 +253,23 @@ export default class TaskService extends BaseService {
           bonusRate: 1 + rule.taskBonusRate,
           status: 'pending',
         },
-        transaction: t,
+        transaction: t1,
       });
+      comp = compRow;
       await comp.update(
         {
           rewardPoints: realPoints,
           rewardGrowth: task.rewardGrowth,
           bonusRate: 1 + rule.taskBonusRate,
         },
-        { transaction: t },
+        { transaction: t1 },
       );
 
-      // ====== 入账积分（按 v2 单对象签名调 addPoints）======
+      // 先提交事务，确保 completion log 已持久化
+      await t1.commit();
+      t1 = null;
+
+      // 阶段二：调用 addPoints（不在事务内，避免事务回滚导致 completion log 丢失）
       const result: any = await this.ctx.service.member.addPoints({
         userId,
         points: realPoints,
@@ -277,43 +279,66 @@ export default class TaskService extends BaseService {
         bizType: 'task',
         bizId: taskCode,
         remark: `任务奖励：${task.name}`,
-        applyMultiplier: false,    // 任务奖励不再叠加等级倍率（已用 taskBonus）
-        transaction: t,
+        applyMultiplier: false,
       });
 
-      // ====== 更新 completion log 与 user_task 状态 ======
-      await comp.update(
-        { status: 'rewarded', pointsLogId: result.logId },
-        { transaction: t },
-      );
-      await ut.update(
-        { status: 'claimed', claimedAt: new Date() },
-        { transaction: t },
-      );
+      // 阶段三：更新 completion log 状态 + user_task 状态
+      await (this.ctx.model as any).transaction(async (t2: any) => {
+        await comp.update(
+          { status: 'rewarded', pointsLogId: result.logId },
+          { transaction: t2 },
+        );
+        await ut.update(
+          { status: 'claimed', claimedAt: new Date() },
+          { transaction: t2 },
+        );
 
-      // ====== 累计每日上限计数（task / invite 两种维度）======
-      if (task.dailyCapGroup === 'task' || task.dailyCapGroup === 'invite') {
-        const today = localTodayStr();
-        const grp = task.dailyCapGroup;
-        const [cap, created] = await (this.ctx.model.DailyPointsCap as any).findOrCreate({
-          where: { userId, capDate: today, capGroup: grp },
-          defaults: { userId, capDate: today, capGroup: grp, earned: realPoints, count: 1 },
-          transaction: t,
-        });
-        if (!created) {
-          await cap.update(
-            { earned: cap.earned + realPoints, count: cap.count + 1 },
-            { transaction: t },
-          );
+        // 累计每日上限计数
+        if (task.dailyCapGroup === 'task' || task.dailyCapGroup === 'invite') {
+          const today = localTodayStr();
+          const grp = task.dailyCapGroup;
+          const [cap, created] = await (this.ctx.model.DailyPointsCap as any).findOrCreate({
+            where: { userId, capDate: today, capGroup: grp },
+            defaults: { userId, capDate: today, capGroup: grp, earned: realPoints, count: 1 },
+            transaction: t2,
+          });
+          if (!created) {
+            await cap.update(
+              { earned: cap.earned + realPoints, count: cap.count + 1 },
+              { transaction: t2 },
+            );
+          }
         }
-      }
+      });
 
       return {
         points: realPoints,
         growth: task.rewardGrowth,
         bonusRate: 1 + rule.taskBonusRate,
       };
-    });
+    } catch (err: any) {
+      // 事务清理
+      if (t1 && !t1.finished) { try { await t1.rollback(); } catch { /* ignore */ } }
+
+      // addPoints 失败：更新 retryCount，保留 status=pending 供补发扫描处理
+      if (comp && comp.id) {
+        try {
+          const newRetryCount = (comp.retryCount || 0) + 1;
+          const nextRetryAt = new Date(Date.now() + Math.pow(2, newRetryCount) * 60 * 1000);
+          const updateData: any = {
+            retryCount: newRetryCount,
+            errorMsg: err.message,
+            nextRetryAt,
+          };
+          if (newRetryCount >= 5) {
+            updateData.status = 'failed';
+          }
+          await comp.update(updateData);
+        } catch { /* ignore */ }
+      }
+
+      throw err;
+    }
   }
 
   /**
