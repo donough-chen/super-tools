@@ -12,28 +12,8 @@ import { useMemberStore } from '../../../store';
 import { getMemberLevels, getMemberBenefits } from '../../../service/member';
 import type { MemberLevelItem, MemberBenefitsResponse } from '../../../types/points';
 import { MemberBadge } from '@/components/MemberBadge';
-import type { MemberLevel } from '@/components/MemberBadge';
+import { mapCodeToLevel, BENEFIT_KEY_LABELS } from '../../../constants/member';
 import './index.less';
-
-/** 将后端等级 code 映射为 MemberLevel 类型 */
-const mapCodeToLevel = (code: string): MemberLevel => {
-  const validLevels: MemberLevel[] = ['normal', 'silver', 'gold', 'diamond', 'blackgold'];
-  return validLevels.includes(code as MemberLevel) ? (code as MemberLevel) : 'normal';
-};
-
-const BENEFIT_KEY_LABELS: Record<string, string> = {
-  points_multiplier: '消费积分倍率',
-  points_expire_days: '积分有效期（天）',
-  discount: '商城折扣',
-  daily_sign_points: '每日签到积分',
-  upgrade_gift_points: '升级礼包积分',
-  deduct_limit: '抵扣上限',
-  max_devices: '最多设备数',
-  ad_free: '免广告',
-  priority_support: '优先客服',
-  exclusive_content: '专属内容',
-  monthly_coupon: '每月优惠券',
-};
 
 const LevelPage: React.FC = () => {
   const memberInfo = useMemberStore((s) => s.memberInfo);

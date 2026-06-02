@@ -110,6 +110,7 @@ export default class MemberService extends BaseService {
         level: levelData.level,
         icon: levelData.icon,
         color: levelData.color,
+        upgradeGrowth: levelData.upgradeGrowth,
       },
       growthValue: memberData.growthValue,
       totalPoints: memberData.totalPoints,

@@ -20,28 +20,7 @@
     text-align: center;
     padding: var(--spacing-lg);
     margin: var(--spacing-md);
-    
-    /* 多层背景：底色 + 径向光晕 + 顶部高光 */
-    background:
-      /* 顶部左侧高光，模拟光源 */
-      radial-gradient(
-        ellipse 80% 60% at 20% -10%,
-        rgba(255, 255, 255, 0.45) 0%,
-        transparent 70%
-      ),
-      /* 底部右侧暗角，增加立体感 */
-      radial-gradient(
-        ellipse 70% 50% at 90% 110%,
-        rgba(0, 0, 0, 0.15) 0%,
-        transparent 70%
-      ),
-      /* 整体从上到下的明暗过渡 */
-      linear-gradient(
-        175deg,
-        rgba(255, 255, 255, 0.2) 0%,
-        rgba(0, 0, 0, 0.08) 100%
-      ),
-      var(--hero-color, #c8f77d);
+   background: linear-gradient(135deg, var(--primary-color), var(--hero-color));
     
     color: #fff;
     border-radius: var(--border-radius-xl);

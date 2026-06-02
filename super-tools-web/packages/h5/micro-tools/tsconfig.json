@@ -17,6 +17,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["*"],
+      "@/utils": ["../../shared/utils"],
       "@/utils/*": ["../../shared/utils/*"],
       "@/appsdk/*": ["../../shared/appsdk/*"],
       "@/hooks/*": ["../../shared/hooks/*"],

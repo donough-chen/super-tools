@@ -17,15 +17,10 @@ import {
   selectGroupedTasks,
 } from '../../store';
 import AppHeader from '../../components/AppHeader';
+import { MemberBadge } from '@/components/MemberBadge';
+import { mapCodeToLevel, QUICK_ENTRIES } from '../../constants/member';
 import { resolveIcon } from '../../utils/icon';
 import './index.less';
-
-const QUICK_ENTRIES = [
-  { key: 'points-logs', label: '积分明细', icon: '📋', path: '/member/points-logs' },
-  { key: 'tasks', label: '任务中心', icon: '🎯', path: '/tasks' },
-  { key: 'mall', label: '积分商城', icon: '🛍️', path: '/points-mall' },
-  { key: 'subscribe', label: '订阅会员', icon: '👑', path: '/member/subscribe' },
-];
 
 const MemberCenterPage: React.FC = () => {
   const { isLoggedIn, userInfo } = useUserStore();
@@ -57,6 +52,7 @@ const MemberCenterPage: React.FC = () => {
   );
   const recommendedItems = useMemo(() => mallItems.slice(0, 2), [mallItems]);
 
+  const paid = memberInfo?.paid;
   const level = memberInfo?.level;
   const nextLevel = memberInfo?.nextLevel;
   const progressPercent = nextLevel
@@ -79,7 +75,7 @@ const MemberCenterPage: React.FC = () => {
       <AppHeader
         title="会员中心"
         showBack
-        onBack={() => navigateBack()}
+        onBack={() => navigateTo('/mine')}
         rightSlot={
           <span
             className="page-member-center__level-link"
@@ -94,7 +90,7 @@ const MemberCenterPage: React.FC = () => {
         {/* 1. 顶部等级卡 */}
         <div
           className="page-member-center__hero"
-          style={level?.color ? { background: level.color } : undefined}
+          style={level?.color ? { '--member-center-hero-color': level.color } as React.CSSProperties : undefined}
           onClick={() => navigateTo('/member/level')}
         >
           <div className="page-member-center__hero-row">
@@ -108,11 +104,20 @@ const MemberCenterPage: React.FC = () => {
                 {userInfo?.nickname || userInfo?.username || '用户'}
               </div>
               <div className="page-member-center__hero-level">
-                {level?.icon ? `${level.icon} ` : ''}
-                {level?.name || '普通用户'}
-              </div>
-              <div className="page-member-center__hero-growth">
-                成长值 {memberInfo?.growthValue ?? 0}
+                {level && (
+                  <MemberBadge
+                    level={mapCodeToLevel(level.code)}
+                    size={42}
+                    customName={level?.name || '普通用户'}
+                    showLevel={false}
+                  />
+                )}
+                {paid?.isPaid && (
+                  <div className="page-member-center__paid-badge">
+                    <p className="page-member-center__paid-badge-name">{paid.planName}</p>
+                    <p className="page-member-center__paid-badge-expire">{paid.expireAt ? `有效期至 ${paid.expireAt.slice(0, 10)}` : '永久有效'}</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -126,7 +131,7 @@ const MemberCenterPage: React.FC = () => {
                 />
               </div>
               <div className="page-member-center__progress-text">
-                距 {nextLevel.name} 还差 {nextLevel.remaining} 成长值
+                成长值 {memberInfo?.growthValue ?? 0}，距 {nextLevel.name} 还差 {nextLevel.remaining} 成长值
               </div>
             </>
           ) : (

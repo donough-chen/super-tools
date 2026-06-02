@@ -17,9 +17,9 @@
   // 顶部等级卡
   &__hero {
     margin: var(--spacing-md);
-    padding: 32px;
-    border-radius: 24px;
-    background: linear-gradient(135deg, #fa8c16, #ffd700);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-xl);
+    background: linear-gradient(135deg, var(--primary-color), var(--member-center-hero-color));
     color: #fff;
     box-shadow: 0 8px 24px rgba(250, 140, 22, 0.25);
   }
@@ -27,7 +27,7 @@
   &__hero-row {
     display: flex;
     align-items: center;
-    margin-bottom: 24px;
+    margin-bottom: var(--spacing-sm);
   }
 
   &__avatar {
@@ -49,21 +49,27 @@
     margin-bottom: 8px;
   }
 
-  &__level-name {
-    font-size: 28px;
-    opacity: 0.95;
-    margin-bottom: 4px;
+  &__hero-level {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: row;
   }
 
-  &__growth {
-    font-size: 24px;
-    opacity: 0.85;
+  &__paid-badge {
+    &-name {
+      color: var(--text-primary);
+      font-size: var(--font-size-md);
+      font-weight: 600;
+    }
+    &-expire {
+      font-size: var(--font-size-xs);
+    }
   }
 
   &__progress {
     width: 100%;
     height: 16px;
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--bg-white, #fff);
     border-radius: 999px;
     overflow: hidden;
     margin-bottom: 12px;
@@ -71,13 +77,13 @@
 
   &__progress-bar {
     height: 100%;
-    background: #fff;
+    background: var(--primary-color);
     border-radius: 999px;
     transition: width 0.6s ease-out;
   }
 
   &__progress-text {
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     opacity: 0.9;
   }
 
