@@ -3,10 +3,10 @@
  * Plan: Task 5.5
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { history, useLocation } from 'umi';
+import { useLocation } from 'umi';
 import AppHeader from '../../../components/AppHeader';
 import MallItemCard from '../../../components/MallItemCard';
-import { safeNavigate } from '../../../utils/safeNavigate';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import { useMemberStore, usePointsMallStore } from '../../../store';
 import type { MallItem } from '../../../types/points';
 import './index.less';
@@ -45,7 +45,7 @@ const ExchangeSuccessPage: React.FC = () => {
 
   return (
     <div className="page-success">
-      <AppHeader title="兑换成功" showBack onBack={() => history.goBack()} />
+      <AppHeader title="兑换成功" showBack onBack={() => navigateBack()} />
       <main className="page-success__content">
         <div className="page-success__hero">
           <div className="page-success__icon">🎉</div>
@@ -60,25 +60,25 @@ const ExchangeSuccessPage: React.FC = () => {
           <div className="page-success__points">
             消耗积分：-{item ? (item.pointsActual ?? item.pointsRequired) : '?'}
           </div>
-          <div className="page-success__remain">剩余积分：{userPoints}</div>
+          <div className="page-success__-remain">剩余积分：{userPoints}</div>
         </div>
 
         <div className="page-success__actions">
-          <button className="page-success__btn" onClick={() => safeNavigate('/points-mall/orders')}>
+          <button className="page-success__btn" onClick={() => navigateTo('/points-mall/orders')}>
             查看我的订单
           </button>
-          <button className="page-success__btn page-success__btn--secondary" onClick={() => safeNavigate('/points-mall')}>
+          <button className="page-success__btn page-success__btn--secondary" onClick={() => navigateTo('/points-mall')}>
             返回商城
           </button>
         </div>
 
         {recommendations.length > 0 && (
-          <div className="page-success__recommend">
-            <div className="page-success__recommend-title">— 顺便看看 —</div>
-            <div className="page-success__recommend-grid">
+          <div className="page-success__-recommend">
+            <div className="page-success__-recommend-title">— 顺便看看 —</div>
+            <div className="page-success__-recommend-grid">
               {recommendations.map((it) => (
                 <MallItemCard key={it.id} item={it} userPoints={userPoints}
-                  onClick={() => safeNavigate(`/points-mall/items/${it.id}`)} />
+                  onClick={() => navigateTo(`/points-mall/items/${it.id}`)} />
               ))}
             </div>
           </div>

@@ -6,7 +6,7 @@
  * Plan: Task 3.2
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { history } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import { useMemberStore, usePointsLogStore } from '../../../store';
 import type { PointsLog, PointsLogType } from '../../../types/points';
@@ -161,7 +161,7 @@ const PointsLogsPage: React.FC = () => {
 
   return (
     <div className="page-points-logs">
-      <AppHeader title="积分明细" showBack onBack={() => history.goBack()} />
+      <AppHeader title="积分明细" showBack onBack={() => navigateBack()} />
 
       <main className="page-points-logs__content">
         {/* 顶部汇总卡 */}

@@ -6,9 +6,8 @@
  * Plan: Task 2.3
  */
 import React, { useEffect, useMemo } from 'react';
-import { history } from 'umi';
-import { safeNavigate } from '../../utils/safeNavigate';
 import { showToast } from '../../utils/toast';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import {
   useUserStore,
   useMemberStore,
@@ -20,6 +19,13 @@ import {
 import AppHeader from '../../components/AppHeader';
 import { resolveIcon } from '../../utils/icon';
 import './index.less';
+
+const QUICK_ENTRIES = [
+  { key: 'points-logs', label: '积分明细', icon: '📋', path: '/member/points-logs' },
+  { key: 'tasks', label: '任务中心', icon: '🎯', path: '/tasks' },
+  { key: 'mall', label: '积分商城', icon: '🛍️', path: '/points-mall' },
+  { key: 'subscribe', label: '订阅会员', icon: '👑', path: '/member/subscribe' },
+];
 
 const MemberCenterPage: React.FC = () => {
   const { isLoggedIn, userInfo } = useUserStore();
@@ -36,7 +42,7 @@ const MemberCenterPage: React.FC = () => {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      safeNavigate('/login');
+      navigateTo('/login');
       return;
     }
     fetchMemberInfo();
@@ -68,23 +74,16 @@ const MemberCenterPage: React.FC = () => {
     }
   };
 
-  const QUICK_ENTRIES = [
-    { key: 'points-logs', label: '积分明细', icon: '📋', path: '/member/points-logs' },
-    { key: 'tasks', label: '任务中心', icon: '🎯', path: '/tasks' },
-    { key: 'mall', label: '积分商城', icon: '🛍️', path: '/points-mall' },
-    { key: 'subscribe', label: '订阅会员', icon: '👑', path: '/member/subscribe' },
-  ];
-
   return (
     <div className="page-member-center">
       <AppHeader
         title="会员中心"
         showBack
-        onBack={() => history.goBack()}
+        onBack={() => navigateBack()}
         rightSlot={
           <span
             className="page-member-center__level-link"
-            onClick={() => safeNavigate('/member/level')}
+            onClick={() => navigateTo('/member/level')}
           >
             等级详情
           </span>
@@ -96,7 +95,7 @@ const MemberCenterPage: React.FC = () => {
         <div
           className="page-member-center__hero"
           style={level?.color ? { background: level.color } : undefined}
-          onClick={() => safeNavigate('/member/level')}
+          onClick={() => navigateTo('/member/level')}
         >
           <div className="page-member-center__hero-row">
             <img
@@ -108,11 +107,11 @@ const MemberCenterPage: React.FC = () => {
               <div className="page-member-center__nickname">
                 {userInfo?.nickname || userInfo?.username || '用户'}
               </div>
-              <div className="page-member-center__level-name">
+              <div className="page-member-center__hero-level">
                 {level?.icon ? `${level.icon} ` : ''}
                 {level?.name || '普通用户'}
               </div>
-              <div className="page-member-center__growth">
+              <div className="page-member-center__hero-growth">
                 成长值 {memberInfo?.growthValue ?? 0}
               </div>
             </div>
@@ -132,7 +131,7 @@ const MemberCenterPage: React.FC = () => {
             </>
           ) : (
             <div className="page-member-center__progress-text">
-              ✨ 您已是最高等级
+              ✨ 您已是最高等级，感谢您的长期支持
             </div>
           )}
         </div>
@@ -141,7 +140,7 @@ const MemberCenterPage: React.FC = () => {
         <div className="page-member-center__stats">
           <div
             className="page-member-center__stat"
-            onClick={() => safeNavigate('/member/points-logs')}
+            onClick={() => navigateTo('/member/points-logs')}
           >
             <div className="page-member-center__stat-value">
               {memberInfo?.points ?? 0}
@@ -150,7 +149,7 @@ const MemberCenterPage: React.FC = () => {
           </div>
           <div
             className="page-member-center__stat"
-            onClick={() => safeNavigate('/member/points-logs')}
+            onClick={() => navigateTo('/member/points-logs')}
           >
             <div className="page-member-center__stat-value">
               {memberInfo?.totalPoints ?? 0}
@@ -159,7 +158,7 @@ const MemberCenterPage: React.FC = () => {
           </div>
           <div
             className="page-member-center__stat"
-            onClick={() => safeNavigate('/tasks')}
+            onClick={() => navigateTo('/tasks')}
           >
             <div className="page-member-center__stat-value">
               {signStatus?.continuousDays ?? 0}
@@ -174,7 +173,7 @@ const MemberCenterPage: React.FC = () => {
             <div
               key={e.key}
               className="page-member-center__entry"
-              onClick={() => safeNavigate(e.path)}
+              onClick={() => navigateTo(e.path)}
             >
               <div className="page-member-center__entry-icon">{e.icon}</div>
               <div className="page-member-center__entry-label">{e.label}</div>
@@ -187,7 +186,7 @@ const MemberCenterPage: React.FC = () => {
           <div className="page-member-center__section-title">我的权益</div>
           <div
             className="page-member-center__benefits"
-            onClick={() => safeNavigate('/member/level')}
+            onClick={() => navigateTo('/member/level')}
           >
             <div className="page-member-center__benefits-text">
               {level
@@ -204,7 +203,7 @@ const MemberCenterPage: React.FC = () => {
             今日任务
             <span
               className="page-member-center__more"
-              onClick={() => safeNavigate('/tasks')}
+              onClick={() => navigateTo('/tasks')}
             >
               全部 →
             </span>
@@ -239,7 +238,7 @@ const MemberCenterPage: React.FC = () => {
             <div
               key={t.code}
               className="page-member-center__task"
-              onClick={() => safeNavigate('/tasks')}
+              onClick={() => navigateTo('/tasks')}
             >
               <div className="page-member-center__task-name">{t.name}</div>
               <div className="page-member-center__task-reward">
@@ -256,7 +255,7 @@ const MemberCenterPage: React.FC = () => {
               积分商城推荐
               <span
                 className="page-member-center__more"
-                onClick={() => safeNavigate('/points-mall')}
+                onClick={() => navigateTo('/points-mall')}
               >
                 更多 →
               </span>
@@ -266,7 +265,7 @@ const MemberCenterPage: React.FC = () => {
                 <div
                   key={it.id}
                   className="page-member-center__mall-item"
-                  onClick={() => safeNavigate(`/points-mall/items/${it.id}`)}
+                  onClick={() => navigateTo(`/points-mall/items/${it.id}`)}
                 >
                   <img
                     className="page-member-center__mall-img"

@@ -4,11 +4,10 @@
  * Plan: Task 5.2
  */
 import React, { useEffect, useMemo } from 'react';
-import { history } from 'umi';
 import AppHeader from '../../components/AppHeader';
 import MallItemCard from '../../components/MallItemCard';
 import Countdown from '../../components/Countdown';
-import { safeNavigate } from '../../utils/safeNavigate';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import { useMemberStore, usePointsMallStore } from '../../store';
 import type { MallItemCategory } from '../../types/points';
 import './index.less';
@@ -48,9 +47,9 @@ const PointsMallPage: React.FC = () => {
       <AppHeader
         title="积分商城"
         showBack
-        onBack={() => history.goBack()}
+        onBack={() => navigateBack()}
         rightSlot={
-          <span className="page-mall__orders-link" onClick={() => safeNavigate('/points-mall/orders')}>
+          <span className="page-mall__orders-link" onClick={() => navigateTo('/points-mall/orders')}>
             兑换记录
           </span>
         }
@@ -63,7 +62,7 @@ const PointsMallPage: React.FC = () => {
               <div className="page-mall__points-label">我的积分</div>
               <div className="page-mall__points-value">{userPoints}</div>
             </div>
-            <button className="page-mall__earn-btn" onClick={() => safeNavigate('/tasks')}>去赚积分</button>
+            <button className="page-mall__earn-btn" onClick={() => navigateTo('/tasks')}>去赚积分</button>
           </div>
           <div className="page-mall__level-tip">当前 {levelName} · 享受专属折扣</div>
         </div>
@@ -78,7 +77,7 @@ const PointsMallPage: React.FC = () => {
             <div className="page-mall__flash-list">
               {flashItems.map((it) => (
                 <MallItemCard key={it.id} item={it} userPoints={userPoints}
-                  onClick={() => safeNavigate(`/points-mall/items/${it.id}`)} />
+                  onClick={() => navigateTo(`/points-mall/items/${it.id}`)} />
               ))}
             </div>
           </div>
@@ -90,7 +89,8 @@ const PointsMallPage: React.FC = () => {
           <div className="page-mall__categories">
             {CATEGORIES.map((c) => (
               <div key={c.code} className="page-mall__category"
-                onClick={() => safeNavigate(`/points-mall/category/${c.code}`)}>
+                onClick={() => navigateTo(`/points-mall/category/${c.code}`)}
+              >
                 <div className="page-mall__category-icon">{c.icon}</div>
                 <div className="page-mall__category-name">{c.name}</div>
               </div>
@@ -107,7 +107,7 @@ const PointsMallPage: React.FC = () => {
             <div className="page-mall__grid">
               {featuredItems.map((it) => (
                 <MallItemCard key={it.id} item={it} userPoints={userPoints}
-                  onClick={() => safeNavigate(`/points-mall/items/${it.id}`)} />
+                  onClick={() => navigateTo(`/points-mall/items/${it.id}`)} />
               ))}
             </div>
           )}

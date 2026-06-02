@@ -10,8 +10,7 @@
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'umi';
-import { navigateBack, navigateTo } from '@/utils/navigator';
-import { safeNavigate } from '../../../../utils/safeNavigate';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import { showToast } from '../../../../utils/toast';
 import { getOrder, cancelOrder } from '../../../../service/payment';
 import type { Order } from '../../../../types/order';
@@ -70,7 +69,7 @@ const OrderDetailPage: React.FC = () => {
   /** Phase 2: 立即支付改跳 cashier?orderId 让用户选 provider */
   const handlePay = useCallback(() => {
     if (!order) return;
-    safeNavigate(`/member/cashier?orderId=${order.id}`);
+    navigateTo(`/member/cashier?orderId=${order.id}`);
   }, [order]);
 
   const handleCancel = useCallback(async () => {
@@ -87,7 +86,7 @@ const OrderDetailPage: React.FC = () => {
 
   return (
     <div className="page-order-detail">
-      <AppHeader title="订单详情" showBack onBack={() => navigateTo('/member/orders')} />
+      <AppHeader title="订单详情" showBack onBack={() => navigateBack()} />
       <main className="page-order-detail__content">
         {loading ? (
           <div className="page-order-detail__loading">加载中...</div>
@@ -125,7 +124,7 @@ const OrderDetailPage: React.FC = () => {
                     <span>原套餐</span>
                     <span>{order.sourcePlanCode}</span>
                   </div>
-                  {order.sourceRemainingValue && (
+                  {order.sourceRemainingValue !== undefined && (
                     <div className="page-order-detail__row">
                       <span>剩余价值</span>
                       <span>¥{order.sourceRemainingValue}</span>
@@ -135,7 +134,7 @@ const OrderDetailPage: React.FC = () => {
               )}
               <div className="page-order-detail__row">
                 <span>创建时间</span>
-                <span>{order.createdAt?.replace('T', ' ').slice(0, 19)}</span>
+                <span>{(order.createdAt || '').replace('T', ' ').slice(0, 19)}</span>
               </div>
               {order.paidAt && (
                 <div className="page-order-detail__row">
@@ -157,6 +156,7 @@ const OrderDetailPage: React.FC = () => {
               )}
             </div>
 
+            {/* 支付流水 */}
             {order.payments && order.payments.length > 0 && (
               <div className="page-order-detail__card">
                 <div className="page-order-detail__card-title">支付流水</div>
@@ -176,9 +176,7 @@ const OrderDetailPage: React.FC = () => {
                     <div className="page-order-detail__pay-meta">
                       <span>{p.provider}</span>
                       <span>¥{p.amount}</span>
-                      <span>
-                        {(p.createdAt || '').replace('T', ' ').slice(0, 19)}
-                      </span>
+                      <span>{(p.createdAt || '').replace('T', ' ').slice(0, 19)}</span>
                     </div>
                     {p.status === 2 && p.failedReason && (
                       <div className="page-order-detail__pay-fail">
@@ -191,7 +189,7 @@ const OrderDetailPage: React.FC = () => {
               </div>
             )}
 
-            {/* Phase 2: 退款记录卡片 */}
+            {/* 退款记录 */}
             {order.refunds && order.refunds.length > 0 && (
               <div className="page-order-detail__card">
                 <div className="page-order-detail__card-title">退款记录</div>
@@ -211,16 +209,8 @@ const OrderDetailPage: React.FC = () => {
                     <div className="page-order-detail__pay-meta">
                       <span>{r.provider}</span>
                       <span>¥{r.amount}</span>
-                      <span>
-                        {(r.refundedAt || r.createdAt || '').replace('T', ' ').slice(0, 19)}
-                      </span>
+                      <span>{(r.refundedAt || r.createdAt || '').replace('T', ' ').slice(0, 19)}</span>
                     </div>
-                    {r.reason && (
-                      <div className="page-order-detail__pay-fail">
-                        <span className="page-order-detail__pay-fail-label">退款原因</span>
-                        <span className="page-order-detail__pay-fail-text">{r.reason}</span>
-                      </div>
-                    )}
                     {r.status === 2 && r.failedReason && (
                       <div className="page-order-detail__pay-fail">
                         <span className="page-order-detail__pay-fail-label">失败原因</span>
@@ -231,36 +221,39 @@ const OrderDetailPage: React.FC = () => {
                 ))}
               </div>
             )}
-
-            <div className="page-order-detail__actions">
-              {order.status === 0 && (
-                <>
-                  <button
-                    className="page-order-detail__btn page-order-detail__btn--ghost"
-                    onClick={() => setCancelModal(true)}
-                  >
-                    取消订单
-                  </button>
-                  <button
-                    className="page-order-detail__btn page-order-detail__btn--primary"
-                    onClick={handlePay}
-                  >
-                    立即支付
-                  </button>
-                </>
-              )}
-              {(order.status === 2 || order.status === 3) && (
-                <button
-                  className="page-order-detail__btn page-order-detail__btn--primary"
-                  onClick={() => safeNavigate('/member')}
-                >
-                  重新下单
-                </button>
-              )}
-            </div>
           </>
         )}
       </main>
+
+      {/* 底部按钮 */}
+      {!loading && order && (
+        <div className="page-order-detail__footer">
+          {order.status === 0 && (
+            <>
+              <button
+                className="page-order-detail__btn page-order-detail__btn--ghost"
+                onClick={() => setCancelModal(true)}
+              >
+                取消订单
+              </button>
+              <button
+                className="page-order-detail__btn page-order-detail__btn--primary"
+                onClick={handlePay}
+              >
+                立即支付
+              </button>
+            </>
+          )}
+          {(order.status === 2 || order.status === 3) && (
+            <button
+              className="page-order-detail__btn page-order-detail__btn--primary"
+              onClick={() => navigateTo('/member/subscribe')}
+            >
+              重新下单
+            </button>
+          )}
+        </div>
+      )}
 
       <AppModal
         visible={cancelModal}

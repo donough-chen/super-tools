@@ -6,8 +6,7 @@
  * - 上拉加载更多（IntersectionObserver）
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { navigateBack, navigateTo } from '@/utils/navigator';
-import { safeNavigate } from '../../../utils/safeNavigate';
+import { navigateTo, navigate, navigateBack } from '@/utils/navigator';
 import { showToast } from '../../../utils/toast';
 import { listMyOrders, cancelOrder, createPayment } from '../../../service/payment';
 import type { OrderListItem } from '../../../types/order';
@@ -49,7 +48,7 @@ const OrdersPage: React.FC = () => {
     visible: false,
   });
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const loadingRef = useRef(false); // 避免 useCallback 闭包过期导致并发请求
+  const loadingRef = useRef(false);
 
   const status = TABS.find((t) => t.key === tab)?.status;
 
@@ -109,7 +108,7 @@ const OrdersPage: React.FC = () => {
       }
       const url =
         payRes.data.cashierUrl || `/member/cashier?paymentNo=${payRes.data.paymentNo}`;
-      safeNavigate(url);
+      navigate(url);
     } catch (e: any) {
       showToast(e?.message || '操作失败', 'error');
     }
@@ -131,7 +130,7 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="page-orders">
-      <AppHeader title="我的订单" showBack onBack={() => navigateTo('/member')} />
+      <AppHeader title="我的订单" showBack onBack={() => navigateBack()} />
       <div className="page-orders__tabs">
         {TABS.map((t) => (
           <div
@@ -149,7 +148,7 @@ const OrdersPage: React.FC = () => {
           <div
             key={o.id}
             className="page-orders__card"
-            onClick={() => safeNavigate(`/member/orders/${o.id}`)}
+            onClick={() => navigateTo(`/member/orders/${o.id}`)}
           >
             <div className="page-orders__card-head">
               <span className="page-orders__no">{o.orderNo}</span>

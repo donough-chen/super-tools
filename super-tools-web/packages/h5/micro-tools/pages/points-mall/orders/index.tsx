@@ -3,7 +3,7 @@
  * Plan: Task 5.6 fix
  */
 import React, { useEffect, useState } from 'react';
-import { history } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import AppTabs from '../../../components/AppTabs';
 import { usePointsMallStore } from '../../../store';
@@ -40,7 +40,7 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="page-mall-orders">
-      <AppHeader title="兑换记录" showBack onBack={() => history.goBack()} />
+      <AppHeader title="兑换记录" showBack onBack={() => navigateBack()} />
 
       <AppTabs
         mode="multiple"

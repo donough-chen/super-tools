@@ -11,9 +11,7 @@
  *   - alipay：1 按钮"去支付宝支付" → 跳 cashierUrl 外链 + 提示用户支付完跳回订单详情
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { history } from 'umi';
-import { navigateBack } from '@/utils/navigator';
-import { safeNavigate } from '../../../utils/safeNavigate';
+import { navigate, navigateBack } from '@/utils/navigator';
 import { showToast } from '../../../utils/toast';
 import {
   getPaymentStatus, getOrder, mockNotify,
@@ -83,7 +81,7 @@ const CashierPage: React.FC = () => {
         // 如果订单已支付，直接跳订单详情
         if (orderRes.data.status === 1) {
           showToast('订单已支付', 'success');
-          safeNavigate(`/member/orders/${orderRes.data.id}`);
+          navigate(`/member/orders/${orderRes.data.id}`);
           return;
         }
       } else {
@@ -110,7 +108,7 @@ const CashierPage: React.FC = () => {
       setSecondsLeft(Math.max(0, remain));
       if (remain <= 0) {
         showToast('订单已过期', 'error');
-        safeNavigate(`/member/orders/${order.id}`);
+        navigate(`/member/orders/${order.id}`);
       }
     };
     tick();
@@ -135,7 +133,6 @@ const CashierPage: React.FC = () => {
         if (!cashierUrl) {
           throw new Error('缺少支付宝跳转地址');
         }
-        // 用 window.location.href 跳转外链（safeNavigate 内部走 history.push 不支持外链）
         showToast('正在跳转支付宝...', 'success');
         window.location.href = cashierUrl;
         return;
@@ -175,7 +172,7 @@ const CashierPage: React.FC = () => {
         const res = await mockNotify(body);
         if (res?.code !== 200) throw new Error(res?.message || '回调失败');
         showToast(type === 'success' ? '支付成功' : '支付已取消', 'success');
-        safeNavigate(`/member/orders/${payment.orderId}`);
+        navigate(`/member/orders/${payment.orderId}`);
       } catch (e: any) {
         showToast(e?.message || '操作失败', 'error');
       } finally {
@@ -197,14 +194,14 @@ const CashierPage: React.FC = () => {
           clearInterval(pollTimerRef.current);
           setPolling(false);
           showToast('收到支付回调，正在跳转', 'success');
-          safeNavigate(`/member/orders/${payment.orderId}`);
+          navigate(`/member/orders/${payment.orderId}`);
           return;
         }
         if (res?.data?.status === 2) {
           clearInterval(pollTimerRef.current);
           setPolling(false);
           showToast('支付失败', 'error');
-          safeNavigate(`/member/orders/${payment.orderId}`);
+          navigate(`/member/orders/${payment.orderId}`);
           return;
         }
       } catch {

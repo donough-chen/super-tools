@@ -3,11 +3,11 @@
  * Plan: Task 5.4
  */
 import React, { useEffect, useState } from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import AppHeader from '../../../components/AppHeader';
 import AppModal from '../../../components/AppModal';
 import { showToast } from '../../../utils/toast';
-import { safeNavigate } from '../../../utils/safeNavigate';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import { useMemberStore, usePointsMallStore } from '../../../store';
 import type { MallItem } from '../../../types/points';
 import './[id].less';
@@ -34,7 +34,7 @@ const ItemDetailPage: React.FC = () => {
   if (loading) {
     return (
       <div className="page-item-detail">
-        <AppHeader title="商品详情" showBack onBack={() => history.goBack()} />
+        <AppHeader title="商品详情" showBack onBack={() => navigateBack()} />
         <div className="page-item-detail__loading">加载中...</div>
       </div>
     );
@@ -42,7 +42,7 @@ const ItemDetailPage: React.FC = () => {
   if (!item) {
     return (
       <div className="page-item-detail">
-        <AppHeader title="商品详情" showBack onBack={() => history.goBack()} />
+        <AppHeader title="商品详情" showBack onBack={() => navigateBack()} />
         <div className="page-item-detail__empty">商品不存在或已下架</div>
       </div>
     );
@@ -80,7 +80,7 @@ const ItemDetailPage: React.FC = () => {
     try {
       const result = await exchangeAction(itemId);
       if (result) {
-        safeNavigate(`/points-mall/exchange-success?orderId=${result.orderId}&itemId=${itemId}`);
+        navigateTo(`/points-mall/exchange-success?orderId=${result.orderId}&itemId=${itemId}`);
       }
     } catch (e: any) {
       showToast(e?.message || '兑换失败', 'error');
@@ -112,7 +112,7 @@ const ItemDetailPage: React.FC = () => {
 
   return (
     <div className="page-item-detail">
-      <AppHeader title="商品详情" showBack onBack={() => history.goBack()} />
+      <AppHeader title="商品详情" showBack onBack={() => navigateBack()} />
       <main className="page-item-detail__content">
         {/* 主图 */}
         <div className="page-item-detail__images">

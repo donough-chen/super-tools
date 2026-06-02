@@ -6,7 +6,7 @@
  * Plan: Task 3.1
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { history } from 'umi';
+import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import { useMemberStore } from '../../../store';
 import { getMemberLevels, getMemberBenefits } from '../../../service/member';
@@ -77,7 +77,7 @@ const LevelPage: React.FC = () => {
   if (loading) {
     return (
       <div className="page-level">
-        <AppHeader title="会员等级" showBack onBack={() => history.goBack()} />
+        <AppHeader title="会员等级" showBack onBack={() => navigateBack()} />
         <div className="page-level__loading">加载中...</div>
       </div>
     );
@@ -85,7 +85,7 @@ const LevelPage: React.FC = () => {
 
   return (
     <div className="page-level">
-      <AppHeader title="会员等级" showBack onBack={() => history.goBack()} />
+      <AppHeader title="会员等级" showBack onBack={() => navigateBack()} />
 
       <main className="page-level__content">
         {/* 顶部：当前等级标识 */}

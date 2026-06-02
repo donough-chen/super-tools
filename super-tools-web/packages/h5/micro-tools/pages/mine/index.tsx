@@ -14,7 +14,6 @@
  */
 import React, { useEffect } from 'react';
 import { navigateTo } from '@/utils/navigator';
-import { safeNavigate } from '../../utils/safeNavigate';
 import { useUserStore, useGlobalStore, useMemberStore } from '../../store';
 import AppHeader from '../../components/AppHeader';
 import AppTabBar from '../../components/AppTabBar';
@@ -57,7 +56,7 @@ const MinePage: React.FC = () => {
       setLogoutModalVisible(true);
       return;
     }
-    safeNavigate(item.path);
+    navigateTo(item.path);
   };
 
   const handleLogout = async () => {

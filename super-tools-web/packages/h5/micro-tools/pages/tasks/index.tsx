@@ -2,25 +2,21 @@
  * 任务中心
  *
  * 4 Tab：新手 / 日常 / 成长 / 活动
- *  - 日常 Tab 含签到日历
- *  - 成长 Tab 按 category 分组
- *  - 活动 Tab 展示截止时间
+ * - 日常 Tab 含签到日历
+ * - 成长 Tab 按 category 分组
+ * - 活动 Tab 展示截止时间
  *
  * Plan: Task 4.4
  */
 import React, { useEffect, useMemo, useState } from 'react';
-import { history } from 'umi';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import AppHeader from '../../components/AppHeader';
 import AppTabs from '../../components/AppTabs';
 import SignCalendar from '../../components/SignCalendar';
 import TaskCard from '../../components/TaskCard';
 import { showToast } from '../../utils/toast';
-import { safeNavigate } from '../../utils/safeNavigate';
 import {
-  useMemberStore,
-  useSignStore,
-  useTaskStore,
-  selectGroupedTasks,
+  useMemberStore, useSignStore, useTaskStore, selectGroupedTasks,
 } from '../../store';
 import { resolveTaskJumpPath } from '../../constants/taskJumpMap';
 import type { TaskItem, TaskType } from '../../types/points';
@@ -92,7 +88,7 @@ const TaskCenterPage: React.FC = () => {
     }
   };
 
-  const handleJump = (path: string) => safeNavigate(path);
+  const handleJump = (path: string) => navigateTo(path);
 
   const handleSign = async () => {
     try {
@@ -268,7 +264,7 @@ const TaskCenterPage: React.FC = () => {
 
   return (
     <div className="page-tasks">
-      <AppHeader title="任务中心" showBack onBack={() => history.goBack()} />
+      <AppHeader title="任务中心" showBack onBack={() => navigateBack()} />
 
       <main className="page-tasks__content">
         {/* 顶部头条 */}

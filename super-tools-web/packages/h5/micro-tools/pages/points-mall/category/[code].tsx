@@ -3,10 +3,10 @@
  * Plan: Task 5.3
  */
 import React, { useEffect, useMemo } from 'react';
-import { history, useParams } from 'umi';
+import { useParams } from 'umi';
 import AppHeader from '../../../components/AppHeader';
 import MallItemCard from '../../../components/MallItemCard';
-import { safeNavigate } from '../../../utils/safeNavigate';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import { useMemberStore, usePointsMallStore } from '../../../store';
 import type { MallItemCategory } from '../../../types/points';
 import './[code].less';
@@ -30,7 +30,7 @@ const CategoryPage: React.FC = () => {
 
   return (
     <div className="page-mall-category">
-      <AppHeader title={CATEGORY_NAMES[code] || '商品分类'} showBack onBack={() => history.goBack()} />
+      <AppHeader title={CATEGORY_NAMES[code] || '商品分类'} showBack onBack={() => navigateBack()} />
       <main className="page-mall-category__content">
         {filtered.length === 0 ? (
           <div className="page-mall-category__empty">📦 该分类暂无商品</div>
@@ -38,7 +38,7 @@ const CategoryPage: React.FC = () => {
           <div className="page-mall-category__grid">
             {filtered.map((it) => (
               <MallItemCard key={it.id} item={it} userPoints={userPoints}
-                onClick={() => safeNavigate(`/points-mall/items/${it.id}`)} />
+                onClick={() => navigateTo(`/points-mall/items/${it.id}`)} />
             ))}
           </div>
         )}

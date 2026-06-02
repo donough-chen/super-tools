@@ -7,8 +7,7 @@
  * Plan: Task 2.1
  */
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { history } from 'umi';
-import { safeNavigate } from '../../../utils/safeNavigate';
+import { navigateTo, navigateBack } from '@/utils/navigator';
 import { showToast } from '../../../utils/toast';
 import { getMemberInfo, getMemberPlans } from '../../../service/member';
 import { createOrder, previewOrder, listMyOrders } from '../../../service/payment';
@@ -101,11 +100,11 @@ const SubscribePage: React.FC = () => {
 
       if (!needPayment) {
         showToast(`${reason || '已开通'}`, 'success');
-        safeNavigate(`/member/orders/${orderId}`);
+        navigateTo(`/member/orders/${orderId}`);
         return;
       }
 
-      safeNavigate(`/member/cashier?orderId=${orderId}`);
+      navigateTo(`/member/cashier?orderId=${orderId}`);
     } catch (e: any) {
       const msg: string = e?.message || e?.errMsg || String(e);
       const m = msg.match(/未完成订单\s+(\S+)/);
@@ -169,11 +168,11 @@ const SubscribePage: React.FC = () => {
       <AppHeader
         title="订阅会员"
         showBack
-        onBack={() => history.goBack()}
+        onBack={() => navigateBack()}
         rightSlot={
           <span
             className="page-member-subscribe__orders-link"
-            onClick={() => safeNavigate('/member/orders')}
+            onClick={() => navigateTo('/member/orders')}
           >
             我的订单
           </span>
@@ -253,8 +252,8 @@ const SubscribePage: React.FC = () => {
         confirmText={pendingOrderModal.orderId ? '查看订单' : '知道了'}
         cancelText="关闭"
         onConfirm={() => {
-          if (pendingOrderModal.orderId) {
-            safeNavigate(`/member/orders/${pendingOrderModal.orderId}`);
+            if (pendingOrderModal.orderId) {
+            navigateTo(`/member/orders/${pendingOrderModal.orderId}`);
           }
           setPendingOrderModal({ visible: false });
         }}
