@@ -5,13 +5,21 @@
  *
  * Plan: Task 3.1
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import { useMemberStore } from '../../../store';
 import { getMemberLevels, getMemberBenefits } from '../../../service/member';
 import type { MemberLevelItem, MemberBenefitsResponse } from '../../../types/points';
+import { MemberBadge } from '@/components/MemberBadge';
+import type { MemberLevel } from '@/components/MemberBadge';
 import './index.less';
+
+/** 将后端等级 code 映射为 MemberLevel 类型 */
+const mapCodeToLevel = (code: string): MemberLevel => {
+  const validLevels: MemberLevel[] = ['normal', 'silver', 'gold', 'diamond', 'blackgold'];
+  return validLevels.includes(code as MemberLevel) ? (code as MemberLevel) : 'normal';
+};
 
 const BENEFIT_KEY_LABELS: Record<string, string> = {
   points_multiplier: '消费积分倍率',
@@ -34,6 +42,11 @@ const LevelPage: React.FC = () => {
   const [benefits, setBenefits] = useState<MemberBenefitsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedLevelCode, setSelectedLevelCode] = useState<string | null>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const nodeRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const currentLevel = memberInfo?.level;
+  const nextLevel = memberInfo?.nextLevel;
 
   useEffect(() => {
     fetchMemberInfo();
@@ -51,9 +64,6 @@ const LevelPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [fetchMemberInfo]);
 
-  const currentLevel = memberInfo?.level;
-  const nextLevel = memberInfo?.nextLevel;
-
   // 升级激励文案分档
   const upgradeText = useMemo(() => {
     if (!nextLevel) return '✨ 您已是最高等级，感谢您的长期支持';
@@ -68,6 +78,25 @@ const LevelPage: React.FC = () => {
     const code = selectedLevelCode || currentLevel?.code;
     return levels.find((l) => l.code === code) || null;
   }, [selectedLevelCode, currentLevel, levels]);
+
+  // 滚动到居中位置
+  const scrollToCenter = useCallback(() => {
+    if (!timelineRef.current || !selectedLevel) return;
+    const timeline = timelineRef.current;
+    const selectedIndex = levels.findIndex((l) => l.code === selectedLevel.code);
+    if (selectedIndex === -1 || !nodeRefs.current[selectedIndex]) return;
+
+    const node = nodeRefs.current[selectedIndex];
+    const scrollLeft =
+      node.offsetLeft - timeline.offsetWidth / 2 + node.offsetWidth / 2;
+    timeline.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+  }, [selectedLevel, levels]);
+
+  useEffect(() => {
+    // 延迟执行确保 DOM 已更新
+    const timer = setTimeout(() => scrollToCenter(), 100);
+    return () => clearTimeout(timer);
+  }, [selectedLevel, scrollToCenter]);
 
   const isLocked = (lv: MemberLevelItem) => {
     if (!currentLevel) return true;
@@ -89,12 +118,19 @@ const LevelPage: React.FC = () => {
 
       <main className="page-level__content">
         {/* 顶部：当前等级标识 */}
-        <div className="page-level__hero">
+        <div
+          className="page-level__hero"
+          style={currentLevel?.color ? { '--hero-color': currentLevel.color } as React.CSSProperties : undefined}
+        >
           <div className="page-level__hero-icon">
-            {currentLevel?.icon || '🥇'}
-          </div>
-          <div className="page-level__hero-name">
-            {currentLevel?.name || '普通用户'}
+            {currentLevel && (
+              <MemberBadge
+                level={mapCodeToLevel(currentLevel.code)}
+                size={80}
+                customName={currentLevel?.name || '普通用户'}
+                showLevel={false}
+              />
+            )}
           </div>
           <div className="page-level__hero-growth">
             成长值 {memberInfo?.growthValue ?? 0}
@@ -102,24 +138,31 @@ const LevelPage: React.FC = () => {
         </div>
 
         {/* 等级时间轴 */}
-        <div className="page-level__timeline">
-          {levels.map((lv, idx) => (
-            <React.Fragment key={lv.code}>
-              <div
-                className={`page-level__node${
-                  currentLevel && lv.level <= currentLevel.level
-                    ? ' is-reached'
-                    : ''
-                }${selectedLevel?.code === lv.code ? ' is-selected' : ''}`}
-                onClick={() => setSelectedLevelCode(lv.code)}
-              >
-                <div className="page-level__node-dot" />
-                <div className="page-level__node-name">{lv.name}</div>
-                <div className="page-level__node-growth">{lv.upgradeGrowth}</div>
-              </div>
-              {idx < levels.length - 1 && <div className="page-level__line" />}
-            </React.Fragment>
-          ))}
+        <div className="page-level__timeline-wrapper">
+          <div className="page-level__timeline" ref={timelineRef}>
+            {levels.map((lv, idx) => (
+              <React.Fragment key={lv.code}>
+                <div
+                  ref={el => { nodeRefs.current[idx] = el; }}
+                  className={`page-level__node${
+                    currentLevel && lv.level <= currentLevel.level
+                      ? ' is-reached'
+                      : ''
+                  }${selectedLevel?.code === lv.code ? ' is-selected' : ''}`}
+                  onClick={() => setSelectedLevelCode(lv.code)}
+                >
+                  <MemberBadge
+                    level={mapCodeToLevel(lv.code)}
+                    size={36}
+                    customName={lv.name}
+                    showLevel={false}
+                  />
+                  <div className="page-level__node-growth">{lv.upgradeGrowth}</div>
+                </div>
+                {idx < levels.length - 1 && <div className="page-level__line" />}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
 
         {/* 升级激励文案 */}
@@ -190,13 +233,13 @@ const BenefitsList: React.FC<{
   /** 将 boolean/数字/字符串转换为友好文案 */
   const formatValue = (key: string, value: any): string => {
     if (typeof value === 'boolean') {
-      return value ? '已开通' : '未开通';
+      return value ? '✓' : '🔒';
     }
     if (typeof value === 'number') {
       // 倍率类型加 ×
       if (key === 'points_multiplier') return `${value}×`;
       // 折扣
-      if (key === 'discount') return value < 1 ? `${value * 10}折` : `${value}折`;
+      if (key === 'discount') return value < 1 ? `${value * 10}折` : `🔒`;
       // 天数
       if (key === 'points_expire_days') return `${value} 天`;
       // 积分
@@ -211,7 +254,7 @@ const BenefitsList: React.FC<{
       {entries.map(([k, v]) => (
         <div key={k} className="page-level__benefit">
           <span className="page-level__benefit-icon">
-            {locked ? '🔒' : '✓'}
+            {locked ? '🔒' : '✨'}
           </span>
           <span className="page-level__benefit-name">
             {BENEFIT_KEY_LABELS[k]}

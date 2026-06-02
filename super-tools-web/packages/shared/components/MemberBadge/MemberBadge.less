@@ -1,0 +1,175 @@
+// MemberBadge.less
+
+// ==================== Variables ====================
+@transition-base: 0.3s ease;
+
+// 普通
+@color-normal-text:   #a0a0b0;
+@color-normal-bg1:    #2a2a3e;
+@color-normal-bg2:    #3a3a4e;
+@color-normal-border: #5a5a7a;
+@color-normal-level:  #8888aa;
+
+// 银牌
+@color-silver-text:   #e8e8f0;
+@color-silver-bg1:    #6a7080;
+@color-silver-bg2:    #9aa0b0;
+@color-silver-border: #c0c8d8;
+@color-silver-level:  #b0b8c8;
+
+// 金牌
+@color-gold-text:   #3a2800;
+@color-gold-bg1:    #f0c040;
+@color-gold-bg2:    #ffd700;
+@color-gold-bg3:    #e8a800;
+@color-gold-border: #ffd700;
+@color-gold-level:  #ffd700;
+
+// 钻石
+@color-diamond-text:   #ffffff;
+@color-diamond-bg1:    #4080ff;
+@color-diamond-bg2:    #80c0ff;
+@color-diamond-bg3:    #a060ff;
+@color-diamond-border: #80c0ff;
+@color-diamond-level:  #80c0ff;
+
+// 黑金
+@color-blackgold-text:   #ffd700;
+@color-blackgold-bg1:    #0a0a0a;
+@color-blackgold-bg2:    #1a1a1a;
+@color-blackgold-bg3:    #2a2000;
+@color-blackgold-border: #c8a000;
+@color-blackgold-level:  #c8a000;
+
+// ==================== Keyframes ====================
+@keyframes glowGoldAnim {
+  0%, 100% { filter: drop-shadow(0 4px 8px rgba(255, 200, 0, 0.4)); }
+  50%       { filter: drop-shadow(0 4px 20px rgba(255, 200, 0, 0.9)); }
+}
+
+@keyframes glowDiamondAnim {
+  0%, 100% { filter: drop-shadow(0 4px 8px rgba(100, 150, 255, 0.4)); }
+  50%       { filter: drop-shadow(0 4px 20px rgba(100, 200, 255, 0.9)); }
+}
+
+@keyframes glowBlackgoldAnim {
+  0%, 100% { filter: drop-shadow(0 4px 8px rgba(200, 160, 0, 0.5)); }
+  50%       { filter: drop-shadow(0 6px 24px rgba(255, 200, 0, 1)); }
+}
+
+// ==================== Wrapper ====================
+.member-badge-wrapper {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: transform @transition-base;
+  user-select: none;
+
+  &:hover {
+    transform: translateY(-6px);
+  }
+
+  &.is-clickable {
+    cursor: pointer;
+
+    &:active {
+      transform: translateY(-2px) scale(0.97);
+    }
+  }
+}
+
+// ==================== Icon Wrapper ====================
+.member-badge-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: filter @transition-base;
+
+  // 发光动画
+  &.glow-gold {
+    animation: glowGoldAnim 2.5s ease-in-out infinite;
+  }
+
+  &.glow-diamond {
+    animation: glowDiamondAnim 2s ease-in-out infinite;
+  }
+
+  &.glow-blackgold {
+    animation: glowBlackgoldAnim 1.8s ease-in-out infinite;
+  }
+}
+
+// ==================== Name Label ====================
+.member-badge-name {
+  font-weight: bold;
+  letter-spacing: 2px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: box-shadow @transition-base;
+
+  &.name-normal {
+    color: @color-normal-text;
+    background: linear-gradient(135deg, @color-normal-bg1, @color-normal-bg2);
+    border: 1px solid @color-normal-border;
+  }
+
+  &.name-silver {
+    color: @color-silver-text;
+    background: linear-gradient(135deg, @color-silver-bg1, @color-silver-bg2);
+    border: 1px solid @color-silver-border;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  &.name-gold {
+    color: @color-gold-text;
+    background: linear-gradient(135deg, @color-gold-bg1, @color-gold-bg2, @color-gold-bg3);
+    border: 1px solid @color-gold-border;
+    text-shadow: 0 1px 2px rgba(255, 200, 0, 0.5);
+  }
+
+  &.name-diamond {
+    color: @color-diamond-text;
+    background: linear-gradient(135deg, @color-diamond-bg1, @color-diamond-bg2, @color-diamond-bg3);
+    border: 1px solid @color-diamond-border;
+    text-shadow: 0 1px 3px rgba(0, 100, 255, 0.5);
+  }
+
+  &.name-blackgold {
+    color: @color-blackgold-text;
+    background: linear-gradient(135deg, @color-blackgold-bg1, @color-blackgold-bg2, @color-blackgold-bg3);
+    border: 1px solid @color-blackgold-border;
+    text-shadow: 0 0 8px rgba(255, 200, 0, 0.6);
+  }
+}
+
+// ==================== Level Label ====================
+.member-badge-level {
+  letter-spacing: 1.5px;
+  opacity: 0.85;
+  white-space: nowrap;
+
+  &.level-normal    { color: @color-normal-level; }
+  &.level-silver    { color: @color-silver-level; }
+  &.level-gold      { color: @color-gold-level; }
+  &.level-diamond   { color: @color-diamond-level; }
+  &.level-blackgold { color: @color-blackgold-level; }
+}
+
+// ==================== Group ====================
+.member-badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+
+  &.direction-horizontal {
+    flex-direction: row;
+  }
+
+  &.direction-vertical {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
