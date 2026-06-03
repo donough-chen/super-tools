@@ -75,19 +75,11 @@ export interface TaskClaimResult {
 }
 
 // === 积分流水 ===
-export type PointsLogType =
-  | 'sign'
-  | 'consume_reward'
-  | 'task'
-  | 'mall_exchange'
-  | 'expired'
-  | 'admin_adjust'
-  | 'refund'
-  | 'other';
-
 export interface PointsLog {
   id: number;
-  type: PointsLogType;
+  type: number;
+  userId: number;
+  title: string;
   points: number;
   growthValue?: number;
   description: string;
@@ -98,7 +90,7 @@ export interface PointsLog {
 export interface PointsLogsQuery {
   page?: number;
   pageSize?: number;
-  type?: PointsLogType | 'all';
+  type?: number | 'all';
   startDate?: string;
   endDate?: string;
 }

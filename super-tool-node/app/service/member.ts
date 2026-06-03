@@ -1,3 +1,4 @@
+import { title } from 'process';
 import BaseService, { PaginationResult } from './base';
 
 /** 成长等级权益 */
@@ -182,16 +183,25 @@ export default class MemberService extends BaseService {
 
   /**
    * 获取积分流水（分页）
-   * type 映射：1=sign, 2=consume_reward, 3=task, 4=mall_exchange, 5=expired, 6=admin_adjust, 7=refund
+   * type 类型:1获得,2消耗,3过期,4管理员调整
    */
-  private readonly TYPE_MAP: Record<number, string> = {
-    1: 'sign',
-    2: 'consume_reward',
-    3: 'task',
-    4: 'mall_exchange',
-    5: 'expired',
-    6: 'admin_adjust',
-    7: 'refund',
+  // 来源:register/daily_login/order/activity/exchange/admin/paid_gift/daily_sign/consume_reward/task_reward/mall_exchange/expired/admin_adjust/refund/other
+  private readonly SOURCE_MAP: Record<string, string> = {
+    register: '注册奖励',
+    daily_login: '每日登录',
+    order: '订单消费',
+    activity: '活动奖励',
+    exchange: '积分兑换',
+    admin: '活动补发',
+    paid_gift: '付费会员礼包',
+    daily_sign: '每日签到',
+    consume_reward: '消费返积分',
+    task_reward: '任务奖励',
+    mall_exchange: '积分商城兑换',
+    expired: '积分过期',
+    admin_adjust: '系统调整',
+    refund: '退款',
+    other: '其他',
   };
 
   async getPointsLogs(userId: number, query: any): Promise<PaginationResult<any>> {
@@ -211,7 +221,7 @@ export default class MemberService extends BaseService {
         const plain = log.toJSON ? log.toJSON() : { ...log };
         return {
           ...plain,
-          type: this.TYPE_MAP[plain.type] ?? 'other',
+          title: this.SOURCE_MAP[plain.source] || '',
           // 确保前端期望的字段存在
           description: plain.remark || '',
           createdAt: plain.createdAt ? new Date(plain.createdAt).toISOString() : '',

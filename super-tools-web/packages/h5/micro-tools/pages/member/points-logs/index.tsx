@@ -9,20 +9,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { navigateBack } from '@/utils/navigator';
 import AppHeader from '../../../components/AppHeader';
 import { useMemberStore, usePointsLogStore } from '../../../store';
-import type { PointsLog, PointsLogType } from '../../../types/points';
+import type { PointsLog } from '../../../types/points';
 import type { DateRangeKey } from '../../../store/pointsLog';
 import './index.less';
-
-const TYPE_LABELS: Record<PointsLogType, string> = {
-  sign: '每日签到',
-  consume_reward: '消费返积分',
-  task: '任务奖励',
-  mall_exchange: '积分商城兑换',
-  expired: '积分过期',
-  admin_adjust: '系统调整',
-  refund: '退款',
-  other: '其他',
-};
 
 const FILTER_TABS: Array<{
   key: 'all' | 'gain' | 'consume' | 'expired';
@@ -93,8 +82,8 @@ const PointsLogsPage: React.FC = () => {
     if (activeTab === 'all') return logs;
     if (activeTab === 'gain') return logs.filter((l) => l.points > 0);
     if (activeTab === 'consume')
-      return logs.filter((l) => l.points < 0 && l.type !== 'expired');
-    if (activeTab === 'expired') return logs.filter((l) => l.type === 'expired');
+      return logs.filter((l) => l.points < 0 && l.type !== 3);
+    if (activeTab === 'expired') return logs.filter((l) => l.type === 3);
     return logs;
   }, [logs, activeTab]);
 
@@ -135,7 +124,7 @@ const PointsLogsPage: React.FC = () => {
       const d = new Date(l.createdAt);
       if (d.getFullYear() === y && d.getMonth() === m) {
         if (l.points > 0) gain += l.points;
-        if (l.points < 0 && l.type !== 'expired') consume += -l.points;
+        if (l.points < 0 && l.type !== 3) consume += -l.points;
       }
       if (l.expireAt && l.points > 0) {
         const t = new Date(l.expireAt).getTime();
@@ -287,7 +276,7 @@ const PointsLogsPage: React.FC = () => {
 };
 
 const LogItem: React.FC<{ log: PointsLog }> = ({ log }) => {
-  const isExpired = log.type === 'expired';
+  const isExpired = log.type === 3;
   const isPositive = log.points > 0;
   const colorClass = isExpired
     ? 'is-expired'
@@ -295,9 +284,7 @@ const LogItem: React.FC<{ log: PointsLog }> = ({ log }) => {
       ? 'is-gain'
       : 'is-consume';
   const icon = isExpired ? '⚠️' : isPositive ? '🟢' : '🔴';
-
-  // 优先显示 description（后端 remark），标题用类型标签兜底
-  const title = log.description || TYPE_LABELS[log.type] || log.type;
+  const title = log.title || log.description;
 
   return (
     <div className="page-points-logs__item">
@@ -305,10 +292,7 @@ const LogItem: React.FC<{ log: PointsLog }> = ({ log }) => {
         <div className="page-points-logs__item-title">
           {icon} {title}
         </div>
-        {/* description 与类型标签不同时才显示副标题，避免重复 */}
-        {log.description && log.description !== TYPE_LABELS[log.type] && (
-          <div className="page-points-logs__item-desc">{log.description}</div>
-        )}
+        <div className="page-points-logs__item-desc">{log.description}</div>
       </div>
       <div className="page-points-logs__item-right">
         <div className={`page-points-logs__item-points ${colorClass}`}>
