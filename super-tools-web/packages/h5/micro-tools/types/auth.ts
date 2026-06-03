@@ -109,6 +109,7 @@ export interface MemberInfo {
     level: number;
     icon: string | null;
     color: string | null;
+    upgradeGrowth: number;
   };
   growthValue: number;
   totalPoints: number;

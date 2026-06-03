@@ -27,7 +27,6 @@
   &__hero-row {
     display: flex;
     align-items: center;
-    margin-bottom: var(--spacing-sm);
   }
 
   &__avatar {
@@ -75,6 +74,14 @@
     margin-bottom: 12px;
   }
 
+  &__progress-range {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-xxs);
+    opacity: 0.8;
+    margin-bottom: 2px;
+  }
+
   &__progress-bar {
     height: 100%;
     background: var(--primary-color);
@@ -93,8 +100,8 @@
     margin: 0 var(--spacing-md);
     background: var(--bg-white, #fff);
     border-radius: 16px;
-    padding: 24px 0;
-    margin-top: 24px;
+    padding: 10px 0;
+    margin-top: var(--spacing-md);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
@@ -105,25 +112,24 @@
   }
 
   &__stat-value {
-    font-size: 36px;
+    font-size: var(--font-size-title);
     font-weight: 600;
     color: var(--text-primary);
     line-height: 1.2;
   }
 
   &__stat-label {
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    margin-top: 8px;
   }
 
   // 快捷入口
   &__entries {
     display: flex;
-    margin: 24px var(--spacing-md);
+    margin: var(--spacing-md);
     background: var(--bg-white, #fff);
     border-radius: 16px;
-    padding: 24px 0;
+    padding: 10px 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
@@ -134,21 +140,21 @@
   }
 
   &__entry-icon {
-    font-size: 48px;
-    margin-bottom: 8px;
+    font-size: var(--font-size-title);
+    margin-bottom: 4px;
   }
 
   &__entry-label {
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     color: var(--text-primary);
   }
 
   // 通用 section
   &__section {
-    margin: 24px var(--spacing-md);
+    margin: var(--spacing-md);
     background: var(--bg-white, #fff);
     border-radius: 16px;
-    padding: 24px;
+    padding: var(--spacing-md);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
@@ -156,14 +162,14 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 30px;
+    font-size: var(--font-size-xl);
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-sm);
   }
 
   &__more {
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     color: var(--primary-color);
     cursor: pointer;
   }
@@ -176,7 +182,7 @@
   }
 
   &__benefits-text {
-    font-size: 26px;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
   }
 
@@ -185,29 +191,27 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 0;
     border-bottom: 1px solid var(--border-color, #f0f0f0);
   }
 
   &__sign-title {
-    font-size: 28px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text-primary);
   }
 
   &__sign-sub {
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
-    margin-top: 4px;
   }
 
   &__sign-btn {
-    padding: 12px 32px;
+    padding: 4px 16px;
     background: var(--primary-color);
     color: #fff;
     border: none;
     border-radius: 999px;
-    font-size: 26px;
+    font-size: var(--font-size-sm);
     cursor: pointer;
 
     &:disabled {
@@ -244,7 +248,7 @@
     text-align: center;
     color: var(--text-tertiary);
     padding: 32px 0;
-    font-size: 26px;
+    font-size: var(--font-size-sm);
   }
 
   // 商城推荐
@@ -270,7 +274,7 @@
   }
 
   &__mall-name {
-    font-size: 26px;
+    font-size: var(--font-size-lg);
     color: var(--text-primary);
     line-height: 1.3;
     overflow: hidden;
@@ -281,7 +285,7 @@
   }
 
   &__mall-points {
-    font-size: 26px;
+    font-size: var(--font-size-lg);
     color: var(--primary-color);
     font-weight: 600;
     margin-top: 8px;

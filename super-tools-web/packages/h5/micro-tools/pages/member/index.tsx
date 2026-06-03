@@ -124,6 +124,14 @@ const MemberCenterPage: React.FC = () => {
 
           {nextLevel ? (
             <>
+              <div className="page-member-center__progress-range">
+                <span className="page-member-center__progress-range-start">
+                  {level?.upgradeGrowth ?? 0}
+                </span>
+                <span className="page-member-center__progress-range-end">
+                  {nextLevel.upgradeGrowth}
+                </span>
+              </div>
               <div className="page-member-center__progress">
                 <div
                   className="page-member-center__progress-bar"
@@ -198,7 +206,7 @@ const MemberCenterPage: React.FC = () => {
                 ? `当前 ${level.name}，享受专属权益`
                 : '登录后查看会员权益'}
             </div>
-            <span className="page-member-center__more">查看全部权益 →</span>
+            <span className="page-member-center__more">查看全部权益</span>
           </div>
         </div>
 
@@ -210,7 +218,7 @@ const MemberCenterPage: React.FC = () => {
               className="page-member-center__more"
               onClick={() => navigateTo('/tasks')}
             >
-              全部 →
+              全部
             </span>
           </div>
 
@@ -262,7 +270,7 @@ const MemberCenterPage: React.FC = () => {
                 className="page-member-center__more"
                 onClick={() => navigateTo('/points-mall')}
               >
-                更多 →
+                更多
               </span>
             </div>
             <div className="page-member-center__mall">
