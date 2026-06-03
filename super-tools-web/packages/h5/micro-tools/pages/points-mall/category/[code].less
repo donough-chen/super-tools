@@ -4,7 +4,19 @@
   min-height: 100vh;
   background: var(--bg-page);
 
-  &__content { padding: var(--header-height) 32px 60px; }
-  &__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-  &__empty { text-align: center; padding: 120px 0; color: var(--text-tertiary); font-size: 28px; }
+  &__content {
+    padding: var(--header-height) var(--spacing-md) 40px;
+  }
+  &__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  &__empty {
+    text-align: center;
+    padding: 120px 0;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-lg);
+  }
 }
