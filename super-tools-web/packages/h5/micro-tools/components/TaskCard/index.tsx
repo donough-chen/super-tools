@@ -20,7 +20,7 @@ export interface TaskCardProps {
 }
 
 const TaskCard: FC<TaskCardProps> = ({ task, onClaim, onJump, claiming }) => {
-  const { status, progress } = task;
+  const { status, progress, progressTarget } = task;
 
   const renderButton = () => {
     if (status === 'claimed') {
@@ -30,10 +30,10 @@ const TaskCard: FC<TaskCardProps> = ({ task, onClaim, onJump, claiming }) => {
         </button>
       );
     }
-    if (status === 'locked') {
+    if (status === 'expired') {
       return (
         <button className="task-card__btn is-disabled" disabled>
-          未解锁
+          已过期
         </button>
       );
     }
@@ -55,7 +55,7 @@ const TaskCard: FC<TaskCardProps> = ({ task, onClaim, onJump, claiming }) => {
           className="task-card__btn is-secondary"
           onClick={() => onJump(task.jumpPath!)}
         >
-          去完成 →
+          去完成
         </button>
       );
     }
@@ -67,7 +67,7 @@ const TaskCard: FC<TaskCardProps> = ({ task, onClaim, onJump, claiming }) => {
   };
 
   const progressPercent = progress
-    ? Math.min(100, Math.round((progress.current / progress.target) * 100))
+    ? Math.min(100, Math.round((progress / progressTarget) * 100))
     : 0;
 
   return (
@@ -78,19 +78,17 @@ const TaskCard: FC<TaskCardProps> = ({ task, onClaim, onJump, claiming }) => {
           {task.description && (
             <div className="task-card__desc">{task.description}</div>
           )}
-          {progress && (
-            <div className="task-card__progress">
-              <div className="task-card__progress-bar">
-                <div
-                  className="task-card__progress-fill"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <div className="task-card__progress-text">
-                {progress.current} / {progress.target}
-              </div>
+          <div className="task-card__progress">
+            <div className="task-card__progress-bar">
+              <div
+                className="task-card__progress-fill"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
-          )}
+            <div className="task-card__progress-text">
+              {progress} / {progressTarget}
+            </div>
+          </div>
           <div className="task-card__reward">
             奖励：+{task.rewardPoints} 积分
             {task.rewardGrowth ? ` +${task.rewardGrowth} 成长值` : ''}

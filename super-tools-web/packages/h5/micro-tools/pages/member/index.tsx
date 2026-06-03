@@ -7,19 +7,19 @@
  */
 import React, { useEffect, useMemo } from 'react';
 import { showToast } from '../../utils/toast';
-import { navigateTo, navigateBack } from '@/utils/navigator';
+import { navigateTo } from '@/utils/navigator';
 import {
   useUserStore,
   useMemberStore,
   useSignStore,
   useTaskStore,
   usePointsMallStore,
-  selectGroupedTasks,
 } from '../../store';
 import AppHeader from '../../components/AppHeader';
 import { MemberBadge } from '@/components/MemberBadge';
 import { mapCodeToLevel, QUICK_ENTRIES } from '../../constants/member';
 import { resolveIcon } from '../../utils/icon';
+import type { TaskCategory } from '../../types/points';
 import './index.less';
 
 const MemberCenterPage: React.FC = () => {
@@ -30,8 +30,8 @@ const MemberCenterPage: React.FC = () => {
   const fetchSignStatus = useSignStore((s) => s.fetchStatus);
   const submitSign = useSignStore((s) => s.submitSign);
   const signSubmitting = useSignStore((s) => s.submitting);
-  const tasks = useTaskStore((s) => s.tasks);
   const fetchTasks = useTaskStore((s) => s.fetchTasks);
+  const getTasksByCategory = useTaskStore((s) => s.getTasksByCategory);
   const mallItems = usePointsMallStore((s) => s.items);
   const fetchMallItems = usePointsMallStore((s) => s.fetchItems);
 
@@ -42,13 +42,15 @@ const MemberCenterPage: React.FC = () => {
     }
     fetchMemberInfo();
     fetchSignStatus();
-    fetchTasks();
+    // 获取日常任务
+    fetchTasks('daily' as TaskCategory, true);
     fetchMallItems();
   }, [isLoggedIn, fetchMemberInfo, fetchSignStatus, fetchTasks, fetchMallItems]);
 
+  // 获取日常任务列表
   const dailyTasks = useMemo(
-    () => selectGroupedTasks(tasks).daily.slice(0, 3),
-    [tasks],
+    () => getTasksByCategory('daily' as TaskCategory).slice(0, 3),
+    [getTasksByCategory],
   );
   const recommendedItems = useMemo(() => mallItems.slice(0, 2), [mallItems]);
 
@@ -247,7 +249,7 @@ const MemberCenterPage: React.FC = () => {
           {dailyTasks.length === 0 && (
             <div className="page-member-center__empty">暂无日常任务</div>
           )}
-          {dailyTasks.map((t) => (
+          {dailyTasks.map((t: any) => (
             <div
               key={t.code}
               className="page-member-center__task"

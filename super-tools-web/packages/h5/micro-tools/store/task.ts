@@ -1,9 +1,9 @@
 /**
  * 任务中心 Store
  *
- * - 5 分钟 TTL 缓存任务列表
+ * - 支持按分类获取任务（利用后端 category 参数）
  * - claimTask 成功后局部更新 status='claimed' + 强刷 useMemberStore
- * - 派生 selectGroupedTasks（按 type 分组）供任务中心 4 Tab 使用
+ * - 按当前 activeCategory 存储对应分类的任务列表
  *
  * Plan: Task 1.9
  */
@@ -12,27 +12,26 @@ import { immer } from 'zustand/middleware/immer';
 import { getTasks, claimTask as claimTaskApi } from '../service/task';
 import { genIdemKey } from '../utils/idempotency';
 import { useMemberStore } from './member';
-import type { TaskItem, TaskType, TaskClaimResult } from '../types/points';
+import type { TaskCategory, TaskItem, TaskClaimResult } from '../types/points';
 
 const CACHE_TTL = 5 * 60 * 1000;
 
 interface TaskState {
-  tasks: TaskItem[];
+  tasksByCategory: Partial<Record<TaskCategory, TaskItem[]>>;
   loading: boolean;
-  fetchedAt: number;
   claimingCode: string | null;
 }
 
 interface TaskActions {
-  fetchTasks: (force?: boolean) => Promise<void>;
+  fetchTasks: (category?: TaskCategory, force?: boolean) => Promise<void>;
   claimTask: (code: string) => Promise<TaskClaimResult | null>;
   reset: () => void;
+  getTasksByCategory: (category: TaskCategory) => TaskItem[];
 }
 
 const initialState: TaskState = {
-  tasks: [],
+  tasksByCategory: {},
   loading: false,
-  fetchedAt: 0,
   claimingCode: null,
 };
 
@@ -40,22 +39,46 @@ export const useTaskStore = create<TaskState & TaskActions>()(
   immer((set, get) => ({
     ...initialState,
 
-    fetchTasks: async (force = false) => {
-      const { fetchedAt, tasks } = get();
-      if (!force && tasks.length && Date.now() - fetchedAt < CACHE_TTL) return;
+    fetchTasks: async (category?: TaskCategory, force = false) => {
+      const { tasksByCategory } = get();
+      const cached = category ? tasksByCategory[category] : undefined;
+      
+      if (!force && cached && cached.length && 
+          Date.now() - (get() as any).fetchedAt < CACHE_TTL) {
+        return;
+      }
+      
       set((s) => {
         s.loading = true;
       });
+      
       try {
-        const res: any = await getTasks();
+        const res: any = await getTasks(category);
         if (res?.code === 200 && res.data) {
           const list: TaskItem[] = Array.isArray(res.data)
             ? res.data
             : res.data.list || [];
           set((s) => {
-            s.tasks = list;
-            s.fetchedAt = Date.now();
+            if (category) {
+              s.tasksByCategory[category] = list;
+            } else {
+              // 如果没有指定分类，则更新所有分类
+              s.tasksByCategory = { ...s.tasksByCategory };
+              list.forEach((task) => {
+                const cat = task.category;
+                if (!s.tasksByCategory[cat]) {
+                  s.tasksByCategory[cat] = [];
+                }
+                const idx = s.tasksByCategory[cat].findIndex((t) => t.code === task.code);
+                if (idx >= 0) {
+                  s.tasksByCategory[cat][idx] = task;
+                } else {
+                  s.tasksByCategory[cat].push(task);
+                }
+              });
+            }
             s.loading = false;
+            (s as any).fetchedAt = Date.now();
           });
         } else {
           set((s) => {
@@ -81,8 +104,14 @@ export const useTaskStore = create<TaskState & TaskActions>()(
         const res: any = await claimTaskApi(code, idemKey);
         if (res?.code === 200 && res.data) {
           set((s) => {
-            const t = s.tasks.find((x) => x.code === code);
-            if (t) t.status = 'claimed';
+            // 更新所有分类中的该任务状态
+            Object.keys(s.tasksByCategory).forEach((cat) => {
+              const taskList = s.tasksByCategory[cat as TaskCategory];
+              if (taskList) {
+                const t = taskList.find((x) => x.code === code);
+                if (t) t.status = 'claimed';
+              }
+            });
             s.claimingCode = null;
           });
           await useMemberStore.getState().fetchMemberInfo(true);
@@ -101,22 +130,14 @@ export const useTaskStore = create<TaskState & TaskActions>()(
     },
 
     reset: () => set(() => ({ ...initialState })),
+
+    getTasksByCategory: (category: TaskCategory) => {
+      return get().tasksByCategory[category] || [];
+    },
   })),
 );
 
-/** 派生：按类型分组（任务中心 4 Tab 直接消费） */
-export const selectGroupedTasks = (
-  tasks: TaskItem[],
-): Record<TaskType, TaskItem[]> => {
-  const groups: Record<TaskType, TaskItem[]> = {
-    new_user: [],
-    daily: [],
-    weekly: [],
-    milestone: [],
-    activity: [],
-  };
-  for (const t of tasks) {
-    if (groups[t.type]) groups[t.type].push(t);
-  }
-  return groups;
+/** 兼容性导出：获取所有任务（扁平化） */
+export const selectAllTasks = (state: TaskState): TaskItem[] => {
+  return Object.values(state.tasksByCategory).flat();
 };

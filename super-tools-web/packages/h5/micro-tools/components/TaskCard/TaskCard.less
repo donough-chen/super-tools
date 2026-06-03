@@ -3,8 +3,8 @@
 .task-card {
   background: #fff;
   border-radius: 12px;
-  padding: 24px;
-  margin-bottom: 16px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 
   &.is-claimed {
@@ -18,20 +18,20 @@
 
   &__main {
     flex: 1;
-    padding-right: 16px;
+    padding-right: var(--spacing-md);
   }
 
   &__name {
-    font-size: 28px;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   &__desc {
-    font-size: 22px;
+    font-size: var(--font-size-sm);
     color: var(--text-tertiary);
-    margin-bottom: 8px;
+    margin-bottom: 4px;
   }
 
   &__progress {
@@ -53,15 +53,15 @@
   }
 
   &__progress-text {
-    font-size: 22px;
+    font-size: var(--font-size-xs);
     color: var(--text-tertiary);
-    margin-top: 4px;
+    margin-top: 2px;
   }
 
   &__reward {
-    font-size: 24px;
+    font-size: var(--font-size-xs);
     color: var(--primary-color);
-    margin-top: 8px;
+    margin-top: 4px;
   }
 
   &__action {
@@ -69,12 +69,12 @@
   }
 
   &__btn {
-    padding: 12px 24px;
+    padding: 8px var(--spacing-md);
     background: var(--primary-color);
     color: #fff;
     border: none;
     border-radius: 999px;
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     cursor: pointer;
     white-space: nowrap;
 

@@ -3,7 +3,7 @@
 .sign-calendar {
   background: #fff;
   border-radius: 16px;
-  padding: 24px;
+  padding: var(--spacing-md);
 
   &__row {
     display: flex;
@@ -12,20 +12,20 @@
 
     &--head {
       color: var(--text-tertiary);
-      font-size: 24px;
+      font-size: var(--font-size-xs);
     }
   }
 
   &__cell {
     flex: 1;
     text-align: center;
-    height: 64px;
-    line-height: 64px;
+    height: 42px;
+    line-height: 42px;
     margin: 0 4px;
-    border-radius: 12px;
+    border-radius: 8px;
     background: var(--bg-page);
     color: var(--text-secondary);
-    font-size: 28px;
+    font-size: var(--font-size-sm);
     transition: all 0.2s;
 
     &.is-signed {
@@ -43,9 +43,9 @@
   &__info {
     display: flex;
     justify-content: space-between;
-    font-size: 24px;
+    font-size: var(--font-size-xs);
     color: var(--text-secondary);
-    margin: 16px 0;
+    margin: 10px 0;
 
     strong {
       color: var(--primary-color);
@@ -58,12 +58,12 @@
 
   &__btn {
     width: 100%;
-    padding: 20px;
+    padding: 10px;
     background: var(--primary-color);
     color: #fff;
     border: none;
     border-radius: 999px;
-    font-size: 28px;
+    font-size: var(--font-size-md);
     cursor: pointer;
 
     &:disabled {

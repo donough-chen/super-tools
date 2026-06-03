@@ -54,20 +54,23 @@ export interface SignResult {
 }
 
 // === 任务 ===
-export type TaskType = 'new_user' | 'daily' | 'weekly' | 'milestone' | 'activity';
-export type TaskStatus = 'locked' | 'in_progress' | 'completed' | 'claimed';
+// 任务分类（与后端 Task.category 对齐）
+export type TaskCategory = 'newbie' | 'daily' | 'achievement' | 'activity';
+export type TaskStatus = 'pending' | 'completed' | 'claimed' | 'expired';
 export interface TaskItem {
   code: string;
   name: string;
   description?: string;
-  type: TaskType;
+  category: TaskCategory;
   rewardPoints: number;
   rewardGrowth?: number;
+  progress: number;
+  progressTarget: number;
   status: TaskStatus;
-  progress?: { current: number; target: number };
-  jumpPath?: string;
   expireAt?: string;
-  category?: string;
+  icon?: string;
+  requiredLevel?: string | null;
+  jumpPath?: string;
 }
 export interface TaskClaimResult {
   pointsAwarded: number;

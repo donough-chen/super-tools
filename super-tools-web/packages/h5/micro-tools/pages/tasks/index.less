@@ -6,13 +6,13 @@
 
   &__content {
     padding-top: calc(var(--header-height) + var(--tabs-height));
-    padding-bottom: 60px;
+    padding-bottom: 40px;
   }
 
   &__header-stats {
     display: flex;
-    margin: 16px 32px;
-    padding: 24px 0;
+    margin: var(--spacing-md);
+    padding: var(--spacing-md) 0;
     background: linear-gradient(135deg, #1677ff, #45a6ff);
     color: #fff;
     border-radius: 16px;
@@ -29,38 +29,36 @@
   }
 
   &__stat-num {
-    font-size: 36px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
   }
 
   &__stat-label {
-    font-size: 22px;
+    font-size: var(--font-size-xs);
     opacity: 0.9;
-    margin-top: 4px;
   }
 
   &__panel {
-    margin: 16px 32px;
+    margin: var(--spacing-md);
   }
 
   &__hero {
-    background: linear-gradient(135deg, #52c41a, #87d068);
+    background: linear-gradient(135deg, var(--primary-color), #87d068);
     color: #fff;
     border-radius: 16px;
-    padding: 24px;
+    padding: var(--spacing-md);
     margin-bottom: 16px;
   }
 
   &__hero-title {
-    font-size: 32px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
-    margin-bottom: 4px;
   }
 
   &__hero-sub {
-    font-size: 24px;
+    font-size: var(--font-size-xs);
     opacity: 0.9;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
   }
 
   &__progress-bar {
@@ -78,16 +76,16 @@
   }
 
   &__progress-text {
-    font-size: 24px;
+    font-size: var(--font-size-xs);
     margin-top: 8px;
     opacity: 0.9;
   }
 
   &__section-title {
-    font-size: 28px;
+    font-size: var(--font-size-lg);
     font-weight: 600;
     color: var(--text-primary);
-    margin: 24px 0 12px;
+    margin: var(--spacing-md) 0 var(--spacing-sm);
   }
 
   &__activity-meta {
@@ -100,6 +98,6 @@
     text-align: center;
     padding: 80px 0;
     color: var(--text-tertiary);
-    font-size: 28px;
+    font-size: var(--font-size-lg);
   }
 }
