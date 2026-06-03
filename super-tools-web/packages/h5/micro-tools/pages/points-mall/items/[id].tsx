@@ -80,7 +80,7 @@ const ItemDetailPage: React.FC = () => {
     try {
       const result = await exchangeAction(itemId);
       if (result) {
-        navigateTo(`/points-mall/exchange-success?orderId=${result.orderId}&itemId=${itemId}`);
+        navigateTo(`/points-mall/exchange-success?orderId=${result.orderNo}&itemId=${itemId}`);
       }
     } catch (e: any) {
       showToast(e?.message || '兑换失败', 'error');

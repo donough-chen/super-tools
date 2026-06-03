@@ -67,7 +67,7 @@ const OrdersPage: React.FC = () => {
               <div className="page-mall-orders__order-date">{o.createdAt?.slice(0, 10)}</div>
             </div>
             <div className="page-mall-orders__order-no">订单号：{o.orderNo}</div>
-            <div className="page-mall-orders__order-cost">消耗：{o.pointsCost} 积分</div>
+            <div className="page-mall-orders__order-cost">消耗：{o.costPoints} 积分</div>
             <div className="page-mall-orders__order-status">
               {STATUS_ICONS[o.status] || ''} {STATUS_TEXT[o.status] || o.status}
             </div>

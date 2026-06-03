@@ -5,13 +5,13 @@
   background: var(--bg-page);
 
   &__content {
-    padding: var(--header-height) 32px 60px;
+    padding: var(--header-height) var(--spacing-md) 40px;
   }
 
   &__hero {
     background: #fff;
     border-radius: 16px;
-    padding: 48px 32px;
+    padding: var(--spacing-lg);
     text-align: center;
     margin-top: 16px;
   }
@@ -20,33 +20,33 @@
     line-height: 1;
   }
   &__title {
-    font-size: 36px;
+    font-size: var(--font-size-title);
     font-weight: 600;
     color: var(--text-primary);
     margin: 16px 0;
   }
   &__item-name {
-    font-size: 30px;
+    font-size: var(--font-size-xxl);
     color: var(--text-primary);
     margin-top: 16px;
   }
   &__item-desc {
-    font-size: 24px;
+    font-size: var(--font-size-md);
     color: var(--text-secondary);
     margin-top: 4px;
   }
   &__order {
-    font-size: 22px;
+    font-size: var(--font-size-sm);
     color: var(--text-tertiary);
     margin-top: 12px;
   }
   &__points {
-    font-size: 28px;
+    font-size: var(--font-size-xl);
     color: var(--primary-color);
-    margin-top: 24px;
+    margin-top: var(--spacing-md);
   }
   &__remain {
-    font-size: 26px;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
     margin-top: 8px;
   }
@@ -54,16 +54,16 @@
   &__actions {
     display: flex;
     gap: 12px;
-    margin: 24px 0;
+    margin: var(--spacing-md) 0;
   }
   &__btn {
     flex: 1;
-    padding: 24px 0;
+    padding: var(--spacing-md) 0;
     background: var(--primary-color);
     color: #fff;
     border: none;
     border-radius: 999px;
-    font-size: 28px;
+    font-size: var(--font-size-md);
     cursor: pointer;
     &--secondary {
       background: rgba(22, 119, 255, 0.1);
@@ -72,13 +72,13 @@
   }
 
   &__recommend {
-    margin-top: 32px;
+    margin-top: var(--spacing-lg);
   }
   &__recommend-title {
     text-align: center;
     color: var(--text-tertiary);
-    font-size: 24px;
-    margin: 24px 0;
+    font-size: var(--font-size-md);
+    margin: var(--spacing-md) 0;
   }
   &__recommend-grid {
     display: grid;

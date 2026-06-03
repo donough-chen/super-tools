@@ -96,8 +96,8 @@ export const useSignStore = create<SignState & SignActions>()(
           set((s) => { s.submitting = false; });
           const st = get().status;
           return {
-            pointsAwarded: 0,
-            growthAwarded: 0,
+            points: 0,
+            growth: 0,
             continuousDays: st?.continuousDays ?? 0,
           } as SignResult;
         }

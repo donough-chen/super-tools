@@ -13,11 +13,11 @@ export interface MallItemCardProps {
   mode?: 'grid' | 'list';
 }
 
-const TAG_LABELS: Record<string, { text: string; color: string }> = {
-  hot: { text: '热门', color: '#ff4d4f' },
-  limited: { text: '限量', color: '#fa8c16' },
-  levelExclusive: { text: '专属', color: '#722ed1' },
-  newArrival: { text: '新品', color: '#13c2c2' },
+const TAG_LABELS: Record<string, { text: string; color: string, icon: string}> = {
+  hot: { text: '热门', color: '#ff4d4f', icon: '🔥'},
+  limited: { text: '限量', color: '#fa8c16', icon: '🎟️'},
+  levelExclusive: { text: '专属', color: '#722ed1', icon: '🎖️'},
+  newArrival: { text: '新品', color: '#13c2c2', icon: '🆕'},
 };
 
 const MallItemCard: FC<MallItemCardProps> = ({ item, userPoints, onClick, mode = 'grid' }) => {
@@ -33,7 +33,7 @@ const MallItemCard: FC<MallItemCardProps> = ({ item, userPoints, onClick, mode =
           {(item.tags || []).slice(0, 2).map((tag) =>
             TAG_LABELS[tag] ? (
               <span key={tag} className="mall-item-card__tag" style={{ background: TAG_LABELS[tag].color }}>
-                {TAG_LABELS[tag].text}
+                {TAG_LABELS[tag].icon} {TAG_LABELS[tag].text}
               </span>
             ) : null,
           )}

@@ -5,13 +5,13 @@
   background: var(--bg-page);
 
   &__content {
-    padding: calc(var(--header-height) + var(--tabs-height) + 16px) 32px 60px;
+    padding: calc(var(--header-height) + var(--tabs-height) + 16px) var(--spacing-md) 40px;
   }
 
   &__order {
     background: #fff;
-    margin-bottom: 16px;
-    padding: 20px 24px;
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-md);
     border-radius: 12px;
   }
 
@@ -23,32 +23,32 @@
   }
 
   &__order-name {
-    font-size: 28px;
+    font-size: var(--font-size-lg);
     font-weight: 500;
     color: var(--text-primary);
   }
 
   &__order-date {
-    font-size: 22px;
+    font-size: var(--font-size-sm);
     color: var(--text-tertiary);
   }
 
   &__order-no,
   &__order-cost {
-    font-size: 24px;
+    font-size: var(--font-size-sm);
     color: var(--text-secondary);
     margin-bottom: 4px;
   }
 
   &__order-status {
-    font-size: 26px;
+    font-size: var(--font-size-md);
     color: var(--primary-color);
     margin-top: 8px;
   }
 
   &__tracking {
     margin-top: 8px;
-    font-size: 22px;
+    font-size: var(--font-size-md);
     color: var(--text-secondary);
     padding: 8px 12px;
     background: var(--bg-page);
@@ -64,7 +64,7 @@
   }
 
   &__empty-sub {
-    font-size: 24px;
+    font-size: var(--font-size-md);
     margin-top: 12px;
   }
 }

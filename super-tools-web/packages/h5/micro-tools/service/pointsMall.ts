@@ -53,7 +53,7 @@ export const adaptMallOrder = (raw: any): MallOrder => ({
   itemId: raw.itemId,
   itemName: raw.itemName || raw.item?.name || '商品',
   itemImage: raw.itemImage || raw.item?.image,
-  pointsCost: Number(raw.pointsCost ?? 0),
+  costPoints: Number(raw.costPoints ?? 0),
   status: raw.status || 'completed',
   createdAt: raw.createdAt,
   trackingInfo: raw.trackingInfo,

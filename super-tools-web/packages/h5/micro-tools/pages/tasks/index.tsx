@@ -75,7 +75,7 @@ const TaskCenterPage: React.FC = () => {
     try {
       const result = await claimTask(code);
       if (result) {
-        showToast(`🎉 +${result.pointsAwarded} 积分`, 'success');
+        showToast(`🎉 +${result.points} 积分 ${result.growth ? ` +${result.growth} 成长值` : ''}`, 'success');
       }
     } catch (e: any) {
       showToast(e?.message || '领取失败', 'error');
@@ -89,7 +89,7 @@ const TaskCenterPage: React.FC = () => {
       const result = await submitSign();
       if (result) {
         showToast(
-          `🎉 签到成功 +${result.pointsAwarded} 积分`,
+          `🎉 签到成功 +${result.points} 积分 ${result.growth ? ` +${result.growth} 成长值` : ''}`,
           'success',
         );
       }

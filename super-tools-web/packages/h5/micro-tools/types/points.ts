@@ -47,8 +47,8 @@ export interface SignStatus {
   monthCalendar?: Array<{ date: string; signed: boolean }>;
 }
 export interface SignResult {
-  pointsAwarded: number;
-  growthAwarded: number;
+  points: number;
+  growth: number;
   continuousDays: number;
   bonusPoints?: number;
 }
@@ -73,8 +73,8 @@ export interface TaskItem {
   jumpPath?: string;
 }
 export interface TaskClaimResult {
-  pointsAwarded: number;
-  growthAwarded?: number;
+  points: number;
+  growth?: number;
 }
 
 // === 积分流水 ===
@@ -132,7 +132,7 @@ export interface MallItemsQuery {
 export interface ExchangeResult {
   orderId: number;
   orderNo: string;
-  pointsCost: number;
+  costPoints: number;
   remainingPoints: number;
 }
 export type MallOrderStatus = 'pending' | 'completed' | 'shipping' | 'cancelled';
@@ -142,7 +142,7 @@ export interface MallOrder {
   itemId: number;
   itemName: string;
   itemImage?: string;
-  pointsCost: number;
+  costPoints: number;
   status: MallOrderStatus;
   createdAt: string;
   trackingInfo?: { carrier: string; number: string };
