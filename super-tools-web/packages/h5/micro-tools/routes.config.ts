@@ -65,6 +65,7 @@ export const PAGE_ROUTES: MicroToolsRoute[] = [
   // 积分成长体系
   { path: '/tasks', component: '@/pages/tasks', title: '任务中心' },
   { path: '/points-mall/category/:code', component: '@/pages/points-mall/category/[code]', title: '分类商品' },
+  { path: '/points-mall/coupons', component: '@/pages/points-mall/coupons', title: '我的券包' },
   { path: '/points-mall/items/:id', component: '@/pages/points-mall/items/[id]', title: '商品详情' },
   { path: '/points-mall/exchange-success', component: '@/pages/points-mall/exchange-success', title: '兑换成功' },
   { path: '/points-mall/orders', component: '@/pages/points-mall/orders', title: '兑换记录' },
@@ -78,6 +79,8 @@ export const PAGE_ROUTES: MicroToolsRoute[] = [
   { path: '/feedback/detail/:id', component: '@/pages/feedback/detail/[id]', title: '反馈详情' },
   { path: '/feedback/history', component: '@/pages/feedback/history', title: '反馈历史' },
   { path: '/feedback', component: '@/pages/feedback', title: '意见反馈' },
+  // 工具详情页
+  { path: '/tools/detail/:code', component: '@/pages/tools/[code]', title: '工具详情' },
 ];
 
 /**

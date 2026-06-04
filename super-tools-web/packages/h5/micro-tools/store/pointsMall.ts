@@ -13,6 +13,7 @@ import {
   getMallItems,
   getMallOrders,
   exchangeItem,
+  getUserCoupons,
 } from '../service/pointsMall';
 import { genIdemKey } from '../utils/idempotency';
 import { useMemberStore } from './member';
@@ -22,7 +23,9 @@ import type {
   MallOrderStatus,
   ExchangeResult,
   MallItemCategory,
+  UserCoupon,
 } from '../types/points';
+import { getUnlockedTools } from '../service/pointsMall';
 
 const CACHE_TTL = 5 * 60 * 1000;
 
@@ -36,6 +39,11 @@ interface PointsMallState {
   ordersFetchedAt: number;
   orderStatusFilter: MallOrderStatus | 'all';
   exchanging: boolean;
+  coupons: UserCoupon[];
+  couponsLoading: boolean;
+  couponsFetchedAt: number;
+  unlockedTools: string[];
+  unlockedToolsFetchedAt: number;
 }
 
 interface PointsMallActions {
@@ -46,6 +54,8 @@ interface PointsMallActions {
     force?: boolean,
     status?: MallOrderStatus | 'all',
   ) => Promise<void>;
+  fetchCoupons: (force?: boolean, status?: 'unused' | 'used' | 'expired' | 'all') => Promise<void>;
+  fetchUnlockedTools: (force?: boolean) => Promise<void>;
   reset: () => void;
 }
 
@@ -59,6 +69,11 @@ const initialState: PointsMallState = {
   ordersFetchedAt: 0,
   orderStatusFilter: 'all',
   exchanging: false,
+  coupons: [],
+  couponsLoading: false,
+  couponsFetchedAt: 0,
+  unlockedTools: [],
+  unlockedToolsFetchedAt: 0,
 };
 
 export const usePointsMallStore = create<
@@ -181,5 +196,42 @@ export const usePointsMallStore = create<
     },
 
     reset: () => set(() => ({ ...initialState })),
+
+    fetchCoupons: async (force = false, status: 'unused' | 'used' | 'expired' | 'all' = 'unused') => {
+      const { couponsFetchedAt, coupons } = get();
+      if (!force && coupons.length && Date.now() - couponsFetchedAt < CACHE_TTL) return;
+      set((s) => { s.couponsLoading = true; });
+      try {
+        const res: any = await getUserCoupons(status);
+        if (res?.code === 200 && res.data) {
+          set((s) => {
+            s.coupons = res.data || [];
+            s.couponsFetchedAt = Date.now();
+            s.couponsLoading = false;
+          });
+        } else {
+          set((s) => { s.couponsLoading = false; });
+        }
+      } catch (e) {
+        console.warn('[usePointsMallStore] fetchCoupons failed:', e);
+        set((s) => { s.couponsLoading = false; });
+      }
+    },
+
+    fetchUnlockedTools: async (force = false) => {
+      const { unlockedToolsFetchedAt, unlockedTools } = get();
+      if (!force && unlockedTools.length && Date.now() - unlockedToolsFetchedAt < CACHE_TTL) return;
+      try {
+        const res: any = await getUnlockedTools();
+        if (res?.code === 200 && res.data) {
+          set((s) => {
+            s.unlockedTools = res.data || [];
+            s.unlockedToolsFetchedAt = Date.now();
+          });
+        }
+      } catch (e) {
+        console.warn('[usePointsMallStore] fetchUnlockedTools failed:', e);
+      }
+    },
   })),
 );

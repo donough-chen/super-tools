@@ -1,0 +1,97 @@
+@import '~@/assets/variables.less';
+
+@import '~@/assets/variables.less';
+
+.page-coupons {
+  min-height: 100vh;
+  background: var(--bg-page);
+
+  &__content {
+    padding: calc(var(--header-height) + var(--tabs-height) + 16px) var(--spacing-md) 40px;
+  }
+}
+
+/* 券卡片 */
+.coupon-card {
+  display: flex;
+  background: var(--bg-white);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+  overflow: hidden;
+  position: relative;
+  box-shadow: var(--shadow-sm);
+}
+
+.coupon-card--disabled {
+  opacity: 0.55;
+}
+
+.coupon-card__left {
+  width: 160px;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
+  color: var(--text-white);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md) var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.coupon-card--disabled .coupon-card__left {
+  background: linear-gradient(135deg, var(--text-tertiary), var(--text-quaternary));
+}
+
+.coupon-card__discount {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+}
+
+.coupon-card__threshold {
+  font-size: var(--font-size-xs);
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.coupon-card__right {
+  flex: 1;
+  padding: var(--spacing-md);
+  position: relative;
+}
+
+.coupon-card__code {
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.coupon-card__expire {
+  font-size: var(--font-size-sm);
+  color: var(--text-tertiary);
+  margin-top: 8px;
+}
+
+.coupon-card__status-badge {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  font-size: var(--font-size-xs);
+  color: var(--text-danger);
+  background: rgba(255, 77, 79, 0.1);
+  padding: 4px 8px;
+  border-radius: var(--border-radius-sm);
+}
+
+.page-coupons__loading,
+.page-coupons__empty {
+  text-align: center;
+  padding: 80px 0;
+  color: var(--text-tertiary);
+  font-size: 28px;
+}
+
+.page-coupons__empty-sub {
+  font-size: var(--font-size-md);
+  margin-top: 12px;
+  color: var(--text-secondary);
+}

@@ -116,9 +116,10 @@ const Items: React.FC = () => {
             }}
             options={[
               { value: 'coupon', label: '优惠券' },
-              { value: 'physical', label: '实物' },
-              { value: 'virtual', label: '虚拟' },
-              { value: 'plan', label: '会员套餐' },
+              { value: 'member_days', label: '会员天数' },
+              { value: 'tool_unlock', label: '工具解锁' },
+              { value: 'badge', label: '徽章' },
+              { value: 'physical', label: '实物商品' },
             ]}
           />
           <Select

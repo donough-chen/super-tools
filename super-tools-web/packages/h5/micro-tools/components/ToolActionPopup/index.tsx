@@ -50,7 +50,7 @@ export interface ToolActionPopupProps {
   /** 操作项列表（自上而下） */
   actions: ToolActionItem[];
   /** 目标 item 的 ref，弹层相对它定位（右下角对齐） */
-  targetRef: RefObject<HTMLElement>;
+  targetRef: RefObject<HTMLDivElement | null>;
   /** 关闭回调 */
   onClose: () => void;
 }
@@ -107,7 +107,7 @@ const ToolActionPopup: FC<ToolActionPopupProps> = ({
 
   /** 计算位置：根据目标 rect 及屏幕尺寸，决定弹出方向与对齐 */
   const computePosition = (): PopupPosition | null => {
-    const el = targetRef.current;
+    const el = targetRef?.current;
     if (!el) return null;
     const rect = el.getBoundingClientRect();
     const vw = window.innerWidth;

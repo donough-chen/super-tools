@@ -59,4 +59,36 @@ export default class PointsMallController extends BaseController {
       pageSize,
     });
   }
+
+  /** GET /api/points-mall/coupons?status=unused|used|expired */
+  async coupons() {
+    const { ctx } = this;
+    const userId = (ctx.state.user as any).id;
+    const status = ctx.query.status as string || 'unused';
+    const list = await (ctx.service as any).pointsMall.getUserCoupons(userId, { status });
+    this.success(list);
+  }
+
+  /** POST /api/points-mall/coupons/use  body: { orderAmount, couponId? } */
+  async useCoupon() {
+    const { ctx } = this;
+    const userId = (ctx.state.user as any).id;
+    const { orderAmount, couponId } = ctx.request.body;
+    if (!orderAmount || orderAmount <= 0) ctx.throw(400, 'orderAmount 必填且大于0');
+    const result = await (ctx.service as any).pointsMall.useCoupon(
+      userId,
+      Number(orderAmount),
+      couponId ? Number(couponId) : undefined,
+    );
+    if (!result) this.success(null);
+    else this.success(result);
+  }
+
+  /** GET /api/points-mall/unlocked-tools */
+  async unlockedTools() {
+    const { ctx } = this;
+    const userId = (ctx.state.user as any).id;
+    const toolCodes = await (ctx.service as any).pointsMall.getUserUnlockedTools(userId);
+    this.success(toolCodes);
+  }
 }

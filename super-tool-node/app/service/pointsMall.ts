@@ -174,7 +174,7 @@ export default class PointsMallService extends BaseService {
 
       // 9) 写订单（含商品快照防止配置漂移）
       const orderNo = `PM${Date.now()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-      const productSnapshot = {
+      const productSnapshot: any = {
         id: item.id,
         name: item.name,
         icon: item.icon,
@@ -201,10 +201,11 @@ export default class PointsMallService extends BaseService {
         { transaction: t },
       );
 
-      // 10) 履约
+      // 10) 履约（虚拟商品）
       if (item.isVirtual === 1) {
         try {
-          const result = await this.fulfillVirtual(userId, productSnapshot, t);
+          // 传入 order.id 以便 fulfillV
+          const result = await this.fulfillVirtual(userId, productSnapshot, t, order.id);
           await order.update(
             {
               fulfillStatus: 'fulfilled',
@@ -247,7 +248,7 @@ export default class PointsMallService extends BaseService {
   }
 
   /** 虚拟商品履约 */
-  private async fulfillVirtual(userId: number, snap: any, t: any): Promise<any> {
+  private async fulfillVirtual(userId: number, snap: any, t: any, orderId?: number): Promise<any> {
     const cfg = snap.fulfillConfig;
     switch (cfg.type) {
       case 'member_days': {
@@ -272,19 +273,53 @@ export default class PointsMallService extends BaseService {
         return { type: 'member_days', planCode: cfg.plan_code, days: cfg.days, expireAt: newExpire };
       }
       case 'coupon': {
-        // MVP：暂未单独建 coupons 表，仅记录到 fulfillResult；后续可建表后改写入 coupons
+        // 写入 user_coupons 表
+        const couponCode = `CP${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        const validDays = cfg.valid_days || 30;
+        const expireAt = new Date(Date.now() + validDays * 86_400_000);
+        const couponType = cfg.discount >= 1 ? 'fixed' : 'percent';
+        await this.ctx.model.UserCoupon.create(
+          {
+            userId,
+            orderId: orderId || 0,
+            couponCode,
+            couponType,
+            discount: cfg.discount,
+            threshold: cfg.threshold || 0,
+            expireAt,
+          },
+          { transaction: t },
+        );
         return {
           type: 'coupon',
-          couponCode: `CP${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-          ...cfg,
+          couponCode,
+          couponType,
+          discount: cfg.discount,
+          threshold: cfg.threshold || 0,
+          expireAt: expireAt.toISOString(),
         };
       }
       case 'tool_unlock': {
+        // 写入 user_tool_unlocks 表
+        const validDays = cfg.days || 7;
+        const now = new Date();
+        const expireAt = new Date(now.getTime() + validDays * 86_400_000);
+        await this.ctx.model.UserToolUnlock.create(
+          {
+            userId,
+            orderId: orderId || 0,
+            toolCode: cfg.tool_code,
+            unlockDays: validDays,
+            unlockedAt: now,
+            expireAt,
+          },
+          { transaction: t },
+        );
         return {
           type: 'tool_unlock',
           toolCode: cfg.tool_code,
-          days: cfg.days,
-          expireAt: new Date(Date.now() + cfg.days * 86_400_000),
+          days: validDays,
+          expireAt: expireAt.toISOString(),
         };
       }
       case 'badge': {
@@ -315,6 +350,88 @@ export default class PointsMallService extends BaseService {
     return await this.ctx.model.PointsMallOrder.findOne({
       where: { userId, orderNo },
     });
+  }
+
+  // ==================== 用户券管理 ====================
+
+  /** 获取用户已解锁工具列表（返回 toolCode 数组） */
+  async getUserUnlockedTools(userId: number): Promise<string[]> {
+    const { Op } = require('sequelize');
+    const now = new Date();
+    const unlocks = await this.ctx.model.UserToolUnlock.findAll({
+      where: {
+        userId,
+        status: 'active',
+        expireAt: { [Op.gte]: now },
+      },
+      attributes: ['toolCode'],
+    });
+    return unlocks.map((u: any) => u.toolCode);
+  }
+
+  /** 获取用户可用券列表 */
+  async getUserCoupons(userId: number, options: { status?: string } = {}) {
+    const { Op } = require('sequelize');
+    const where: any = { userId };
+    if (options.status === 'unused') {
+      where.status = 'unused';
+      where.expireAt = { [Op.gte]: new Date() };
+    } else if (options.status === 'used') {
+      where.status = 'used';
+    } else if (options.status === 'expired') {
+      where.status = 'expired';
+      where.expireAt = { [Op.lt]: new Date() };
+    }
+    return await this.ctx.model.UserCoupon.findAll({
+      where,
+      order: [['created_at', 'DESC']],
+    });
+  }
+
+  /**
+   * 使用券（下单时调用）
+   * @returns { couponId, discountAmount } 或 null（无可使用券）
+   */
+  async useCoupon(userId: number, orderAmount: number, couponId?: number): Promise<{ couponId: number; discountAmount: number } | null> {
+    const { Op } = require('sequelize');
+    const now = new Date();
+
+    let coupon: any;
+    if (couponId) {
+      // 指定券使用
+      coupon = await this.ctx.model.UserCoupon.findOne({
+        where: { id: couponId, userId, status: 'unused', expireAt: { [Op.gte]: now } },
+      });
+    } else {
+      // 自动选最优券（折扣金额最大）
+      const coupons = await this.ctx.model.UserCoupon.findAll({
+        where: {
+          userId,
+          status: 'unused',
+          expireAt: { [Op.gte]: now },
+          threshold: { [Op.lte]: orderAmount },
+        },
+        order: [['discount', 'DESC']],
+      });
+      coupon = coupons[0] || null;
+    }
+
+    if (!coupon) return null;
+    if (coupon.threshold > 0 && orderAmount < coupon.threshold) return null;
+
+    // 计算优惠金额
+    let discountAmount: number;
+    if (coupon.couponType === 'percent') {
+      discountAmount = Math.floor(orderAmount * (1 - coupon.discount));
+    } else {
+      discountAmount = coupon.discount; // fixed 类型，discount 字段存减免金额
+    }
+    if (discountAmount <= 0) return null;
+
+    // 标记已使用
+    await coupon.update({ status: 'used', usedAt: now });
+
+    return { couponId: coupon.id, discountAmount };
   }
 
   /** 退款（管理端） */

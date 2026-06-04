@@ -235,6 +235,38 @@
     }
   }
 
+  /* ==================== 已解锁徽章 ==================== */
+  &__tool-unlock-badge {
+    position: absolute;
+    padding: 2px 8px;
+    border-radius: var(--border-radius-sm);
+    background: var(--success-color, #52c41a);
+    color: #fff;
+    font-size: 10px;
+    line-height: 1.4;
+    font-weight: 500;
+    pointer-events: none;
+    z-index: 3;
+    /* 默认（flow / 胶囊）：贴在 item 左上角稍内 */
+    top: 6px;
+    left: 6px;
+    animation: page-home__badge-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* grid / card 模式：解锁徽章贴在图标左上角 */
+  &__tool-list--grid &__tool-unlock-badge,
+  &__tool-list--card &__tool-unlock-badge {
+    top: 4px;
+    left: 4px;
+  }
+
+  /* double / single 模式：解锁徽章贴在 item 左上角 */
+  &__tool-list--double &__tool-unlock-badge,
+  &__tool-list--single &__tool-unlock-badge {
+    top: 6px;
+    left: 6px;
+  }
+
   @keyframes page-home__badge-pop {
     from {
       transform: scale(0);

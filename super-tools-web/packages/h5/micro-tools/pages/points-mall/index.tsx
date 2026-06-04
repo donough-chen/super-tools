@@ -55,6 +55,12 @@ const PointsMallPage: React.FC = () => {
         }
       />
       <main className="page-mall__content">
+        {/* 我的券包入口 */}
+        <div className="page-mall__coupons-entry" onClick={() => navigateTo('/points-mall/coupons')}>
+          <span className="page-mall__coupons-icon">🎫</span>
+          <span className="page-mall__coupons-text">我的券包</span>
+          <span className="page-mall__coupons-arrow"></span>
+        </div>
         {/* 积分卡 */}
         <div className="page-mall__points-card">
           <div className="page-mall__points-row">

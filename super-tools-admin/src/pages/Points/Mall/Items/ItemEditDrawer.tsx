@@ -7,10 +7,11 @@ import type { PointsMallItem } from '@/services/points';
  *
  * fulfillConfig：JSON 字段，前端用 Textarea 编辑，提交前 JSON.parse。
  *   常用 payload：
- *     - 优惠券:  {"type":"coupon","couponId":123}
- *     - 套餐:    {"type":"plan","planCode":"silver_30d"}
- *     - 实物:    {"type":"physical","skuCode":"sku_001"}
- *     - 虚拟:    {"type":"virtual","contentKey":"vip_badge"}
+ *     - 优惠券:      {"type":"coupon","discount":0.8,"threshold":100,"valid_days":30}
+ *     - 会员天数:    {"type":"member_days","plan_code":"silver","days":30}
+ *     - 工具解锁:    {"type":"tool_unlock","tool_code":"image-to-link","days":1}
+ *     - 徽章:        {"type":"badge","badge_code":"vip_badge"}
+ *     - 实物商品:    {"type":"physical"}  // 无需额外配置，填写收货信息即可
  */
 interface Props {
   open: boolean;
@@ -21,9 +22,10 @@ interface Props {
 
 const CATEGORY_OPTIONS = [
   { value: 'coupon', label: '优惠券' },
-  { value: 'physical', label: '实物' },
-  { value: 'virtual', label: '虚拟' },
-  { value: 'plan', label: '会员套餐' },
+  { value: 'member_days', label: '会员天数' },
+  { value: 'tool_unlock', label: '工具解锁' },
+  { value: 'badge', label: '徽章' },
+  { value: 'physical', label: '实物商品' },
 ];
 
 const ItemEditDrawer: React.FC<Props> = ({ open, initial, onClose, onSubmit }) => {
@@ -53,7 +55,14 @@ const ItemEditDrawer: React.FC<Props> = ({ open, initial, onClose, onSubmit }) =
       message.error('fulfillConfig 不是合法 JSON');
       return;
     }
-    await onSubmit({ ...values, fulfillConfig: cfg });
+    // 转换布尔值为数字（Switch 组件返回 boolean，后端需要 0/1）
+    const submitValues = {
+      ...values,
+      fulfillConfig: cfg,
+      isVirtual: values.isVirtual ? 1 : 0,
+      status: values.status ? 1 : 0,
+    };
+    await onSubmit(submitValues);
   };
 
   return (

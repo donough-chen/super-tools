@@ -1,21 +1,21 @@
 /**
  * 首页 Home
  *
- * 一级页面：搜索框 + 广告位 Banner（特色工具充当） + 工具分类列表
- * 头部按钮：[search, agent, settings]
+ * 一级页面:搜索框 + 广告位 Banner(特色工具充当) + 工具分类列表
+ * 头部按钮:[search, agent, settings]
  *
- * 数据来源：
+ * 数据来源:
  *  - useHomeStore.fetchHomeData() — 聚合模式一次性加载全部分类+工具
- *  - useFavoritesStore.fetchCodes() — 登录态下拉取已收藏 code 集合，用于心形标注
+ *  - useFavoritesStore.fetchCodes() — 登录态下拉取已收藏 code 集合,用于心形标注
  *
- * 交互：
- *  - 普通点击工具：走 useToolClick（权限校验 + 跳转）
- *  - 长按工具项：右下角弹出操作浮层（收藏 / 取消收藏）
- *  - 已收藏工具：右下角心形角标
+ * 交互:
+ *  - 普通点击工具:走 useToolClick(权限校验 + 跳转)
+ *  - 长按工具项:右下角弹出操作浮层(收藏 / 取消收藏)
+ *  - 已收藏工具:右下角心形角标
  */
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { navigateTo } from '@/utils/navigator';
-import { useHomeStore, useGlobalStore, useFavoritesStore, useUserStore } from '../../store';
+import { useHomeStore, useGlobalStore, useFavoritesStore, useUserStore, usePointsMallStore } from '../../store';
 import type { ToolListMode } from '../../store/global';
 import { useToolClick } from '../../hooks/useToolClick';
 import { useLongPress } from '../../hooks/useLongPress';
@@ -31,7 +31,7 @@ import { resolveIcon } from '../../utils/icon';
 import HexColorIcon from '../../components/HexColorIcon';
 import './index.less';
 
-/** 图标颜色主题配色映射（保留原始主题色逻辑作为后端 color 字段的兜底） */
+/** 图标颜色主题配色映射(保留原始主题色逻辑作为后端 color 字段的兜底) */
 const DEFAULT_THEME = { bg: 'rgba(22, 119, 255, 0.1)', color: '#1677ff' };
 
 /** 根据后端 color(#HEX) 生成透明背景 + 前景色 */
@@ -45,7 +45,7 @@ function colorToTheme(hex?: string): { bg: string; color: string } {
   return { bg: `rgba(${r}, ${g}, ${b}, 0.12)`, color: hex };
 }
 
-/** 带分类的工具数据结构（兼容原有布局） */
+/** 带分类的工具数据结构(兼容原有布局) */
 interface CategoryWithTools {
   id: string;
   name: string;
@@ -54,7 +54,7 @@ interface CategoryWithTools {
   expanded: boolean;
 }
 
-/** 页面视图层工具 item（从后端 Tool 映射而来） */
+/** 页面视图层工具 item(从后端 Tool 映射而来) */
 interface ToolViewItem {
   id: string;
   name: string;
@@ -80,11 +80,11 @@ function mapToolToView(tool: Tool): ToolViewItem {
   };
 }
 
-/** 渲染工具图标：外层白底容器 + 内部主题色染色图标，提升层次感 */
+/** 渲染工具图标:外层白底容器 + 内部主题色染色图标,提升层次感 */
 function renderToolIcon(tool: ToolViewItem, themeColorMode: 'official' | 'unified', unifiedColor: string) {
   const theme = colorToTheme(tool.color);
   if (tool.iconResolved) {
-    // 官方多彩模式：使用接口返回的 color；统一单色模式：使用用户选择的主题色
+    // 官方多彩模式:使用接口返回的 color;统一单色模式:使用用户选择的主题色
     const iconColor = themeColorMode === 'unified' ? unifiedColor : tool.color;
     return (
       <span className="page-home__tool-icon-wrap">
@@ -108,15 +108,16 @@ function renderToolIcon(tool: ToolViewItem, themeColorMode: 'official' | 'unifie
 }
 
 /**
- * 单个工具 item 子组件（提取到组件外部）。
+ * 单个工具 item 子组件(提取到组件外部)。
  *
- * 关键：**绝不能**把它定义在 HomePage 内部——那样每次父组件 re-render，
- * ToolItem 会成为新的函数引用，React 视为新的组件类型，整棵子树卸载重建，
- * 导致 useRef/useLongPress 内部状态全部重置，长按弹浮层彻底失效。
+ * 关键:**绝不能**把它定义在 HomePage 内部——那样每次父组件 re-render,
+ * ToolItem 会成为新的函数引用,React 视为新的组件类型,整棵子树卸载重建,
+ * 导致 useRef/useLongPress 内部状态全部重置,长按弹浮层彻底失效。
  */
 interface ToolItemProps {
   tool: ToolViewItem;
   favorited: boolean;
+  unlocked: boolean;
   isPopupOpen: boolean;
   toolListMode: ToolListMode;
   themeColorMode: 'official' | 'unified';
@@ -130,6 +131,7 @@ interface ToolItemProps {
 const ToolItem: React.FC<ToolItemProps> = React.memo(({
   tool,
   favorited,
+  unlocked,
   isPopupOpen,
   toolListMode,
   themeColorMode,
@@ -139,7 +141,7 @@ const ToolItem: React.FC<ToolItemProps> = React.memo(({
   onClosePopup,
   popupActions,
 }) => {
-  const itemRef = useRef<HTMLDivElement>(null);
+  const itemRef = useRef<HTMLDivElement | null>(null);
   const longPressBind = useLongPress({
     onLongPress: () => onLongPress(tool.id),
     onClick: () => onItemClick(tool._raw),
@@ -171,6 +173,10 @@ const ToolItem: React.FC<ToolItemProps> = React.memo(({
         <span className="page-home__tool-fav-badge" aria-label="已收藏" />
       )}
 
+      {unlocked && (
+        <span className="page-home__tool-unlock-badge" aria-label="已解锁">已解锁</span>
+      )}
+
       <ToolActionPopup
         visible={isPopupOpen}
         actions={popupActions}
@@ -197,13 +203,15 @@ const HomePage: React.FC = () => {
   const removeFavorite = useFavoritesStore(s => s.removeFavorite);
   const isLoggedIn = useUserStore(s => s.isLoggedIn);
   const { onClick: handleToolClick, dialog, closeDialog } = useToolClick();
+  const unlockedTools = usePointsMallStore(s => s.unlockedTools);
+  const fetchUnlockedTools = usePointsMallStore(s => s.fetchUnlockedTools);
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const bannerRef = useRef<HTMLDivElement>(null);
   /** 当前 Banner 索引 */
   const [activeBanner, setActiveBanner] = useState(0);
   /** 分类展开/折叠状态 */
   const [expandedMap, setExpandedMap] = useState<Record<string, boolean>>({});
-  /** 长按弹出操作浮层的目标工具 code（同一时间只能有一个） */
+  /** 长按弹出操作浮层的目标工具 code(同一时间只能有一个) */
   const [popupToolCode, setPopupToolCode] = useState<string | null>(null);
   /** 轻提示 toast */
   const [toast, setToast] = useState<string | null>(null);
@@ -212,12 +220,17 @@ const HomePage: React.FC = () => {
     fetchHomeData();
   }, []);
 
-  // 登录后拉取收藏 code 集合（用于心形标注）
+  // 登录后拉取收藏 code 集合(用于心形标注)
   useEffect(() => {
     if (isLoggedIn) fetchFavoriteCodes();
   }, [isLoggedIn]);
 
-  // 初始化展开状态（全部展开）
+  // 登录后拉取已解锁工具列表(用于解锁徽章标注)
+  useEffect(() => {
+    if (isLoggedIn) fetchUnlockedTools();
+  }, [isLoggedIn]);
+
+  // 初始化展开状态(全部展开)
   useEffect(() => {
     if (rawCategories.length > 0 && Object.keys(expandedMap).length === 0) {
       const map: Record<string, boolean> = {};
@@ -226,8 +239,11 @@ const HomePage: React.FC = () => {
     }
   }, [rawCategories]);
 
-  /** 收藏 code Set（O(1) 查询） */
+  /** 收藏 code Set(O(1) 查询) */
   const favSet = useMemo(() => new Set(favoritesCodes), [favoritesCodes]);
+
+  /** 已解锁工具 code Set(O(1) 查询) */
+  const unlockedToolsSet = useMemo(() => new Set(unlockedTools), [unlockedTools]);
 
   /** 构造与原始布局兼容的 categories 数据 */
   const categories: CategoryWithTools[] = rawCategories.map(cat => ({
@@ -238,7 +254,7 @@ const HomePage: React.FC = () => {
     expanded: expandedMap[cat.code] !== false,
   }));
 
-  /** Banner 数据：用特色工具的 icon 和信息充当 */
+  /** Banner 数据:用特色工具的 icon 和信息充当 */
   const banners = bannerTools.map(t => ({
     id: t.code,
     imageUrl: resolveIcon(t.icon) || '',
@@ -275,7 +291,7 @@ const HomePage: React.FC = () => {
     setActiveBanner(clampedIndex);
   }, [banners.length]);
 
-  /** 监听 Banner 原生 scroll 事件，同步指示器 */
+  /** 监听 Banner 原生 scroll 事件,同步指示器 */
   useEffect(() => {
     const container = bannerRef.current;
     if (!container) return;
@@ -328,7 +344,7 @@ const HomePage: React.FC = () => {
     handleToolClick(tool);
   }, [handleToolClick]);
 
-  /** 生成某个工具的 popupActions（根据收藏态） */
+  /** 生成某个工具的 popupActions(根据收藏态) */
   const buildPopupActions = useCallback((toolId: string, favorited: boolean): ToolActionItem[] => (
     favorited
       ? [{
@@ -378,7 +394,7 @@ const HomePage: React.FC = () => {
           <span className="page-home__search-placeholder">搜索所需功能</span>
         </div>
 
-        {/* 广告位 Banner（特色工具充当） */}
+        {/* 广告位 Banner(特色工具充当) */}
         {banners.length > 0 && (
           <div className="page-home__banner-wrap">
             <div
@@ -426,11 +442,13 @@ const HomePage: React.FC = () => {
                   <div className={`page-home__tool-list page-home__tool-list--${toolListMode}`}>
                     {cat.tools.map(tool => {
                       const favorited = favSet.has(tool.id);
+                      const unlocked = unlockedToolsSet.has(tool.id);
                       return (
                         <ToolItem
                           key={tool.id}
                           tool={tool}
                           favorited={favorited}
+                          unlocked={unlocked}
                           isPopupOpen={popupToolCode === tool.id}
                           toolListMode={toolListMode}
                           themeColorMode={themeColorMode}

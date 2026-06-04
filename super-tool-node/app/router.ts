@@ -257,6 +257,14 @@ export default (app: Application) => {
   router.get('/api/tools/member', controller.tool.memberList);
   router.get('/api/tools/:code/access', auth, controller.tool.checkAccess);
 
+  // ==================== 积分商城（H5 端） ====================
+  router.get('/api/points-mall/items', controller.pointsMall.items);
+  router.post('/api/points-mall/exchange', auth, app.middleware.rateLimit({ max: 5, window: 60 }, app), controller.pointsMall.exchange);
+  router.get('/api/points-mall/orders', auth, controller.pointsMall.orders);
+  router.get('/api/points-mall/coupons', auth, controller.pointsMall.coupons);
+  router.post('/api/points-mall/coupons/use', auth, app.middleware.rateLimit({ max: 10, window: 60 }, app), controller.pointsMall.useCoupon);
+  router.get('/api/points-mall/unlocked-tools', auth, controller.pointsMall.unlockedTools);
+
   // ==================== 工具分类管理（管理端） ====================
   router.get('/api/admin/tool-categories', auth, perm('category:list'), controller.admin.tool.listCategories);
   router.post('/api/admin/tool-categories', auth, perm('category:create'), controller.admin.tool.createCategory);
@@ -404,6 +412,9 @@ export default (app: Application) => {
   router.get('/api/points-mall/items', auth, (controller as any).pointsMall.items);
   router.post('/api/points-mall/exchange', auth, rl(5, 60), idemEnforced, (controller as any).pointsMall.exchange);
   router.get('/api/points-mall/orders', auth, (controller as any).pointsMall.orders);
+  // 券管理
+  router.get('/api/points-mall/coupons', auth, (controller as any).pointsMall.coupons);
+  router.post('/api/points-mall/coupons/use', auth, rl(10, 60), (controller as any).pointsMall.useCoupon);
 
   // ==================== 积分体系（管理端） ====================
   // 任务管理

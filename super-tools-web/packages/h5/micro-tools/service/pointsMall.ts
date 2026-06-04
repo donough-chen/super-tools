@@ -4,6 +4,8 @@
  * - GET /api/points-mall/items：商品列表（分页 + 分类筛选）
  * - POST /api/points-mall/exchange：兑换商品，必传 Idempotency-Key（限流 5 次/分钟）
  * - GET /api/points-mall/orders：兑换订单列表（分页 + 状态筛选）
+ * - GET /api/points-mall/coupons：我的券列表
+ * - POST /api/points-mall/coupons/use：使用券
  *
  * 后端字段缺失处由 adaptItem / adaptOrder 兜底。
  *
@@ -17,6 +19,7 @@ import type {
   MallOrder,
   MallOrdersQuery,
   ExchangeResult,
+  UserCoupon,
 } from '../types/points';
 
 const DEFAULT_ITEM_IMG = '/assets/icons/default-mall-item.png';
@@ -100,6 +103,42 @@ export const getMallOrders = async (
       message: res.message,
       data: { list: rawList.map(adaptMallOrder), total },
     };
+  }
+  return res;
+};
+
+/** 获取用户券列表 */
+export const getUserCoupons = async (
+  status: 'unused' | 'used' | 'expired' | 'all' = 'unused',
+): Promise<ApiResult<UserCoupon[]>> => {
+  const res: any = await request.get('/api/points-mall/coupons', {
+    params: { status },
+  });
+  if (res?.code === 200 && res.data) {
+    return { code: 200, data: res.data };
+  }
+  return res;
+};
+
+/** 使用券 */
+export const useCoupon = async (
+  orderAmount: number,
+  couponId?: number,
+): Promise<ApiResult<{ couponId: number; discountAmount: number } | null>> => {
+  const res: any = await request.post('/api/points-mall/coupons/use', {
+    data: { orderAmount, couponId },
+  });
+  if (res?.code === 200) {
+    return { code: 200, data: res.data };
+  }
+  return res;
+};
+
+/** 获取用户已解锁工具列表 */
+export const getUnlockedTools = async (): Promise<ApiResult<string[]>> => {
+  const res: any = await request.get('/api/points-mall/unlocked-tools');
+  if (res?.code === 200 && res.data) {
+    return { code: 200, data: res.data };
   }
   return res;
 };

@@ -46,6 +46,7 @@ export type HomeResult = HomeAggregateResult | HomePaginatedResult;
 export interface AccessAllowed {
   allowed: true;
   tool: { code: string; name: string; path: string };
+  unlocked?: boolean;
 }
 export interface AccessDenied {
   allowed: false;
@@ -65,9 +66,9 @@ export default class ToolService extends BaseService {
   // ==================== H5 端 ====================
 
   /**
-   * H5 首页接口（双模式）：
-   *  - 无 categoryCode 且无 keyword → aggregate（聚合所有分类 + 全量已发布工具）
-   *  - 否则 → paginated（分类全量 + 工具分页）
+   * H5 首页接口(双模式):
+   *  - 无 categoryCode 且无 keyword → aggregate(聚合所有分类 + 全量已发布工具)
+   *  - 否则 → paginated(分类全量 + 工具分页)
    */
   async getHomeData(query: {
     categoryCode?: string;
@@ -132,7 +133,7 @@ export default class ToolService extends BaseService {
   }
 
   /**
-   * 特色 Tab：is_feature=1 AND status=1
+   * 特色 Tab:is_feature=1 AND status=1
    */
   async getFeatureTools(pagination: PaginationOptions): Promise<PaginationResult<ToolDto>> {
     const result = await this.paginate<any>(
@@ -150,7 +151,7 @@ export default class ToolService extends BaseService {
   }
 
   /**
-   * 会员专属 Tab：status=1 AND (required_level_code != 'free' OR require_paid = 1)
+   * 会员专属 Tab:status=1 AND (required_level_code != 'free' OR require_paid = 1)
    */
   async getMemberTools(pagination: PaginationOptions): Promise<PaginationResult<ToolDto>> {
     const { Op } = require('sequelize');
@@ -177,7 +178,7 @@ export default class ToolService extends BaseService {
   // ==================== 权限校验 ====================
 
   /**
-   * 工具使用前权限校验（用户点击工具卡片跳转时调用）
+   * 工具使用前权限校验(用户点击工具卡片跳转时调用)
    */
   async checkToolAccess(userId: number, toolCode: string): Promise<AccessResult> {
     const tool = await this.ctx.model.Tool.findOne({ where: { code: toolCode } });
@@ -188,7 +189,7 @@ export default class ToolService extends BaseService {
 
     // 免费工具快速通道
     if (t.requiredLevelCode === 'free' && t.requirePaid === 0) {
-      // ========== 积分体系 v2 — 工具使用事件埋点（Task 18）==========
+      // ========== 积分体系 v2 — 工具使用事件埋点(Task 18)==========
       try {
         await (this.ctx.service as any).event.emit(EVENT_CODES.TOOL_USED, { userId, tool_code: t.code });
       } catch (e: any) {
@@ -241,7 +242,37 @@ export default class ToolService extends BaseService {
       }
     }
 
-    // ========== 积分体系 v2 — 工具使用事件埋点（Task 18）==========
+    // ========== 积分商城 tool_unlock 校验 ==========
+    // 会员等级不满足时,检查用户是否通过积分商城解锁了该工具
+    if (currentLevelValue < requiredLevelValue) {
+      const now = new Date();
+      const unlock = await this.ctx.model.UserToolUnlock.findOne({
+        where: {
+          userId,
+          toolCode: toolCode,
+          status: 'active',
+          expireAt: { [this.ctx.model.Sequelize.Op.gte]: now },
+        },
+      });
+      if (unlock) {
+        // 有有效解锁记录,允许使用
+        try {
+          await (this.ctx.service as any).event.emit(EVENT_CODES.TOOL_USED, { userId, tool_code: t.code });
+        } catch (e: any) {
+          this.ctx.logger.warn(`[tool.checkAccess] points-v2 event failed: ${e.message}`);
+        }
+        return { allowed: true, tool: { code: t.code, name: t.name, path: t.path }, unlocked: true };
+      }
+      // 无解锁记录,返回原错误
+      return {
+        allowed: false,
+        reason: 'need_level',
+        required: { levelCode: t.requiredLevelCode, levelName: requiredLevelName, requirePaid: t.requirePaid === 1 },
+        current: { levelCode: currentLevelCode, isPaid },
+      };
+    }
+
+    // ========== 积分体系 v2 — 工具使用事件埋点(Task 18)==========
     try {
       await (this.ctx.service as any).event.emit(EVENT_CODES.TOOL_USED, { userId, tool_code: t.code });
     } catch (e: any) {
@@ -324,7 +355,7 @@ export default class ToolService extends BaseService {
     if (!cat) this.ctx.throw(404, '分类不存在');
     const count = await this.ctx.model.Tool.count({ where: { categoryId: id } });
     if (count > 0) {
-      this.ctx.throw(400, `该分类下尚有 ${count} 个工具，请先移除或删除后再操作`);
+      this.ctx.throw(400, `该分类下尚有 ${count} 个工具,请先移除或删除后再操作`);
     }
     await (cat as any).destroy();
     await this.clearCache('tool:*');
@@ -442,7 +473,7 @@ export default class ToolService extends BaseService {
     );
     await this.clearCache('tool:*');
 
-    // P2.4: 触发工具上线/下架通知（通知收藏了这些工具的用户）
+    // P2.4: 触发工具上线/下架通知(通知收藏了这些工具的用户)
     try {
       const typeCode = status === 1 ? 'BUSINESS_TOOL_PUBLISHED' : 'BUSINESS_TOOL_UNPUBLISHED';
       for (const toolId of ids) {

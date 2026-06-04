@@ -105,7 +105,7 @@ export interface PointsLogsResponse {
 }
 
 // === 商城 ===
-export type MallItemCategory = 'benefit' | 'coupon' | 'physical' | 'thirdparty';
+export type MallItemCategory = 'benefit' | 'coupon' | 'physical' | 'thirdparty' | 'tool_unlock';
 export type MallItemTag = 'hot' | 'limited' | 'levelExclusive' | 'newArrival';
 
 export interface MallItem {
@@ -151,4 +151,24 @@ export interface MallOrdersQuery {
   page?: number;
   pageSize?: number;
   status?: MallOrderStatus | 'all';
+}
+
+// === 用户券 ===
+export interface UserCoupon {
+  id: number;
+  userId: number;
+  orderId: number;
+  couponCode: string;
+  couponType: 'fixed' | 'percent';
+  discount: number;
+  threshold: number;
+  status: number; // 1=未使用, 0=已使用
+  usedAt?: string | null;
+  expireAt: string;
+  createdAt: string;
+}
+
+export interface CouponUseResult {
+  couponId: number;
+  discountAmount: number;
 }
