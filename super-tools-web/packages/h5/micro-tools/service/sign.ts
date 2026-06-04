@@ -58,10 +58,9 @@ export const doSign = async (
   });
   if (res?.code === 200 && res.data) {
     const d: any = res.data;
-    // 适配后端字段名 → 前端 SignResult
     const adapted: SignResult = {
-      pointsAwarded: d.points ?? 0,
-      growthAwarded: d.growth ?? 0,
+      points: d.points ?? 0,
+      growth: d.growth ?? 0,
       continuousDays: d.streak ?? 0,
     };
     return { code: 200, data: adapted, message: res.message };
