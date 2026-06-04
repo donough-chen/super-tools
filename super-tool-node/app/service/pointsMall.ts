@@ -12,8 +12,32 @@ import BaseService from './base';
  *    - 等级门槛：通过 member_levels.level 字段比较（而非 id）
  */
 export default class PointsMallService extends BaseService {
+  /**
+   * 获取会员商城折扣率（使用 member_levels.benefits.discount 字段）
+   * 默认 1.00 = 无折扣
+   */
+  private async getMemberDiscount(userId: number): Promise<number> {
+    const member: any = await this.ctx.model.UserMember.findOne({
+      where: { userId },
+      include: [{ model: this.ctx.model.MemberLevel, as: 'level' }],
+    });
+    if (!member) return 1.00;
+    const benefits = member.level?.benefits;
+    if (benefits && typeof benefits === 'object') {
+      return parseFloat(benefits.discount ?? 1.00);
+    }
+    return 1.00;
+  }
+
+  /** 计算实际支付积分（应用会员折扣，向下取整，最低1积分） */
+  private calcActualPoints(pointsRequired: number, discount: number): number {
+    if (discount >= 1.00) return pointsRequired;
+    const result = Math.floor(pointsRequired * discount);
+    return result > 0 ? result : 1;  // 折扣后至少为 1 积分
+  }
+
   /** C 端：商品列表（按 category 过滤；自动过滤已下架/未上架） */
-  async listItems(filter: { category?: string } = {}) {
+  async listItems(filter: { category?: string; userId?: number } = {}) {
     const { Op } = require('sequelize');
     const where: any = { status: 1 };
     if (filter.category) where.category = filter.category;
@@ -22,9 +46,30 @@ export default class PointsMallService extends BaseService {
       { [Op.or]: [{ validFrom: null }, { validFrom: { [Op.lte]: now } }] },
       { [Op.or]: [{ validTo: null }, { validTo: { [Op.gte]: now } }] },
     ];
-    return await this.ctx.model.PointsMallItem.findAll({
+    const items = await this.ctx.model.PointsMallItem.findAll({
       where,
       order: [['sort', 'ASC']],
+    });
+
+    // 如果传入 userId，计算会员折扣
+    let discount = 1.00;
+    if (filter.userId) {
+      discount = await this.getMemberDiscount(filter.userId);
+    }
+
+    return items.map((item: any) => {
+      const itemData = item.toJSON();
+      const pointsRequired = itemData.pointsRequired || itemData.costPoints;
+      const pointsActual = filter.userId
+        ? this.calcActualPoints(pointsRequired, discount)
+        : pointsRequired;
+
+      return {
+        ...itemData,
+        pointsRequired,
+        pointsActual,
+        costPoints: pointsActual,  // 保持前端兼容
+      };
     });
   }
 
@@ -55,14 +100,20 @@ export default class PointsMallService extends BaseService {
       // 3) 库存校验
       if (item.stock !== -1 && item.stock <= 0) this.ctx.throw(400, '库存不足');
 
-      // 4) 用户余额/等级
+      // 4) 用户余额/等级 + 计算会员折扣后实际积分
       const member: any = await this.ctx.model.UserMember.findOne({
         where: { userId },
         lock: t.LOCK.UPDATE,
         transaction: t,
       });
       if (!member) this.ctx.throw(404, '用户会员记录不存在');
-      if (member.points < item.costPoints) this.ctx.throw(400, '积分不足');
+
+      // 计算会员折扣后实际支付积分
+      const discount = await this.getMemberDiscount(userId);
+      const pointsRequired = (item as any).pointsRequired || item.costPoints;
+      const pointsActual = this.calcActualPoints(pointsRequired, discount);
+
+      if (member.points < pointsActual) this.ctx.throw(400, '积分不足');
 
       // 等级门槛：通过 level 字段比较（不是 id）
       if (item.requiredLevel) {
@@ -105,10 +156,10 @@ export default class PointsMallService extends BaseService {
         }
       }
 
-      // 7) 扣积分（v2 签名：consumePoints(userId, amount, source, bizType?, bizId?, remark?, options?)）
+      // 7) 扣积分（使用折扣后实际积分）
       const cr: any = await this.ctx.service.member.consumePoints(
         userId,
-        item.costPoints,
+        pointsActual,
         'mall_exchange',
         'mall',
         String(item.id),
@@ -129,7 +180,8 @@ export default class PointsMallService extends BaseService {
         icon: item.icon,
         description: item.description,
         category: item.category,
-        costPoints: item.costPoints,
+        costPoints: pointsActual,  // 快照记录实际支付积分
+        pointsRequired: pointsRequired,  // 快照记录原价积分
         fulfillConfig: item.fulfillConfig,
         isVirtual: item.isVirtual,
       };
@@ -138,7 +190,7 @@ export default class PointsMallService extends BaseService {
           orderNo,
           userId,
           itemId: item.id,
-          costPoints: item.costPoints,
+          costPoints: pointsActual,  // 订单记录实际支付积分
           productSnapshot,
           pointsLogId: cr.logId,
           fulfillStatus: 'pending',

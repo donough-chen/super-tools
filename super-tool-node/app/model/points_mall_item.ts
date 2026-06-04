@@ -9,6 +9,7 @@ export interface PointsMallItemAttributes {
   category: 'coupon' | 'member_days' | 'tool_unlock' | 'badge' | 'physical';
   isVirtual: number;
   costPoints: number;
+  pointsRequired: number;  // 商品原价积分
   requiredLevel?: string;
   fulfillConfig: any;
   stock: number;
@@ -33,6 +34,7 @@ export default (app: Application) => {
     category: { type: ENUM('coupon', 'member_days', 'tool_unlock', 'badge', 'physical'), allowNull: false },
     isVirtual: { type: TINYINT, defaultValue: 1, field: 'is_virtual' },
     costPoints: { type: INTEGER.UNSIGNED, allowNull: false, field: 'cost_points' },
+    pointsRequired: { type: INTEGER.UNSIGNED, allowNull: false, defaultValue: 0, field: 'points_required' },
     requiredLevel: { type: STRING(30), allowNull: true, field: 'required_level' },
     fulfillConfig: { type: JSON_TYPE, allowNull: false, field: 'fulfill_config' },
     stock: { type: INTEGER, defaultValue: -1 },

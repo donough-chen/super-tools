@@ -13,8 +13,10 @@ export default class PointsMallController extends BaseController {
   /** GET /api/points-mall/items */
   async items() {
     const { ctx } = this;
+    const userId = (ctx.state.user as any)?.id;  // 未登录时为 undefined
     const list = await (ctx.service as any).pointsMall.listItems({
       category: ctx.query.category as string,
+      userId,
     });
     this.success(list);
   }
