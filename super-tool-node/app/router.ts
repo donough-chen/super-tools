@@ -265,6 +265,9 @@ export default (app: Application) => {
   router.post('/api/points-mall/coupons/use', auth, app.middleware.rateLimit({ max: 10, window: 60 }, app), controller.pointsMall.useCoupon);
   router.get('/api/points-mall/unlocked-tools', auth, controller.pointsMall.unlockedTools);
 
+  // ==================== 优惠券（H5 端） ====================
+  router.get('/api/coupons/available-for-subscription', auth, controller.coupon.availableForSubscription);
+
   // ==================== 工具分类管理（管理端） ====================
   router.get('/api/admin/tool-categories', auth, perm('category:list'), controller.admin.tool.listCategories);
   router.post('/api/admin/tool-categories', auth, perm('category:create'), controller.admin.tool.createCategory);
