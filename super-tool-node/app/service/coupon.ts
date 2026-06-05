@@ -1,26 +1,21 @@
 import BaseService from './base';
+import { Op, Sequelize } from 'sequelize';
 
 export default class CouponService extends BaseService {
   /**
    * 获取可用于会员订阅的优惠券列表
-   * 规则：
-   * 1. status = 'unused'
-   * 2. 未过期（expire_at > now()）
-   * 3. applicable_scenes 包含 'member_subscription'（或 NULL 表示全场景）
-   * 4. 满减券需要 targetAmount >= threshold
    */
   async getAvailableForSubscription(userId: number, targetAmount: number) {
-    const { ctx, app } = this;
-    const userIdNum = typeof userId === 'number' ? userId : Number(userId);
+    const { ctx } = this;
 
     const coupons = await ctx.model.UserCoupon.findAll({
       where: {
-        userId: userIdNum,
+        userId,
         status: 'unused',
-        expireAt: { [app.Sequelize.Op.gt]: new Date() },
-        [app.Sequelize.Op.or]: [
-          { applicableScenes: { [app.Sequelize.Op.is]: null } },
-          { applicableScenes: { [app.Sequelize.Op.like]: '%"member_subscription"%' } },
+        expireAt: { [Op.gt]: new Date() },
+        [Op.or]: [
+          { applicableScenes: { [Op.is]: null } },
+          { applicableScenes: { [Op.like]: '%"member_subscription"%' } },
         ],
       },
       order: [['expireAt', 'ASC']],
@@ -28,16 +23,13 @@ export default class CouponService extends BaseService {
 
     // 过滤：满减券需要满足门槛
     const validCoupons = coupons.filter((c: any) => {
-      const coupon = c.toJSON();
-      // 无门槛券（threshold = 0）始终可用
+      const coupon = c.toJSON ? c.toJSON() : c;
       if (coupon.threshold === 0) return true;
-      // 满减券需要订阅金额 >= 门槛
       return targetAmount >= coupon.threshold;
     });
 
     return validCoupons.map((c: any) => {
-      const coupon = c.toJSON();
-      // 计算抵扣金额
+      const coupon = c.toJSON ? c.toJSON() : c;
       const discountAmount = this._calcDiscountAmount(coupon, targetAmount);
       return {
         ...coupon,
@@ -47,8 +39,7 @@ export default class CouponService extends BaseService {
   }
 
   /**
-   * 选择最佳优惠券（每次限用一张）
-   * 规则：抵扣金额最大的优先
+   * 选择最佳优惠券
    */
   pickBestCoupon(coupons: any[], targetAmount: number): any | null {
     if (!coupons || coupons.length === 0) return null;
@@ -72,10 +63,8 @@ export default class CouponService extends BaseService {
    */
   _calcDiscountAmount(coupon: any, targetAmount: number): number {
     if (coupon.couponType === 'fixed') {
-      // 固定金额抵扣
-      return Math.min(coupon.discount, targetAmount); // 抵扣金额不超过订单金额
+      return Math.min(coupon.discount, targetAmount);
     } else if (coupon.couponType === 'percent') {
-      // 折扣券：discount 是折扣率（0.9 = 9折）
       const discountRate = Number(coupon.discount);
       return Math.round(targetAmount * (1 - discountRate) * 100) / 100;
     }
@@ -91,7 +80,7 @@ export default class CouponService extends BaseService {
         id: couponId,
         userId,
         status: 'unused',
-        expireAt: { [this.app.Sequelize.Op.gt]: new Date() },
+        expireAt: { [Op.gt]: new Date() },
       },
     });
 
@@ -101,9 +90,16 @@ export default class CouponService extends BaseService {
 
     // 检查适用场景
     if (couponData.applicableScenes) {
-      const scenes = Array.isArray(couponData.applicableScenes)
-        ? couponData.applicableScenes
-        : JSON.parse(couponData.applicableScenes);
+      let scenes: string[];
+      if (Array.isArray(couponData.applicableScenes)) {
+        scenes = couponData.applicableScenes;
+      } else {
+        try {
+          scenes = JSON.parse(couponData.applicableScenes);
+        } catch {
+          scenes = [];
+        }
+      }
       if (!scenes.includes('member_subscription')) {
         return { valid: false, error: '该优惠券不可用于会员订阅' };
       }
@@ -114,7 +110,6 @@ export default class CouponService extends BaseService {
       return { valid: false, error: `该优惠券需要满足 ${couponData.threshold} 元门槛` };
     }
 
-    // 计算抵扣金额
     const discountAmount = this._calcDiscountAmount(couponData, targetAmount);
 
     return {
@@ -126,7 +121,7 @@ export default class CouponService extends BaseService {
   }
 
   /**
-   * 锁定优惠券（创建支付时）
+   * 锁定优惠券
    */
   async lockCoupon(couponId: number, paymentId: number) {
     await this.ctx.model.UserCoupon.update(
@@ -136,7 +131,7 @@ export default class CouponService extends BaseService {
   }
 
   /**
-   * 解锁优惠券（支付失败时）
+   * 解锁优惠券
    */
   async unlockCoupon(couponId: number) {
     await this.ctx.model.UserCoupon.update(
@@ -146,7 +141,7 @@ export default class CouponService extends BaseService {
   }
 
   /**
-   * 标记优惠券为已使用（支付成功时）
+   * 标记优惠券为已使用
    */
   async markCouponUsed(couponId: number) {
     await this.ctx.model.UserCoupon.update(
