@@ -6,12 +6,13 @@ interface CreatePaymentInput {
   orderId: number;
   userId: number;
   provider: ProviderCode;
+  couponId?: number;  // 优惠券ID
 }
 
 export default class PaymentService extends BaseService {
   /** 创建支付（用户在 H5 选完支付方式后调用） */
   async create(input: CreatePaymentInput) {
-    const { orderId, userId, provider } = input;
+    const { orderId, userId, provider, couponId } = input;
 
     const order = await this.ctx.model.MemberOrder.findOne({
       where: { id: orderId, userId },
@@ -29,15 +30,38 @@ export default class PaymentService extends BaseService {
     });
     if (existedSuccess) this.ctx.throw(400, '订单已支付');
 
+    // 优惠券处理逻辑
+    let discountAmount = 0;
+    let finalAmount = Number(orderData.amount);
+    if (couponId) {
+      const validation = await this.service.coupon.validateCouponForSubscription(
+        couponId,
+        userId,
+        Number(orderData.amount),
+      );
+      if (!validation.valid) {
+        this.ctx.throw(400, validation.error);
+      }
+      discountAmount = validation.discountAmount;
+      finalAmount = validation.finalAmount;
+    }
+
     const paymentNo = this._genPaymentNo();
     const payment = await this.ctx.model.MemberPayment.create({
       paymentNo,
       orderId,
       userId,
       provider,
-      amount: orderData.amount,
+      amount: finalAmount,  // 使用抵扣后的金额
+      couponId: couponId || null,
+      couponDiscountAmount: discountAmount,
       status: 0,
     });
+
+    // 锁定优惠券
+    if (couponId) {
+      await this.service.coupon.lockCoupon(couponId, (payment as any).id);
+    }
 
     // Phase 2：alipay 等真实通道走 createProvider(name, ctx)；mock/wechat 占位继续走 getPaymentProvider
     const providerImpl = provider === 'mock'
@@ -47,7 +71,7 @@ export default class PaymentService extends BaseService {
     const notifyUrl = `${baseUrl}/api/payments/${provider}/notify`;
     const prepayResult = await providerImpl.createPrepay({
       paymentNo,
-      amount: Number(orderData.amount),
+      amount: finalAmount,  // 使用抵扣后的金额
       subject: `${orderData.planSnapshot?.name || orderData.planCode} 会员订阅`,
       planName: orderData.planSnapshot?.name,
       userId,
@@ -62,6 +86,8 @@ export default class PaymentService extends BaseService {
       provider,
       prepayData: prepayResult.prepayData,
       cashierUrl: prepayResult.cashierUrl,
+      discountAmount,
+      finalAmount,
     };
   }
 
@@ -138,6 +164,14 @@ export default class PaymentService extends BaseService {
         status: 1,
         paidAt: new Date(),
       }, { transaction: t });
+
+      // 标记优惠券为已使用
+      const paymentDataForCoupon = (lockedPayment as any).toJSON
+        ? (lockedPayment as any).toJSON()
+        : lockedPayment;
+      if (paymentDataForCoupon.couponId) {
+        await this.service.coupon.markCouponUsed(paymentDataForCoupon.couponId);
+      }
 
       orderForActivation = (lockedOrder as any).toJSON();
     });
@@ -267,6 +301,11 @@ export default class PaymentService extends BaseService {
     const payment = await this.ctx.model.MemberPayment.findOne({ where: { paymentNo } });
     if (!payment) this.ctx.throw(404, '支付流水不存在');
     if ((payment as any).status === 1) return;
+
+    // 解锁优惠券
+    if ((payment as any).couponId) {
+      await this.service.coupon.unlockCoupon((payment as any).couponId);
+    }
 
     await (payment as any).update({ status: 2, failedReason: reason });
 
