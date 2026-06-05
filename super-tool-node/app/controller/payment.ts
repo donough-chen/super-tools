@@ -10,10 +10,11 @@ export default class PaymentController extends BaseController {
     this.validate({
       orderId: { type: 'number', required: true },
       provider: { type: 'string', required: true },
+      couponId: { type: 'number', required: false },
     });
     const userId = (this.ctx.state.user as any).id;
-    const { orderId, provider } = this.ctx.request.body;
-    const data = await this.service.payment.create({ orderId, userId, provider });
+    const { orderId, provider, couponId } = this.ctx.request.body;
+    const data = await this.service.payment.create({ orderId, userId, provider, couponId });
     this.success(data, '已生成支付订单');
   }
 

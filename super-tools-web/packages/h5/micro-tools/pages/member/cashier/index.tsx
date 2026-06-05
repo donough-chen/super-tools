@@ -181,7 +181,8 @@ const CashierPage: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [order, selectedProvider, submitting]);
+  }, [order, selectedProvider, selectedCoupon, submitting]);
+
 
   /** Mock：模拟支付成功/失败 */
   const handleMock = useCallback(
