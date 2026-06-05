@@ -29,6 +29,7 @@ const ITEM_FIELDS = [
   'requiredLevel',
   'isVirtual',
   'fulfillConfig',
+  'applicableScenes',
   'stock',
   'dailyLimit',
   'totalLimit',

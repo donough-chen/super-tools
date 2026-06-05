@@ -38,6 +38,7 @@ const ItemEditDrawer: React.FC<Props> = ({ open, initial, onClose, onSubmit }) =
       if (initial) {
         form.setFieldsValue({
           ...initial,
+          applicableScenes: initial.applicableScenes || [],  // 回显适用场景
           fulfillConfig: initial.fulfillConfig
             ? JSON.stringify(initial.fulfillConfig, null, 2)
             : '{}',
