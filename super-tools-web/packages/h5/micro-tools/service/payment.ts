@@ -66,6 +66,7 @@ export const cancelOrder = (
 export const createPayment = (
   orderId: number,
   provider: PaymentProvider,
+  couponId?: number,
 ): Promise<
   ApiResult<{
     paymentNo: string;
@@ -73,8 +74,10 @@ export const createPayment = (
     provider: string;
     prepayData: any;
     cashierUrl?: string;
+    discountAmount?: number;
+    finalAmount?: number;
   }>
-> => postJson(`${API_BASE}/payments`, { orderId, provider });
+> => postJson(`${API_BASE}/payments`, { orderId, provider, couponId });
 
 export const getPaymentStatus = (
   paymentNo: string,

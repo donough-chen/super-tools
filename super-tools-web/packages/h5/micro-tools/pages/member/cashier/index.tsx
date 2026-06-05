@@ -19,7 +19,9 @@ import {
   getPaymentStatus, getOrder, mockNotify,
   createPayment, getEnabledPaymentProviders,
 } from '../../../service/payment';
+import { getAvailableCoupons } from '../../../service/coupon';
 import type { Order, Payment, PaymentProvider } from '../../../types/order';
+import type { AvailableCoupon } from '../../../service/coupon';
 import AppHeader from '../../../components/AppHeader';
 import AppModal from '../../../components/AppModal';
 import './index.less';
@@ -46,6 +48,11 @@ const CashierPage: React.FC = () => {
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [polling, setPolling] = useState(false);
   const pollTimerRef = useRef<any>(null);
+
+  // 优惠券相关状态
+  const [coupons, setCoupons] = useState<AvailableCoupon[]>([]);
+  const [bestCoupon, setBestCoupon] = useState<AvailableCoupon | null>(null);
+  const [selectedCoupon, setSelectedCoupon] = useState<AvailableCoupon | null>(null);
 
   // Phase 2：provider 选择
   const [providers, setProviders] = useState<PaymentProvider[]>(['mock']);
@@ -100,6 +107,28 @@ const CashierPage: React.FC = () => {
     fetchAll();
   }, [fetchAll]);
 
+  // 加载可用优惠券
+  useEffect(() => {
+    if (!order || order.status !== 0) return;
+    const loadCoupons = async () => {
+      try {
+        const res = await getAvailableCoupons(Number(order.amount));
+        if (res?.code === 200 && res.data) {
+          setCoupons(res.data.list || []);
+          setBestCoupon(res.data.bestCoupon || null);
+          // 自动选择最佳优惠券
+          if (res.data.bestCoupon) {
+            setSelectedCoupon(res.data.bestCoupon);
+          }
+        }
+      } catch (e: any) {
+        // 获取优惠券失败不影响主流程
+        console.warn('加载优惠券失败:', e?.message);
+      }
+    };
+    loadCoupons();
+  }, [order]);
+
   // 倒计时（基于订单 expireAt）
   useEffect(() => {
     if (!order?.expireAt) return;
@@ -123,7 +152,11 @@ const CashierPage: React.FC = () => {
     if (!order || submitting) return;
     setSubmitting(true);
     try {
-      const res = await createPayment(order.id, selectedProvider);
+      const res = await createPayment(
+        order.id,
+        selectedProvider,
+        selectedCoupon?.id,
+      );
       if (res?.code !== 200 || !res.data) {
         throw new Error(res?.message || '创建支付失败');
       }
@@ -257,6 +290,18 @@ const CashierPage: React.FC = () => {
                 <span>金额</span>
                 <span className="page-cashier__amount">¥{order.amount}</span>
               </div>
+              {selectedCoupon && (
+                <div className="page-cashier__row">
+                  <span>优惠券</span>
+                  <span className="page-cashier__coupon">-¥{selectedCoupon.discountAmount}（{selectedCoupon.couponType === 'fixed' ? '满减券' : '折扣券'}）</span>
+                </div>
+              )}
+              {selectedCoupon && (
+                <div className="page-cashier__row">
+                  <span>实付金额</span>
+                  <span className="page-cashier__amount page-cashier__final-amount">¥{Math.max(0, Number(order.amount) - selectedCoupon.discountAmount).toFixed(2)}</span>
+                </div>
+              )}
               {order.scene === 3 && (
                 <div className="page-cashier__row">
                   <span>场景</span>
@@ -264,6 +309,39 @@ const CashierPage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* 优惠券选择 */}
+            {coupons.length > 0 && (
+              <div className="page-cashier__card">
+                <div className="page-cashier__section-title">优惠券（{coupons.length} 张可用）</div>
+                {coupons.map((coupon) => (
+                  <label key={coupon.id} className="page-cashier__coupon-item">
+                    <input
+                      type="radio"
+                      name="coupon"
+                      checked={selectedCoupon?.id === coupon.id}
+                      onChange={() => setSelectedCoupon(
+                        selectedCoupon?.id === coupon.id ? null : coupon
+                      )}
+                    />
+                    <div className="page-cashier__coupon-info">
+                      <span className="page-cashier__coupon-discount">
+                        {coupon.couponType === 'fixed' ? `¥${coupon.discountAmount}` : `${(Number(coupon.discount) * 10).toFixed(1)}折`}
+                      </span>
+                      <span className="page-cashier__coupon-threshold">
+                        {coupon.threshold > 0 ? `满${coupon.threshold}可用` : '无门槛'}
+                      </span>
+                      <span className="page-cashier__coupon-expire">
+                        过期：{new Date(coupon.expireAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </label>
+                ))}
+                {bestCoupon && selectedCoupon?.id === bestCoupon.id && (
+                  <div className="page-cashier__coupon-tip">已自动选择最优优惠券</div>
+                )}
+              </div>
+            )}
 
             {/* 未创建 payment：显示 provider 单选 */}
             {!hasPayment && (
