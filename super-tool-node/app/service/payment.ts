@@ -40,10 +40,10 @@ export default class PaymentService extends BaseService {
         Number(orderData.amount),
       );
       if (!validation.valid) {
-        this.ctx.throw(400, validation.error);
+        this.ctx.throw(400, validation.error || '优惠券不可用');
       }
-      discountAmount = validation.discountAmount;
-      finalAmount = validation.finalAmount;
+      discountAmount = validation.discountAmount || 0;
+      finalAmount = validation.finalAmount || Number(orderData.amount);
     }
 
     const paymentNo = this._genPaymentNo();
@@ -160,17 +160,26 @@ export default class PaymentService extends BaseService {
         paidAt: new Date(),
       }, { transaction: t });
 
+      // 计算实际支付金额：优先使用 payment 的 amount（已含优惠券抵扣）
+      const paymentDataForAmount = (lockedPayment as any).toJSON
+        ? (lockedPayment as any).toJSON()
+        : lockedPayment;
+      // 注意：amount 可能为 0（优惠券全额抵扣），不能用 || 判断
+      const actualAmount = paymentDataForAmount.amount !== null && paymentDataForAmount.amount !== undefined
+        ? Number(paymentDataForAmount.amount)
+        : null;
+
       await (lockedOrder as any).update({
         status: 1,
         paidAt: new Date(),
+        actualAmount,  // 记录实际支付金额
       }, { transaction: t });
 
       // 标记优惠券为已使用
-      const paymentDataForCoupon = (lockedPayment as any).toJSON
-        ? (lockedPayment as any).toJSON()
-        : lockedPayment;
-      if (paymentDataForCoupon.couponId) {
-        await this.service.coupon.markCouponUsed(paymentDataForCoupon.couponId);
+      // 直接从 lockedPayment 实例获取 couponId，避免 toJSON 可能的字段名问题
+      const couponId = (lockedPayment as any).couponId;
+      if (couponId) {
+        await this.service.coupon.markCouponUsed(couponId);
       }
 
       orderForActivation = (lockedOrder as any).toJSON();

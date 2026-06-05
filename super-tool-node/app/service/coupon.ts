@@ -7,17 +7,23 @@ export default class CouponService extends BaseService {
    */
   async getAvailableForSubscription(userId: number, targetAmount: number) {
     const { ctx } = this;
+    const { Op } = require('sequelize');
+
+    const where: any = {
+      userId,
+      status: 'unused',
+      expireAt: { [Op.gt]: new Date() },
+      lockedPaymentId: null, // 排除已锁定的券
+    };
+
+    // MySQL JSON 列需用 JSON_CONTAINS 判断数组包含关系
+    where[Op.or] = [
+      { applicableScenes: { [Op.is]: null } },
+      Sequelize.literal(`JSON_CONTAINS(applicable_scenes, '"member_subscription"')`),
+    ];
 
     const coupons = await ctx.model.UserCoupon.findAll({
-      where: {
-        userId,
-        status: 'unused',
-        expireAt: { [Op.gt]: new Date() },
-        [Op.or]: [
-          { applicableScenes: { [Op.is]: null } },
-          { applicableScenes: { [Op.like]: '%"member_subscription"%' } },
-        ],
-      },
+      where,
       order: [['expireAt', 'ASC']],
     });
 
@@ -80,6 +86,7 @@ export default class CouponService extends BaseService {
         id: couponId,
         userId,
         status: 'unused',
+        lockedPaymentId: null, // 确保券未被锁定
         expireAt: { [Op.gt]: new Date() },
       },
     });
@@ -121,7 +128,7 @@ export default class CouponService extends BaseService {
   }
 
   /**
-   * 锁定优惠券
+   * 锁定优惠券（不改变status，只记录lockedPaymentId）
    */
   async lockCoupon(couponId: number, paymentId: number) {
     await this.ctx.model.UserCoupon.update(
@@ -131,12 +138,12 @@ export default class CouponService extends BaseService {
   }
 
   /**
-   * 解锁优惠券
+   * 解锁优惠券（清除lockedPaymentId，状态保持unused）
    */
   async unlockCoupon(couponId: number) {
     await this.ctx.model.UserCoupon.update(
       { lockedPaymentId: null },
-      { where: { id: couponId } }
+      { where: { id: couponId, lockedPaymentId: { [Op.ne]: null } } }
     );
   }
 

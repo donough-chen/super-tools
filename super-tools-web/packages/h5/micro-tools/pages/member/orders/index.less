@@ -72,6 +72,22 @@
     color: var(--primary-color);
     font-size: var(--font-size-lg);
     font-weight: bold;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+
+    &--original {
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+      font-weight: normal;
+      text-decoration: line-through;
+    }
+
+    &--actual {
+      color: var(--primary-color);
+      font-size: var(--font-size-md);
+    }
   }
 
   &__card-foot {

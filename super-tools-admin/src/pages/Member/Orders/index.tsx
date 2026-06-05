@@ -112,10 +112,30 @@ const OrdersPage: React.FC = () => {
         render: (snap: any, row: AdminOrder) => snap?.name || row.planCode,
       },
       {
-        title: '金额',
+        title: '订单金额',
         dataIndex: 'amount',
         width: 100,
         render: (v: any) => formatCurrency(v),
+      },
+      {
+        title: '实际支付',
+        dataIndex: 'actualAmount',
+        width: 100,
+        render: (v: any, row: AdminOrder) => {
+          // 已取消(2)、已过期(3)：未实际支付
+          // 已退款(4)：实际支付为0（已退款）
+          if (row.status === 2 || row.status === 3 || row.status === 4) {
+            return <span style={{ color: '#999' }}>-</span>;
+          }
+          
+          // 已支付(1)：显示实际支付金额
+          const actual = v !== null && v !== undefined ? Number(v) : null;
+          const original = Number(row.amount);
+          if (actual !== null && actual !== original) {
+            return <span style={{ color: '#52c41a', fontWeight: 'bold' }}>{formatCurrency(actual)}</span>;
+          }
+          return formatCurrency(actual ?? original);
+        },
       },
       {
         title: '状态',

@@ -9,6 +9,7 @@ export interface MemberOrderAttributes {
   planCode: string;
   planSnapshot: object;
   amount: number;
+  actualAmount?: number;
   status: number;
   scene: number;
   sourcePlanCode?: string;
@@ -32,6 +33,7 @@ export default (app: Application) => {
     planCode: { type: STRING(30), allowNull: false, field: 'plan_code' },
     planSnapshot: { type: JSONTYPE, allowNull: false, field: 'plan_snapshot' },
     amount: { type: DECIMAL(10, 2), allowNull: false },
+    actualAmount: { type: DECIMAL(10, 2), allowNull: true, field: 'actual_amount', comment: '实际支付金额（含优惠券抵扣）' },
     status: { type: TINYINT.UNSIGNED, defaultValue: 0 },
     scene: { type: TINYINT.UNSIGNED, defaultValue: 1 },
     sourcePlanCode: { type: STRING(30), allowNull: true, field: 'source_plan_code' },

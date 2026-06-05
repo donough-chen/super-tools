@@ -9,6 +9,8 @@ export interface MemberPaymentAttributes {
   provider: string;
   providerTradeNo?: string;
   amount: number;
+  couponId?: number;
+  couponDiscountAmount?: number;
   status: number;
   prepayData?: object;
   callbackPayload?: object;
@@ -29,6 +31,8 @@ export default (app: Application) => {
     provider: { type: STRING(20), allowNull: false },
     providerTradeNo: { type: STRING(64), allowNull: true, field: 'provider_trade_no' },
     amount: { type: DECIMAL(10, 2), allowNull: false },
+    couponId: { type: BIGINT.UNSIGNED, allowNull: true, field: 'coupon_id' },
+    couponDiscountAmount: { type: DECIMAL(10, 2), allowNull: false, defaultValue: 0, field: 'coupon_discount_amount' },
     status: { type: TINYINT.UNSIGNED, defaultValue: 0 },
     prepayData: { type: JSONTYPE, allowNull: true, field: 'prepay_data' },
     callbackPayload: { type: JSONTYPE, allowNull: true, field: 'callback_payload' },

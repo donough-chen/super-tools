@@ -65,6 +65,11 @@
   &__amount {
     color: var(--primary-color);
     font-weight: bold;
+
+    &--highlight {
+      color: var(--primary-color);  // 绿色，表示优惠后金额
+      font-size: var(--font-size-md);
+    }
   }
 
   &__pay {
@@ -125,7 +130,7 @@
     }
   }
 
-  &__actions {
+  &__footer {
     position: fixed;
     left: 0;
     right: 0;

@@ -41,6 +41,7 @@ export interface PointsMallItem {
   costPoints: number;
   requiredLevel?: number;
   isVirtual: 0 | 1;
+  applicableScenes?: string[];
   fulfillConfig: any;
   stock?: number;
   dailyLimit?: number;

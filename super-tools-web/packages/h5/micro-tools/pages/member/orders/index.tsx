@@ -108,7 +108,7 @@ const OrdersPage: React.FC = () => {
       }
       const url =
         payRes.data.cashierUrl || `/member/cashier?paymentNo=${payRes.data.paymentNo}`;
-      navigate(url);
+      navigate({ target: url, type: 'url', openTarget: '_self' });
     } catch (e: any) {
       showToast(e?.message || '操作失败', 'error');
     }
@@ -130,7 +130,7 @@ const OrdersPage: React.FC = () => {
 
   return (
     <div className="page-orders">
-      <AppHeader title="我的订单" showBack onBack={() => navigateBack()} />
+      <AppHeader title="我的订单" showBack onBack={() => navigateTo('/member')} />
       <div className="page-orders__tabs">
         {TABS.map((t) => (
           <div
@@ -164,7 +164,16 @@ const OrdersPage: React.FC = () => {
                 {o.planSnapshot?.name || o.planCode}
                 {o.scene === 2 ? '（续费）' : ''}
               </div>
-              <div className="page-orders__amount">¥{o.amount}</div>
+              <div className="page-orders__amount">
+                {o.actualAmount !== undefined && o.actualAmount !== null && Number(o.actualAmount) !== Number(o.amount) ? (
+                  <>
+                    <span className="page-orders__amount--original">¥{o.amount}</span>
+                    <span className="page-orders__amount--actual">¥{Number(o.actualAmount).toFixed(2)}</span>
+                  </>
+                ) : (
+                  `¥${o.amount}`
+                )}
+              </div>
             </div>
             <div className="page-orders__card-foot">
               <span className="page-orders__time">

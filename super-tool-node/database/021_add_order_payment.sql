@@ -78,3 +78,11 @@ INSERT IGNORE INTO `system_configs` (`group`, `key`, `value`, `type`, `is_secret
 ('payment', 'enabled_providers',     '["mock"]', 'json',    0, 1, '当前启用的支付方式');
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- 给 member_orders 表增加 actual_amount 字段，用于存储实际支付金额（含优惠券抵扣）
+ALTER TABLE member_orders
+  ADD COLUMN actual_amount DECIMAL(10,2) NULL COMMENT '实际支付金额（含优惠券抵扣，NULL表示与amount相同）'
+  AFTER amount;
+
+-- 创建索引用于营收统计
+CREATE INDEX idx_actual_amount ON member_orders(actual_amount);

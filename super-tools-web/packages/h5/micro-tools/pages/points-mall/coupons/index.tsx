@@ -31,7 +31,8 @@ const CouponsPage: React.FC = () => {
 
   const renderCoupon = (c: UserCoupon) => {
     const isExpired = new Date(c.expireAt) <= now;
-    const isUsed = c.status === 0;
+    // status: 'unused' | 'locked' | 'used' | 'expired'
+    const isUsed = c.status === 'used';
     const disabled = isUsed || isExpired;
 
     let discountLabel = '';
@@ -47,8 +48,16 @@ const CouponsPage: React.FC = () => {
     }
 
     let statusLabel = '';
-    if (isUsed) statusLabel = '已使用';
-    else if (isExpired) statusLabel = '已过期';
+    let usedDateLabel = '';
+    if (isUsed) {
+      statusLabel = '已使用';
+      // 使用日期取 usedAt
+      if (c.usedAt) {
+        usedDateLabel = `使用日期：${c.usedAt.slice(0, 10)}`;
+      }
+    } else if (isExpired) {
+      statusLabel = '已过期';
+    }
 
     return (
       <div key={c.id} className={`coupon-card ${disabled ? 'coupon-card--disabled' : ''}`}>
@@ -61,7 +70,14 @@ const CouponsPage: React.FC = () => {
           <div className="coupon-card__expire">
             有效期至 {c.expireAt.slice(0, 10)}
           </div>
-          {statusLabel && <div className="coupon-card__status-badge">{statusLabel}</div>}
+          {usedDateLabel && (
+            <div className="coupon-card__used-date">{usedDateLabel}</div>
+          )}
+          {statusLabel && (
+            <div className={`coupon-card__status-badge coupon-card__status-badge--${isUsed ? 'used' : 'expired'}`}>
+              {statusLabel}
+            </div>
+          )}
         </div>
       </div>
     );

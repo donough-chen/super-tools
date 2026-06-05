@@ -86,7 +86,7 @@ const OrderDetailPage: React.FC = () => {
 
   return (
     <div className="page-order-detail">
-      <AppHeader title="订单详情" showBack onBack={() => navigateBack()} />
+      <AppHeader title="订单详情" showBack onBack={() => navigateTo('/member/orders')} />
       <main className="page-order-detail__content">
         {loading ? (
           <div className="page-order-detail__loading">加载中...</div>
@@ -110,9 +110,15 @@ const OrderDetailPage: React.FC = () => {
                 <span>{order.planSnapshot?.name || order.planCode}</span>
               </div>
               <div className="page-order-detail__row">
-                <span>金额</span>
+                <span>订单金额</span>
                 <span className="page-order-detail__amount">¥{order.amount}</span>
               </div>
+              {((order as any).actualAmount !== undefined && (order as any).actualAmount !== null && Number((order as any).actualAmount) !== Number(order.amount)) && (
+                <div className="page-order-detail__row">
+                  <span>实际支付金额</span>
+                  <span className="page-order-detail__amount page-order-detail__amount--highlight">¥{Number((order as any).actualAmount).toFixed(2)}</span>
+                </div>
+              )}
               <div className="page-order-detail__row">
                 <span>场景</span>
                 <span>{SCENE_LABEL[order.scene] || `场景${order.scene}`}</span>

@@ -377,6 +377,7 @@ export default class PointsMallService extends BaseService {
     const where: any = { userId };
     if (options.status === 'unused') {
       where.status = 'unused';
+      where.lockedPaymentId = null; // 排除已锁定的券
       where.expireAt = { [Op.gte]: new Date() };
     } else if (options.status === 'used') {
       where.status = 'used';
@@ -402,7 +403,7 @@ export default class PointsMallService extends BaseService {
     if (couponId) {
       // 指定券使用
       coupon = await this.ctx.model.UserCoupon.findOne({
-        where: { id: couponId, userId, status: 'unused', expireAt: { [Op.gte]: now } },
+        where: { id: couponId, userId, status: 'unused', lockedPaymentId: null, expireAt: { [Op.gte]: now } },
       });
     } else {
       // 自动选最优券（折扣金额最大）
@@ -410,6 +411,7 @@ export default class PointsMallService extends BaseService {
         where: {
           userId,
           status: 'unused',
+          lockedPaymentId: null,
           expireAt: { [Op.gte]: now },
           threshold: { [Op.lte]: orderAmount },
         },

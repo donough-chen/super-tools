@@ -127,9 +127,16 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onRefunded })
                 <Descriptions.Item label="套餐">
                   {detail.planSnapshot?.name || detail.planCode}
                 </Descriptions.Item>
-                <Descriptions.Item label="金额">
+                <Descriptions.Item label="订单金额">
                   {formatCurrency(detail.amount)}
                 </Descriptions.Item>
+                {detail.actualAmount !== null && detail.actualAmount !== undefined && Number(detail.actualAmount) !== Number(detail.amount) && (
+                  <Descriptions.Item label="实际支付金额">
+                    <span style={{ color: '#52c41a', fontWeight: 'bold' }}>
+                      {formatCurrency(detail.actualAmount)}
+                    </span>
+                  </Descriptions.Item>
+                )}
                 <Descriptions.Item label="状态">
                   <Tag color={ORDER_STATUS_COLORS[detail.status]}>
                     {ORDER_STATUS_LABELS[detail.status]}
@@ -307,10 +314,10 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onRefunded })
           <Button key="cancel" onClick={() => setRefundModalVisible(false)}>
             取消
           </Button>,
-          <Popconfirm
+            <Popconfirm
             key="confirm"
             title="确认退款？"
-            description={`将退还订单 ${detail?.orderNo} 共 ${formatCurrency(detail?.amount || '0')}，且会员立即失效`}
+            description={`将退还订单 ${detail?.orderNo} 共 ${formatCurrency(detail?.actualAmount || detail?.amount || '0')}，且会员立即失效`}
             onConfirm={handleRefund}
             okText="确认退款"
             cancelText="再想想"
@@ -325,7 +332,7 @@ const DetailDrawer: React.FC<Props> = ({ visible, target, onClose, onRefunded })
           订单号：<code>{detail?.orderNo}</code>
         </p>
         <p>
-          退款金额：<strong>{formatCurrency(detail?.amount || '0')}</strong>
+          退款金额：<strong>{formatCurrency(detail?.actualAmount || detail?.amount || '0')}</strong>
         </p>
         <p style={{ color: '#fa8c16' }}>
           ⚠️ 退款成功后：会员立即失效（is_paid=0）+ 订单状态置为已退款 + 用户收到站内信通知。

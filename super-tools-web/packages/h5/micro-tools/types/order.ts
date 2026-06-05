@@ -61,6 +61,7 @@ export interface OrderListItem {
   /** 后端 paginate 直接返回 model 全字段，含套餐快照；列表展示优先用 name */
   planSnapshot?: PaidPlan;
   amount: string;
+  actualAmount?: string | null;
   status: OrderStatus;
   scene: OrderScene;
   /** Phase 2：升降级前 plan code（scene 3/4 才有） */

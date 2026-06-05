@@ -24,10 +24,20 @@
 
 .coupon-card--disabled {
   opacity: 0.55;
+
+  .coupon-card__left {
+    background: linear-gradient(135deg, #aaa, #999) !important;
+  }
+
+  .coupon-card__code,
+  .coupon-card__expire,
+  .coupon-card__used-date {
+    color: #999 !important;
+  }
 }
 
 .coupon-card__left {
-  width: 160px;
+  width: 130px;
   background: linear-gradient(135deg, var(--primary-color), var(--primary-color-hover));
   color: var(--text-white);
   display: flex;
@@ -36,10 +46,6 @@
   justify-content: center;
   padding: var(--spacing-md) var(--spacing-sm);
   flex-shrink: 0;
-}
-
-.coupon-card--disabled .coupon-card__left {
-  background: linear-gradient(135deg, var(--text-tertiary), var(--text-quaternary));
 }
 
 .coupon-card__discount {
@@ -60,26 +66,45 @@
 }
 
 .coupon-card__code {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   color: var(--text-primary);
   font-weight: 500;
 }
 
 .coupon-card__expire {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--text-tertiary);
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
+.coupon-card__used-date {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* 状态标记通用 */
 .coupon-card__status-badge {
   position: absolute;
   top: var(--spacing-sm);
   right: var(--spacing-sm);
-  font-size: var(--font-size-xs);
-  color: var(--text-danger);
-  background: rgba(255, 77, 79, 0.1);
-  padding: 4px 8px;
+  font-size: var(--font-size-xxs);
+  padding: 4px;
   border-radius: var(--border-radius-sm);
+}
+
+/* 已使用：橙色标记 */
+.coupon-card__status-badge--used {
+  color: #fa8c16;
+  background: rgba(250, 140, 22, 0.1);
+  border: 1px solid rgba(250, 140, 22, 0.3);
+}
+
+/* 已过期：灰色标记 */
+.coupon-card__status-badge--expired {
+  color: #999;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid #ddd;
 }
 
 .page-coupons__loading,

@@ -15,6 +15,7 @@ export interface AdminOrder {
   planCode: string;
   planSnapshot: any;
   amount: string;
+  actualAmount?: string | null;
   status: 0 | 1 | 2 | 3 | 4;
   scene: 1 | 2 | 3 | 4;
   /** Phase 2：升降级前 plan code（scene 3/4 才有） */

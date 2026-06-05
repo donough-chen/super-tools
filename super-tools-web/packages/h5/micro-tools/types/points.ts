@@ -162,7 +162,7 @@ export interface UserCoupon {
   couponType: 'fixed' | 'percent';
   discount: number;
   threshold: number;
-  status: number; // 1=未使用, 0=已使用
+  status: 'unused' | 'locked' | 'used' | 'expired';
   usedAt?: string | null;
   expireAt: string;
   createdAt: string;

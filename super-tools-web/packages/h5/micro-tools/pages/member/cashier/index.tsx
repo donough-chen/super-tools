@@ -381,7 +381,9 @@ const CashierPage: React.FC = () => {
                     ? '处理中...'
                     : selectedProvider === 'alipay'
                       ? '🅰️ 去支付宝支付'
-                      : `去支付 ¥${order.amount}`}
+                      : (selectedCoupon
+                        ? `去支付 ¥${Math.max(0, Number(order.amount) - selectedCoupon.discountAmount).toFixed(2)}（已减¥${selectedCoupon.discountAmount}）`
+                        : `去支付 ¥${order.amount}`)}
                 </button>
               </div>
             )}

@@ -111,6 +111,8 @@ export default class OrderService extends BaseService {
       scene: calc.scene,
       sourcePlanCode: isCrossPlan ? memberData.paidPlanCode : null,
       sourceRemainingValue: isCrossPlan ? calc.remainingValue : null,
+      // scene=4 时 actualAmount = 0（无需支付）
+      actualAmount: calc.scene === 4 ? 0 : null,
       paidAt: calc.scene === 4 ? new Date() : null,
       expireAt: orderExpireAt,
       remark,
@@ -268,7 +270,9 @@ export default class OrderService extends BaseService {
 
     const totalOrders = await this.ctx.model.MemberOrder.count({ where });
     const paidOrders = await this.ctx.model.MemberOrder.count({ where: { ...where, status: 1 } });
-    const totalRevenue = await this.ctx.model.MemberOrder.sum('amount', {
+    
+    // 直接使用 actual_amount 统计营收（已同步历史数据）
+    const totalRevenue = await this.ctx.model.MemberOrder.sum('actual_amount', {
       where: { ...where, status: 1 },
     }) || 0;
 
