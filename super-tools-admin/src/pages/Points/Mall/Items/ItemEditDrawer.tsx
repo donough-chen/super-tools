@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Drawer, Form, Input, InputNumber, Select, Switch, Row, Col, Button, Space, message } from 'antd';
+import { Drawer, Form, Input, InputNumber, Select, Switch, Checkbox, Row, Col, Button, Space, message } from 'antd';
 import type { PointsMallItem } from '@/services/points';
 
 /**
@@ -131,6 +131,14 @@ const ItemEditDrawer: React.FC<Props> = ({ open, initial, onClose, onSubmit }) =
           <Col span={12}>
             <Form.Item name="status" label="启用" valuePropName="checked" initialValue={true}>
               <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={24}>
+            <Form.Item name="applicableScenes" label="适用场景">
+              <Checkbox.Group>
+                <Checkbox value="points_mall">积分商城兑换</Checkbox>
+                <Checkbox value="member_subscription">会员订阅抵扣</Checkbox>
+              </Checkbox.Group>
             </Form.Item>
           </Col>
           <Col span={24}>

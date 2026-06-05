@@ -184,6 +184,7 @@ export default class PointsMallService extends BaseService {
         pointsRequired: pointsRequired,  // 快照记录原价积分
         fulfillConfig: item.fulfillConfig,
         isVirtual: item.isVirtual,
+        applicableScenes: item.applicableScenes,  // 快照记录适用场景
       };
       const order: any = await this.ctx.model.PointsMallOrder.create(
         {
@@ -286,6 +287,7 @@ export default class PointsMallService extends BaseService {
             couponType,
             discount: cfg.discount,
             threshold: cfg.threshold || 0,
+            applicableScenes: snap.applicableScenes || null,  // 从商品快照继承适用场景
             expireAt,
           },
           { transaction: t },
