@@ -12,6 +12,7 @@ export interface PointsMallItemAttributes {
   pointsRequired: number;  // 商品原价积分
   requiredLevel?: string;
   fulfillConfig: any;
+  applicableScenes?: any;
   stock: number;
   dailyLimit: number;
   totalLimit: number;
@@ -37,6 +38,7 @@ export default (app: Application) => {
     pointsRequired: { type: INTEGER.UNSIGNED, allowNull: false, defaultValue: 0, field: 'points_required' },
     requiredLevel: { type: STRING(30), allowNull: true, field: 'required_level' },
     fulfillConfig: { type: JSON_TYPE, allowNull: false, field: 'fulfill_config' },
+    applicableScenes: { type: JSON_TYPE, allowNull: true, field: 'applicable_scenes' },
     stock: { type: INTEGER, defaultValue: -1 },
     dailyLimit: { type: INTEGER.UNSIGNED, defaultValue: 0, field: 'daily_limit' },
     totalLimit: { type: INTEGER.UNSIGNED, defaultValue: 0, field: 'total_limit' },

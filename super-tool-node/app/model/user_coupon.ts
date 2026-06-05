@@ -9,6 +9,8 @@ export interface UserCouponAttributes {
   couponType: 'fixed' | 'percent';
   discount: number;
   threshold: number;
+  applicableScenes?: any;
+  lockedPaymentId?: number;
   status: 'unused' | 'used' | 'expired';
   usedAt?: Date;
   expireAt: Date;
@@ -17,7 +19,7 @@ export interface UserCouponAttributes {
 }
 
 export default (app: Application) => {
-  const { STRING, BIGINT, DATE, DECIMAL, ENUM } = DataTypes;
+  const { STRING, BIGINT, DATE, DECIMAL, ENUM, JSON: JSON_TYPE } = DataTypes;
 
   return app.model.define('UserCoupon', {
     id: { type: BIGINT.UNSIGNED, autoIncrement: true, primaryKey: true },
@@ -27,6 +29,8 @@ export default (app: Application) => {
     couponType: { type: ENUM('fixed', 'percent'), allowNull: false, field: 'coupon_type' },
     discount: { type: DECIMAL(10, 2), allowNull: false, field: 'discount' },
     threshold: { type: DECIMAL(10, 2), allowNull: false, defaultValue: 0, field: 'threshold' },
+    applicableScenes: { type: JSON_TYPE, allowNull: true, field: 'applicable_scenes' },
+    lockedPaymentId: { type: BIGINT.UNSIGNED, allowNull: true, field: 'locked_payment_id' },
     status: { type: ENUM('unused', 'used', 'expired'), allowNull: false, defaultValue: 'unused' },
     usedAt: { type: DATE, allowNull: true, field: 'used_at' },
     expireAt: { type: DATE, allowNull: false, field: 'expire_at' },
